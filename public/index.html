@@ -40,6 +40,11 @@
       minTrackingConfidence: 0.5
     });
 
+  const ws = new WebSocket("ws://localhost:8000");
+  ws.onopen = () => console.log("WebSocket connected");
+
+    let frameCount = 0; // 전송 제어용
+
     faceMesh.onResults((results) => {
       canvasElement.width = videoElement.videoWidth;
       canvasElement.height = videoElement.videoHeight;
@@ -57,6 +62,12 @@
             canvasCtx.fill();
           }
         }
+
+        frameCount++;
+        if (frameCount % 3 === 0 && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(results.multiFaceLandmarks));
+      }
+        
       }
     });
 
