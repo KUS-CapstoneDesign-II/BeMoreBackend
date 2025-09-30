@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Face Mesh Demo</title>
+  <style>
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: scaleX(-1); /* 거울처럼 보이게 반전 */
+    }
+  </style>
+</head>
+<body>
+  <video id="input_video" autoplay playsinline></video>
+  <canvas id="output_canvas"></canvas>
+<p>실행중</p>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

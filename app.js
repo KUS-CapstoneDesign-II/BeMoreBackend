@@ -1,9 +1,9 @@
 const express = require("express");
+const path = require("path");
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("테스트 페이지");
-});
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = 8000;
 app.listen(PORT, () => {
