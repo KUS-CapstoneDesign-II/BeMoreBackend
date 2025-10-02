@@ -1,11 +1,22 @@
 const express = require("express");
-const app = express();
+const http = require("http");
+const path = require("path");
+const WebSocket = require("ws");
+const {setupLandmarkSocket} = require("./emotion_detector/landmarkSocket")
 
-app.get("/", (req, res) => {
-  res.send("테스트 페이지");
-});
+
+const app = express();
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+
+const server = http.createServer(app); // WebSocket 을 위한 HTTP 서버 객체
+const wss = new WebSocket.Server({ server });
+
+setupLandmarkSocket(wss);
+
+
 
 const PORT = 8000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
