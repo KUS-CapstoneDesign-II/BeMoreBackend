@@ -22,6 +22,8 @@ async function analyzeExpression(landmarks) {
         ${JSON.stringify(keyLandmarks)}
         `;
 
+        // TODO : 위 프롬포트를 통한 계산은 많이 정확하지는 않은 편, 추후 목소리, 상담 내용과 통합 필요 (multi-modal)
+
 
         const res = await genAI.models.generateContent({
             model: "gemini-2.5-flash-lite",
