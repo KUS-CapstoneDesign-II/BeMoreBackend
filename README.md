@@ -35,7 +35,7 @@ project-root/
 │
 ├── node_modules/            # npm 설치된 패키지들 (gitignore 처리됨)
 │
-├── emotion_detector/        # 감정 분석 모듈 관련 코드
+├── face_detector/        # 감정 분석 모듈 관련 코드
 │   └── landmarkSocket.js    # Mediapipe로 얻은 랜드마크 데이터를 소켓으로 처리
 │
 └── gemini/                  # Gemini API 관련 로직
