@@ -19,8 +19,12 @@ const KEY_INDICES = {
 async function analyzeExpression(accumulatedData, speechText = "") {
   if (!accumulatedData || accumulatedData.length === 0) return "데이터 없음";
 
+  // 얼굴 데이터가 있는 첫 번째 프레임을 초기값으로 사용
+  const firstValidFrame = accumulatedData.find(f => f.landmarks && f.landmarks[0]);
+  if (!firstValidFrame) return "데이터 없음";
+  const initialLandmarks = firstValidFrame.landmarks[0];
+
   const framesCount = accumulatedData.length;
-  const initialLandmarks = accumulatedData[0].landmarks[0];
   const coordinateChanges = {};
 
   for (const key in KEY_INDICES) {
@@ -28,10 +32,11 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   }
 
   accumulatedData.forEach((frame) => {
-    const face = frame.landmarks[0];
-    if (!face) return;
+    const face = frame.landmarks?.[0];
+    if (!face) return; // 얼굴 없으면 건너뜀
     for (const key in KEY_INDICES) {
       const idx = KEY_INDICES[key];
+      if (!face[idx] || !initialLandmarks[idx]) continue; // 안전 체크
       const relY = face[idx].y - initialLandmarks[idx].y;
       coordinateChanges[key].min_y = Math.min(coordinateChanges[key].min_y, relY);
       coordinateChanges[key].max_y = Math.max(coordinateChanges[key].max_y, relY);
@@ -50,11 +55,9 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   }
 
   const mouthMove =
-    coordinateChanges.MOUTH_LEFT_CORNER.max_y -
-    coordinateChanges.MOUTH_LEFT_CORNER.min_y;
+    coordinateChanges.MOUTH_LEFT_CORNER.max_y - coordinateChanges.MOUTH_LEFT_CORNER.min_y;
   const browMove =
-    coordinateChanges.BROW_CENTER.max_y -
-    coordinateChanges.BROW_CENTER.min_y;
+    coordinateChanges.BROW_CENTER.max_y - coordinateChanges.BROW_CENTER.min_y;
 
   summaryText += `입 움직임 폭=${mouthMove.toFixed(3)}, 눈썹 움직임 폭=${browMove.toFixed(3)}\n`;
 
@@ -66,7 +69,7 @@ async function analyzeExpression(accumulatedData, speechText = "") {
     ${summaryText}
 
     [발화 내용(STT)]
-    ${speechText && speechText.trim().length > 0 ? speechText : "발화 없음"}
+    ${speechText?.trim() ? speechText : "발화 없음"}
 
     단계:
     1. 표정 변화를 해석합니다.
@@ -79,7 +82,8 @@ async function analyzeExpression(accumulatedData, speechText = "") {
       model: "gemini-2.5-flash",
       contents: prompt,
     });
-    console.log("여기서 gemini 전송 완료", speechText);
+
+    console.log("Gemini 전송 완료", speechText);
     return res.text.trim().split("\n").pop();
   } catch (err) {
     console.error("Gemini Error:", err);
