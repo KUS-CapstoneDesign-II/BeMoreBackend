@@ -1,83 +1,154 @@
 <!--
-카메라 및 얼굴 landmark 분석을 위한 
-백엔드 입력 테스트용 코드
+카메라 + 음성(STT) + 얼굴 랜드마크 통합 테스트용 프론트엔드
 -->
 
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Face Mesh Demo</title>
-  <style>
-    video, canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform: scaleX(-1);
-    }
-  </style>
-</head>
-<body>
-  <video id="input_video" autoplay playsinline></video>
-  <canvas id="output_canvas"></canvas>
-  <!-- Mediapipe 라이브러리 CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Emotion Analyzer Demo</title>
+    <style>
+      video,
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: scaleX(-1);
+      }
 
-  <script>
-    const videoElement = document.getElementById('input_video');
-    const canvasElement = document.getElementById('output_canvas');
-    const canvasCtx = canvasElement.getContext('2d');
+      #status {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 8px;
+        font-family: sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="status">🎥 초기화 중...</div>
+    <video id="input_video" autoplay playsinline></video>
+    <canvas id="output_canvas"></canvas>
 
-    const faceMesh = new FaceMesh({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-    });
+    <!-- Mediapipe 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 
-    faceMesh.setOptions({
-      maxNumFaces: 1,
-      refineLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
+    <script>
+      const statusDiv = document.getElementById("status");
+      const videoElement = document.getElementById("input_video");
+      const canvasElement = document.getElementById("output_canvas");
+      const canvasCtx = canvasElement.getContext("2d");
 
-  const ws = new WebSocket("ws://localhost:8000");
-  ws.onopen = () => console.log("WebSocket connected");
+      // ====== WebSocket 연결 ======
+      const ws = new WebSocket("ws://localhost:3000");
+      ws.onopen = () => (statusDiv.textContent = "✅ WebSocket 연결 완료");
+      ws.onmessage = (msg) => {
+        try {
+          const data = JSON.parse(msg.data);
+          if (data.emotion) {
+            statusDiv.textContent = `😃 감정: ${data.emotion}`;
+          }
+        } catch {}
+      };
 
-    let frameCount = 0; // 전송 제어용
+      // ====== Mediapipe FaceMesh 설정 ======
+      const faceMesh = new FaceMesh({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+      });
 
-    faceMesh.onResults((results) => {
-      canvasElement.width = videoElement.videoWidth;
-      canvasElement.height = videoElement.videoHeight;
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
 
-      if (results.multiFaceLandmarks) {
-        for (const landmarks of results.multiFaceLandmarks) {
-          for (const point of landmarks) {
-            const x = point.x * canvasElement.width;
-            const y = point.y * canvasElement.height;
-            canvasCtx.beginPath();
-            canvasCtx.arc(x, y, 1.5, 0, 2 * Math.PI);
-            canvasCtx.fillStyle = "red";
-            canvasCtx.fill();
+      let frameCount = 0;
+      faceMesh.onResults((results) => {
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(
+          results.image,
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
+
+        if (results.multiFaceLandmarks) {
+          for (const landmarks of results.multiFaceLandmarks) {
+            for (const point of landmarks) {
+              const x = point.x * canvasElement.width;
+              const y = point.y * canvasElement.height;
+              canvasCtx.beginPath();
+              canvasCtx.arc(x, y, 1.5, 0, 2 * Math.PI);
+              canvasCtx.fillStyle = "red";
+              canvasCtx.fill();
+            }
+          }
+
+          frameCount++;
+          if (frameCount % 3 === 0 && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(results.multiFaceLandmarks));
           }
         }
+      });
 
-        frameCount++;
-        if (frameCount % 3 === 0 && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(results.multiFaceLandmarks));
-      }
-        
-      }
-    });
+      // ====== 카메라 시작 ======
+      const camera = new Camera(videoElement, {
+        onFrame: async () => await faceMesh.send({ image: videoElement }),
+        width: 640,
+        height: 480,
+      });
+      camera.start();
 
-    // 전역 Camera 객체 사용
-    const camera = new Camera(videoElement, {
-      onFrame: async () => await faceMesh.send({ image: videoElement }),
-      width: 640,
-      height: 480
-    });
-    camera.start();
-  </script>
-</body>
+      // ====== 마이크 녹음 및 STT 전송 ======
+      let mediaRecorder;
+      let audioChunks = [];
+
+      async function startMicRecording() {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          audioChunks.push(e.data);
+        };
+
+        // 일정 주기로 전송 (예: 10초마다)
+        setInterval(async () => {
+          if (audioChunks.length === 0) return;
+
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          audioChunks = [];
+
+          const formData = new FormData();
+          formData.append("audio", blob, "speech.webm");
+
+          try {
+            const res = await fetch("/api/transcribe", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await res.json();
+            console.log("🗣️ STT 결과:", data.text);
+          } catch (err) {
+            console.error("STT 업로드 실패:", err);
+          }
+        }, 10000);
+
+        mediaRecorder.start(1000); // 1초 단위 버퍼 수집
+        statusDiv.textContent = "🎤 음성 녹음 중 + 얼굴 추적 중";
+      }
+
+      startMicRecording().catch((err) => {
+        statusDiv.textContent = "🚫 마이크 접근 실패: " + err.message;
+      });
+    </script>
+  </body>
 </html>
