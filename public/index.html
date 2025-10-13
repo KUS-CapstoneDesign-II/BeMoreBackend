@@ -25,6 +25,7 @@
         padding: 10px;
         border-radius: 8px;
         font-family: sans-serif;
+        z-index: 10;
       }
     </style>
   </head>
@@ -44,7 +45,7 @@
       const canvasCtx = canvasElement.getContext("2d");
 
       // ====== WebSocket 연결 ======
-      const ws = new WebSocket("ws://localhost:3000");
+      const ws = new WebSocket("ws://localhost:8000");
       ws.onopen = () => (statusDiv.textContent = "✅ WebSocket 연결 완료");
       ws.onmessage = (msg) => {
         try {
@@ -114,21 +115,30 @@
 
       async function startMicRecording() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
+
+        // mimeType 명시
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm; codecs=opus" });
 
         mediaRecorder.ondataavailable = (e) => {
-          audioChunks.push(e.data);
+          if (e.data && e.data.size > 0) {
+            audioChunks.push(e.data);
+          }
         };
 
-        // 일정 주기로 전송 (예: 10초마다)
+        // 5초 단위로 자동 전송
         setInterval(async () => {
           if (audioChunks.length === 0) return;
 
-          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          const blob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" });
           audioChunks = [];
 
+          if (blob.size === 0) return; // 빈 오디오 전송 방지
+
+          if (blob.size < 500) return; // 너무 작은 파일 무시
+
+
           const formData = new FormData();
-          formData.append("audio", blob, "speech.webm");
+          formData.append("audio", blob, `speech_${Date.now()}.webm`);
 
           try {
             const res = await fetch("/api/transcribe", {
@@ -140,9 +150,9 @@
           } catch (err) {
             console.error("STT 업로드 실패:", err);
           }
-        }, 10000);
+        }, 5000);
 
-        mediaRecorder.start(1000); // 1초 단위 버퍼 수집
+        mediaRecorder.start(1000); // 1초 단위 chunk
         statusDiv.textContent = "🎤 음성 녹음 중 + 얼굴 추적 중";
       }
 

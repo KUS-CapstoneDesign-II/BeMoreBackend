@@ -37,10 +37,10 @@ if (typeof File === "undefined") {
 router.post("/transcribe", upload.single("audio"), async (req, res) => {
   const filePath = req.file.path; // 업로드된 파일 경로
 
-    const stats = fs.statSync(filePath);
-    if (stats.size === 0) {
-      throw new Error("빈 오디오 파일");
-    }
+  const stats = fs.statSync(filePath);
+  if (stats.size === 0) {
+    throw new Error("빈 오디오 파일");
+  }
   try {
     const result = await openai.audio.transcriptions.create({
       file: fs.createReadStream(filePath),

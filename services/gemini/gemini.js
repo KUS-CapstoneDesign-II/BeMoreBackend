@@ -79,6 +79,7 @@ async function analyzeExpression(accumulatedData, speechText = "") {
       model: "gemini-2.5-flash",
       contents: prompt,
     });
+    console.log("여기서 gemini 전송 완료", speechText);
     return res.text.trim().split("\n").pop();
   } catch (err) {
     console.error("Gemini Error:", err);

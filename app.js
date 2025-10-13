@@ -4,7 +4,7 @@ const path = require("path");
 const { WebSocketServer } = require("ws");
 const dotenv = require("dotenv");
 const sttRouter = require("./routes/stt");
-const { setupLandmarkSocket } = require("./services/socket/setupLandmarkSocekt");
+const { setupLandmarkSocket } = require("./services/socket/setupLandmarkSocket");
 
 dotenv.config();
 
