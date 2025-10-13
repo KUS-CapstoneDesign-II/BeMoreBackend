@@ -36,6 +36,11 @@ if (typeof File === "undefined") {
 // 🔊 Whisper STT 변환
 router.post("/transcribe", upload.single("audio"), async (req, res) => {
   const filePath = req.file.path; // 업로드된 파일 경로
+
+    const stats = fs.statSync(filePath);
+    if (stats.size === 0) {
+      throw new Error("빈 오디오 파일");
+    }
   try {
     const result = await openai.audio.transcriptions.create({
       file: fs.createReadStream(filePath),
@@ -51,7 +56,9 @@ router.post("/transcribe", upload.single("audio"), async (req, res) => {
     res.json({ text: result.text });
   } catch (err) {
     console.error("STT 변환 실패:", err);
-    res.status(500).json({ error: "STT 변환 실패" });
+    res.json({ text: "목소리가 인식되지 않습니다." });
+
+
   } finally {
     // 변환 성공/실패 상관 없이 임시 mp3 파일 삭제
     fs.unlink(filePath, (err) => {
