@@ -1,55 +1,90 @@
-<!--
-카메라 및 얼굴 landmark 분석을 위한 
-백엔드 입력 테스트용 코드
--->
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
+ 
+
 <head>
-  <meta charset="UTF-8">
-  <title>Face Mesh Demo</title>
-  <style>
-    video, canvas {
+     
+  <meta charset="UTF-8" />
+      <title>Emotion Analyzer Demo</title>
+      <style>
+    video,
+    canvas {
       position: absolute;
       top: 0;
       left: 0;
       transform: scaleX(-1);
     }
+
+    #status {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      font-family: sans-serif;
+      z-index: 10;
+    }
   </style>
+   
 </head>
+ 
+
 <body>
-  <video id="input_video" autoplay playsinline></video>
-  <canvas id="output_canvas"></canvas>
-  <!-- Mediapipe 라이브러리 CDN -->
+      <div id="status">🎥 초기화 중...</div>
+      <video id="input_video" autoplay playsinline></video>
+      <canvas id="output_canvas"></canvas>
+
+         
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+     
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 
+     
   <script>
-    const videoElement = document.getElementById('input_video');
-    const canvasElement = document.getElementById('output_canvas');
-    const canvasCtx = canvasElement.getContext('2d');
+    const statusDiv = document.getElementById("status");
+    const videoElement = document.getElementById("input_video");
+    const canvasElement = document.getElementById("output_canvas");
+    const canvasCtx = canvasElement.getContext("2d");
 
+    // ====== WebSocket 연결 ======
+    const ws = new WebSocket("ws://localhost:8000");
+    ws.onopen = () => (statusDiv.textContent = "✅ WebSocket 연결 완료");
+    ws.onmessage = (msg) => {
+      try {
+        const data = JSON.parse(msg.data);
+        if (data.emotion) {
+          statusDiv.textContent = `😃 감정: ${data.emotion}`;
+        }
+      } catch { }
+    };
+
+    // ====== Mediapipe FaceMesh 설정 ======
     const faceMesh = new FaceMesh({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
     });
 
     faceMesh.setOptions({
       maxNumFaces: 1,
       refineLandmarks: true,
       minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
+      minTrackingConfidence: 0.5,
     });
 
-  const ws = new WebSocket("ws://localhost:8000");
-  ws.onopen = () => console.log("WebSocket connected");
-
-    let frameCount = 0; // 전송 제어용
-
+    let frameCount = 0;
     faceMesh.onResults((results) => {
       canvasElement.width = videoElement.videoWidth;
       canvasElement.height = videoElement.videoHeight;
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(
+        results.image,
+        0,
+        0,
+        canvasElement.width,
+        canvasElement.height
+      );
 
       if (results.multiFaceLandmarks) {
         for (const landmarks of results.multiFaceLandmarks) {
@@ -65,19 +100,123 @@
 
         frameCount++;
         if (frameCount % 3 === 0 && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(results.multiFaceLandmarks));
-      }
-        
+          ws.send(JSON.stringify(results.multiFaceLandmarks));
+        }
       }
     });
 
-    // 전역 Camera 객체 사용
+    // ====== 카메라 시작 ======
     const camera = new Camera(videoElement, {
       onFrame: async () => await faceMesh.send({ image: videoElement }),
       width: 640,
-      height: 480
+      height: 480,
     });
     camera.start();
+
+    // ====== 마이크 녹음 및 STT 전송 (수정된 안정적인 로직) ======
+    let mediaRecorder;
+    let audioChunks = [];
+    let audioStream;
+    let recordingInterval;
+
+    // MediaRecorder를 초기화하고 시작하는 헬퍼 함수
+    const initAndStartRecorder = (stream) => {
+      // 이전 인스턴스가 있다면 중지하고 정리 (안전 조치)
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+
+      audioChunks = []; // 데이터 버퍼 초기화
+
+      // 새로운 MediaRecorder 인스턴스 생성
+      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm; codecs=opus" });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.start(); // 즉시 녹음 시작
+    };
+
+    async function startMicRecording() {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // 최초 녹음 시작
+      initAndStartRecorder(audioStream);
+
+      // 5초 단위로 자동 전송 (중지 -> 전송 -> 재시작)
+      recordingInterval = setInterval(async () => {
+
+        // 1. 녹음 중지: ondataavailable 이벤트를 강제하여 청크를 최종 확보
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        } else {
+          // 이미 멈춰있다면 (예: 중지 이벤트 처리 중) 재시작만 하고 데이터 전송은 스킵
+          initAndStartRecorder(audioStream);
+          return;
+        }
+
+        // ondataavailable이 비동기적으로 실행된 후, audioChunks가 채워지기를 기다림
+        // 데이터가 준비될 때까지 잠시 대기 (setTimeout 대신 다음 루프에서 처리)
+        // 즉시 실행될 경우, audioChunks.length === 0 일 수 있으므로 방어 로직 추가
+
+        // 2. 데이터 처리 및 전송
+        // ondataavailable이 완전히 실행되기를 기다리기 위해 잠시 딜레이를 주거나,
+        // 다음 인터벌 루프에서 처리하는 것이 일반적입니다. 여기서는 다음 루프를 위해
+        // 바로 initAndStartRecorder(audioStream)를 호출하지 않고, 현재 확보된 청크만 확인합니다.
+
+        if (audioChunks.length === 0) {
+          // 데이터가 확보되지 않았다면 다음 루프에서 재시도 (중지/재시작은 initAndStartRecorder에서 처리됨)
+          initAndStartRecorder(audioStream);
+          return;
+        }
+
+        const blob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" });
+        // audioChunks = []; // 버퍼는 initAndStartRecorder에서 초기화됨
+
+        if (blob.size < 500) {
+          initAndStartRecorder(audioStream); // 작은 파일 무시 후 재시작
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("audio", blob, `speech_${Date.now()}.webm`);
+
+        // 3. 녹음 재시작 (전송 전에 시작하여 빈 시간 최소화)
+        initAndStartRecorder(audioStream);
+
+        // 4. STT 전송
+        try {
+          const res = await fetch("/api/transcribe", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+          console.log("🗣️ STT 결과:", data.text);
+        } catch (err) {
+          console.error("STT 업로드 실패:", err);
+        }
+
+      }, 5000);
+
+      statusDiv.textContent = "🎤 음성 녹음 중 + 얼굴 추적 중";
+    }
+
+    startMicRecording().catch((err) => {
+      statusDiv.textContent = "🚫 마이크 접근 실패: " + err.message;
+    });
+
+    // 페이지를 떠날 때 Interval 정리
+    window.onbeforeunload = () => {
+      clearInterval(recordingInterval);
+      if (mediaRecorder && mediaRecorder.stream) {
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      }
+    };
   </script>
+   
 </body>
+
 </html>
