@@ -4,6 +4,7 @@ const path = require("path");
 const { WebSocketServer } = require("ws");
 const dotenv = require("dotenv");
 const sttRouter = require("./routes/stt");
+const sessionRouter = require("./routes/session");
 const { setupLandmarkSocket } = require("./services/socket/setupLandmarkSocket");
 
 dotenv.config();
@@ -13,7 +14,8 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 app.use(express.json());
-app.use("/api", sttRouter);
+app.use("/api/stt", sttRouter);
+app.use("/api/session", sessionRouter);
 app.use(express.static(path.join(__dirname, "public")));
 
 setupLandmarkSocket(wss);

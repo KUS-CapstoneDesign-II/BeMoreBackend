@@ -1,0 +1,25 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+✅ SessionManager 초기화 완료
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+🚀 서버 실행 중: http://localhost:8000
+✅ 세션 생성: sess_1760776873841_e04afcf3 (사용자: test_user_001, 상담사: test_counselor_001)
+📡 세션 시작 API 호출 성공: sess_1760776873841_e04afcf3
+⏸️ 세션 일시정지: sess_1760776873841_e04afcf3
+⏸️ 세션 일시정지 API 호출: sess_1760776873841_e04afcf3
+▶️ 세션 재개: sess_1760776873841_e04afcf3
+▶️ 세션 재개 API 호출: sess_1760776873841_e04afcf3
+✅ 세션 종료: sess_1760776873841_e04afcf3 (지속 시간: 12초)
+✅ 세션 종료 API 호출: sess_1760776873841_e04afcf3
+⚠️ 세션 없음: invalid_session_id
+❌ 세션 일시정지 오류: Error: 활성 세션이 아닙니다: sess_1760776873841_e04afcf3 (현재 상태: ended)
+    at SessionManager.pauseSession (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/services/session/SessionManager.js:110:13)
+    at /Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/routes/session.js:168:36
+    at Layer.handleRequest (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/lib/layer.js:152:17)
+    at next (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/lib/route.js:157:13)
+    at Route.dispatch (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/lib/route.js:117:3)
+    at handle (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/index.js:435:11)
+    at Layer.handleRequest (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/lib/layer.js:152:17)
+    at /Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/index.js:295:15
+    at param (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/index.js:600:14)
+    at param (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/index.js:610:14)
