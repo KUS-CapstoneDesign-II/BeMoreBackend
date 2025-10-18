@@ -19,6 +19,7 @@
     "formidable": "^3.5.4",
     "multer": "^2.0.2",
     "openai": "^6.3.0",
+    "uuid": "^13.0.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {

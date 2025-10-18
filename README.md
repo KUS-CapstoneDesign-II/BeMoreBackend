@@ -358,17 +358,6 @@ chore: 빌드/설정 변경
 
 ---
 
-## 👥 팀
-
-**KUS CapstoneDesign II - BeMore Team**
-
-- **Backend**: 우승재
-- **Frontend**: [팀원명]
-- **AI/ML**: [팀원명]
-- **PM**: [팀원명]
-
----
-
 ## 📞 문의
 
 - **GitHub Issues**: [프로젝트 이슈](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend/issues)
