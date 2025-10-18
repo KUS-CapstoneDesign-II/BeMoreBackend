@@ -1,59 +1,9 @@
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
 ✅ SessionManager 초기화 완료
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
 ✅ WebSocket 3채널 라우터 설정 완료
 🚀 서버 실행 중: http://localhost:8000
-✅ 세션 생성: sess_1760778798452_64e8589b (사용자: test_user_001, 상담사: test_counselor_001)
-📡 세션 시작 API 호출 성공: sess_1760778798452_64e8589b
-⏸️ 세션 일시정지: sess_1760778798452_64e8589b
-⏸️ 세션 일시정지 API 호출: sess_1760778798452_64e8589b
-▶️ 세션 재개: sess_1760778798452_64e8589b
-▶️ 세션 재개 API 호출: sess_1760778798452_64e8589b
-✅ 세션 생성: sess_1760778861333_6d66eae0 (사용자: test_ws_user, 상담사: test_ws_counselor)
-📡 세션 시작 API 호출 성공: sess_1760778861333_6d66eae0
-🔌 WebSocket 연결 시도: /ws/landmarks, sessionId: sess_1760778861333_6d66eae0
-✅ Landmarks 채널 연결: sess_1760778861333_6d66eae0
-🎭 Landmarks 핸들러 시작: sess_1760778861333_6d66eae0
-🔌 WebSocket 연결 시도: /ws/voice, sessionId: sess_1760778861333_6d66eae0
-✅ Voice 채널 연결: sess_1760778861333_6d66eae0
-🎤 Voice 핸들러 시작: sess_1760778861333_6d66eae0
-🔌 WebSocket 연결 시도: /ws/session, sessionId: sess_1760778861333_6d66eae0
-✅ Session 채널 연결: sess_1760778861333_6d66eae0
-⚙️ Session 핸들러 시작: sess_1760778861333_6d66eae0
-💬 STT 텍스트 수신: "이것은 테스트 음성 텍스트입니다...."
-⏸️ 세션 일시정지: sess_1760778861333_6d66eae0
-⏸️ 세션 일시정지 명령: sess_1760778861333_6d66eae0
-▶️ 세션 재개: sess_1760778861333_6d66eae0
-▶️ 세션 재개 명령: sess_1760778861333_6d66eae0
-🔌 Session 채널 종료: sess_1760778861333_6d66eae0
-🔌 Landmarks 채널 종료: sess_1760778861333_6d66eae0
-🔌 Voice 채널 종료: sess_1760778861333_6d66eae0
-✅ 세션 생성: sess_1760778887388_71fd3368 (사용자: demo_user_001, 상담사: demo_counselor_001)
-📡 세션 시작 API 호출 성공: sess_1760778887388_71fd3368
-🔌 WebSocket 연결 시도: /ws/landmarks, sessionId: sess_1760778887388_71fd3368
-✅ Landmarks 채널 연결: sess_1760778887388_71fd3368
-🎭 Landmarks 핸들러 시작: sess_1760778887388_71fd3368
-🔌 WebSocket 연결 시도: /ws/voice, sessionId: sess_1760778887388_71fd3368
-✅ Voice 채널 연결: sess_1760778887388_71fd3368
-🎤 Voice 핸들러 시작: sess_1760778887388_71fd3368
-🔌 WebSocket 연결 시도: /ws/session, sessionId: sess_1760778887388_71fd3368
-✅ Session 채널 연결: sess_1760778887388_71fd3368
-⚙️ Session 핸들러 시작: sess_1760778887388_71fd3368
-📊 10초 주기 분석 시작 (frames: 55, stt_len: 0)
-🎯 Gemini 분석 결과: 데이터 없음
-📤 감정 업데이트 전송: 데이터 없음
-📦 Landmarks 프레임 수신: 100개 (버퍼: 45)
-📊 10초 주기 분석 시작 (frames: 68, stt_len: 0)
-🎯 Gemini 분석 결과: 데이터 없음
-📤 감정 업데이트 전송: 데이터 없음
-🔌 WebSocket 종료: landmarks
-🔌 WebSocket 종료: voice
-🔌 WebSocket 종료: session
-✅ 세션 종료: sess_1760778887388_71fd3368 (지속 시간: 22초)
-✅ 세션 종료 API 호출: sess_1760778887388_71fd3368
-🔌 Landmarks 채널 종료: sess_1760778887388_71fd3368
-🔌 Session 채널 종료: sess_1760778887388_71fd3368
-🔌 Voice 채널 종료: sess_1760778887388_71fd3368
-✅ 세션 종료: sess_1760778887388_71fd3368 (지속 시간: 28초)
-✅ 세션 종료 API 호출: sess_1760778887388_71fd3368
+✅ 세션 생성: sess_1760779751664_266db1ca (사용자: vad_test_user, 상담사: vad_test_counselor)
+📡 세션 시작 API 호출 성공: sess_1760779751664_266db1ca
+📊 VAD 분석 결과 조회: sess_1760779751664_266db1ca
