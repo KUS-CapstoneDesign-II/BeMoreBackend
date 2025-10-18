@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
- 
+
 
 <head>
-     
+
   <meta charset="UTF-8" />
-      <title>Emotion Analyzer Demo</title>
-      <style>
+  <title>Emotion Analyzer Demo</title>
+  <style>
     video,
     canvas {
       position: absolute;
@@ -27,21 +27,23 @@
       z-index: 10;
     }
   </style>
-   
+
 </head>
- 
+
 
 <body>
-      <div id="status">🎥 초기화 중...</div>
-      <video id="input_video" autoplay playsinline></video>
-      <canvas id="output_canvas"></canvas>
+  <div id="status">🎥 초기화 중...</div>
+  <!-- 종료 버튼 추가 -->
+  <button id="stopBtn" style="position: fixed; top: 10px; right: 10px; z-index: 11; padding: 8px 12px;">종료</button>
+  <video id="input_video" autoplay playsinline></video>
+  <canvas id="output_canvas"></canvas>
 
-         
+
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-     
+
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 
-     
+
   <script>
     const statusDiv = document.getElementById("status");
     const videoElement = document.getElementById("input_video");
@@ -54,10 +56,15 @@
     ws.onmessage = (msg) => {
       try {
         const data = JSON.parse(msg.data);
-        if (data.emotion) {
-          statusDiv.textContent = `😃 감정: ${data.emotion}`;
+        if (data.type === 'analysis_result' || data.emotion) {
+          statusDiv.textContent = `😃 감정: ${data.emotion || data.emotion}`;
+        } else if (data.type === 'final_analysis') {
+          // 최종 분석 결과 표시
+          showFinalAnalysis(data);
+        } else if (data.type === 'stop_refused') {
+          alert('종료 거부: ' + (data.reason || '세션이 충분하지 않습니다.'));
         }
-      } catch { }
+      } catch (e) { console.error('ws message parse error', e); }
     };
 
     // ====== Mediapipe FaceMesh 설정 ======
@@ -207,6 +214,226 @@
     startMicRecording().catch((err) => {
       statusDiv.textContent = "🚫 마이크 접근 실패: " + err.message;
     });
+
+    // ====== 종료 버튼 처리 (서버 확인 후 로컬 정지)
+    const stopBtn = document.getElementById('stopBtn');
+    stopBtn.addEventListener('click', () => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        alert('서버와 연결되어 있지 않습니다.');
+        return;
+      }
+
+      // 서버에 stop 요청 전송
+      ws.send(JSON.stringify({ type: 'control', action: 'stop' }));
+      statusDiv.textContent = '요청 중... 서버 응답 대기';
+    });
+
+    // 최종 분석 UI 표시 함수 (종합 분석 페이지)
+    function showFinalAnalysis(data) {
+      // 전체 화면 분석 패널 생성
+      const panel = document.createElement('div');
+      panel.id = 'analysisPanel';
+      panel.style.position = 'fixed';
+      panel.style.left = '0';
+      panel.style.top = '0';
+      panel.style.width = '100%';
+      panel.style.height = '100%';
+      panel.style.background = '#f6f8fa';
+      panel.style.zIndex = '1000';
+      panel.style.overflow = 'auto';
+      panel.style.fontFamily = 'sans-serif';
+
+      // 내부 스타일
+      const container = document.createElement('div');
+      container.style.maxWidth = '1000px';
+      container.style.margin = '40px auto';
+      container.style.background = 'white';
+      container.style.borderRadius = '10px';
+      container.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+      container.style.padding = '24px';
+
+      const header = document.createElement('div');
+      header.style.display = 'flex';
+      header.style.justifyContent = 'space-between';
+      header.style.alignItems = 'center';
+
+      const title = document.createElement('h2');
+      title.textContent = '종합 감정 분석 결과';
+
+      const controls = document.createElement('div');
+      controls.style.display = 'flex';
+      controls.style.gap = '8px';
+
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = '결과 다운로드';
+      downloadBtn.addEventListener('click', () => downloadReport(data));
+
+      const restartBtn = document.createElement('button');
+      restartBtn.textContent = '다시 시작';
+      restartBtn.addEventListener('click', () => {
+        // 패널 제거 후 리소스 재시작
+        document.body.removeChild(panel);
+        try { camera.start(); } catch (e) { /* noop */ }
+        // 재녹음 시작
+        startMicRecording().catch(err => console.warn('재시작 중 마이크 오류', err));
+        frameCount = 0;
+        statusDiv.textContent = '🎤 음성 녹음 중 + 얼굴 추적 중';
+      });
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '닫기';
+      closeBtn.addEventListener('click', () => {
+        document.body.removeChild(panel);
+      });
+
+      controls.appendChild(downloadBtn);
+      controls.appendChild(restartBtn);
+      controls.appendChild(closeBtn);
+
+      header.appendChild(title);
+      header.appendChild(controls);
+
+      // 요약 섹션
+      const summary = document.createElement('div');
+      summary.style.display = 'grid';
+      summary.style.gridTemplateColumns = '1fr 1fr';
+      summary.style.gap = '12px';
+      summary.style.marginTop = '16px';
+
+      const emotionCard = document.createElement('div');
+      emotionCard.style.padding = '16px';
+      emotionCard.style.border = '1px solid #e6e9ee';
+      emotionCard.style.borderRadius = '8px';
+      const emotionTitle = document.createElement('h3');
+      emotionTitle.textContent = '감정 요약';
+      const emotionText = document.createElement('p');
+      emotionText.style.fontSize = '20px';
+      emotionText.style.fontWeight = '600';
+      emotionText.textContent = data.emotion || '알 수 없음';
+      // 상세 리포트(가능하면) 표시
+      if (data.detailed_report && data.detailed_report.report) {
+        const dr = data.detailed_report.report;
+        const drBox = document.createElement('div');
+        drBox.style.marginTop = '8px';
+        drBox.innerHTML = `<strong>신뢰도:</strong> ${dr.confidence ?? '-'}<br/><strong>추천:</strong> ${Array.isArray(dr.recommendation) ? dr.recommendation.join('<br/>') : (dr.recommendation || '-')}`;
+        emotionCard.appendChild(drBox);
+      }
+      emotionCard.appendChild(emotionTitle);
+      emotionCard.appendChild(emotionText);
+
+      const statsCard = document.createElement('div');
+      statsCard.style.padding = '16px';
+      statsCard.style.border = '1px solid #e6e9ee';
+      statsCard.style.borderRadius = '8px';
+      const statsTitle = document.createElement('h3');
+      statsTitle.textContent = '통계';
+      const statsBody = document.createElement('div');
+      statsBody.innerHTML = `<p>프레임 수: ${data.frames_count || 0}</p><p>분석 시각: ${data.timestamp || ''}</p>`;
+      statsCard.appendChild(statsTitle);
+      statsCard.appendChild(statsBody);
+
+      summary.appendChild(emotionCard);
+      summary.appendChild(statsCard);
+
+      // STT 섹션
+      const sttSection = document.createElement('div');
+      sttSection.style.marginTop = '16px';
+      const sttTitle = document.createElement('h3');
+      sttTitle.textContent = 'STT (음성 텍스트)';
+      const sttPre = document.createElement('pre');
+      sttPre.style.background = '#f4f6f8';
+      sttPre.style.padding = '12px';
+      sttPre.style.borderRadius = '6px';
+      sttPre.style.maxHeight = '240px';
+      sttPre.style.overflow = 'auto';
+      sttPre.textContent = data.stt_snippet || '(발화 없음)';
+      sttSection.appendChild(sttTitle);
+      sttSection.appendChild(sttPre);
+
+      // 상세 리포트 섹션
+      if (data.detailed_report && data.detailed_report.report) {
+        const rep = data.detailed_report.report;
+        const repSection = document.createElement('div');
+        repSection.style.marginTop = '16px';
+        const repTitle = document.createElement('h3');
+        repTitle.textContent = '상세 리포트';
+        const repPre = document.createElement('pre');
+        repPre.style.background = '#f9fafb';
+        repPre.style.padding = '12px';
+        repPre.style.borderRadius = '6px';
+        repPre.style.maxHeight = '300px';
+        repPre.style.overflow = 'auto';
+        repPre.textContent = JSON.stringify(rep, null, 2);
+        repSection.appendChild(repTitle);
+        repSection.appendChild(repPre);
+        container.appendChild(repSection);
+      }
+
+      // 타임라인 / 간단한 시각화
+      const timelineSection = document.createElement('div');
+      timelineSection.style.marginTop = '16px';
+      const timelineTitle = document.createElement('h3');
+      timelineTitle.textContent = '간단 타임라인';
+      const timelineCanvas = document.createElement('canvas');
+      timelineCanvas.width = 800;
+      timelineCanvas.height = 100;
+      timelineCanvas.style.width = '100%';
+      timelineCanvas.style.border = '1px solid #e6e9ee';
+      timelineCanvas.style.borderRadius = '6px';
+      timelineSection.appendChild(timelineTitle);
+      timelineSection.appendChild(timelineCanvas);
+
+      // 내용 조합
+      container.appendChild(header);
+      container.appendChild(summary);
+      container.appendChild(sttSection);
+      container.appendChild(timelineSection);
+      panel.appendChild(container);
+      document.body.appendChild(panel);
+
+      // 간단한 타임라인 그리기 (프레임 수 기반)
+      try {
+        const ctx = timelineCanvas.getContext('2d');
+        ctx.clearRect(0, 0, timelineCanvas.width, timelineCanvas.height);
+        const frames = data.frames_count || 0;
+        const maxFrames = Math.max(frames, 60);
+        const barWidth = Math.max(4, (timelineCanvas.width / maxFrames) * Math.min(frames, maxFrames));
+        ctx.fillStyle = '#4caf50';
+        ctx.fillRect(0, timelineCanvas.height / 4, barWidth, timelineCanvas.height / 2);
+        ctx.fillStyle = '#000';
+        ctx.fillText(`프레임: ${frames}`, 10, 14);
+      } catch (e) { console.warn('타임라인 렌더링 실패', e); }
+
+      // 서버가 수락하고 최종 분석을 보냈으므로 로컬 자원 정리
+      try { camera.stop(); } catch (e) { /* noop */ }
+      try {
+        clearInterval(recordingInterval);
+        if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+        if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+      } catch (e) { console.warn('로컬 정리 오류', e); }
+
+      statusDiv.textContent = '⏹️ 측정 중지됨';
+    }
+
+    // 결과 다운로드 유틸
+    function downloadReport(data) {
+      const report = {
+        emotion: data.emotion,
+        frames_count: data.frames_count,
+        timestamp: data.timestamp,
+        stt_snippet: data.stt_snippet,
+        detailed_report: data.detailed_report || null
+      };
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analysis_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
 
     // 페이지를 떠날 때 Interval 정리
     window.onbeforeunload = () => {

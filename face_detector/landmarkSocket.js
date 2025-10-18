@@ -1,17 +1,18 @@
 const { analyzeExpression } = require("../services/gemini/gemini");
 
-// 랜드마크 데이터를 누적할 시간 (10초)
+// 랜드마크 데이터를 누적할 시간 (10초) => 추후 조정 가능
 const ACCUMULATION_DURATION_MS = 10000;
 
 function setupLandmarkSocket(wss) {
   wss.on("connection", (socket) => {
     console.log("client connected");
 
-    // 데이터 누적 버퍼
-    let landmarkBuffer = [];
-    let latestLandmarks = null; // 실시간 랜드마크를 잠시 저장
+  // 데이터 누적 버퍼
+  let landmarkBuffer = [];
+  let latestLandmarks = null; // 실시간 랜드마크를 잠시 저장
 
-    let analyzing = false;
+  let analyzing = false;
+  const sessionStartTime = Date.now();
 
     // 10초마다 누적된 데이터를 Gemini로 보내 분석하는 타이머
     const analysisInterval = setInterval(async () => {
@@ -44,21 +45,54 @@ function setupLandmarkSocket(wss) {
       }
     }, ACCUMULATION_DURATION_MS); // 10초마다 분석 실행
 
-    socket.on("message", async (data) => {
-      try {
-        latestLandmarks = JSON.parse(data);
-        // 랜드마크가 유효하면 버퍼에 추가
-        if (latestLandmarks && Array.isArray(latestLandmarks) && latestLandmarks.length > 0) {
-          // 받은 랜드마크 데이터에 타임스탬프를 추가하여 버퍼에 저장 
-          landmarkBuffer.push({
-            timestamp: Date.now(),
-            landmarks: latestLandmarks
-          });
+      socket.on("message", async (data) => {
+        try {
+          const parsed = JSON.parse(data);
+
+          // 제어 메시지 처리: { type: 'control', action: 'stop' }
+          if (parsed && parsed.type === 'control') {
+            if (parsed.action === 'stop') {
+              const sessionDuration = Date.now() - sessionStartTime;
+              if (sessionDuration < 10000) {
+                if (socket.readyState === socket.OPEN) {
+                  socket.send(JSON.stringify({ type: 'stop_refused', reason: '세션이 충분히 길지 않습니다. 최소 10초 필요합니다.', duration: sessionDuration }));
+                }
+                return;
+              }
+
+              // 즉시 분석
+              try {
+                const framesToAnalyze = [...landmarkBuffer];
+                const emotion = await analyzeExpression(framesToAnalyze);
+                if (socket.readyState === socket.OPEN) {
+                  socket.send(JSON.stringify({ type: 'final_analysis', emotion, frames_count: framesToAnalyze.length }));
+                }
+              } catch (err) {
+                console.error('종료 시 즉시 분석 실패 (face_detector):', err);
+                if (socket.readyState === socket.OPEN) {
+                  socket.send(JSON.stringify({ type: 'analysis_error', message: '종료 시 즉시 분석에 실패했습니다.' }));
+                }
+              } finally {
+                landmarkBuffer = [];
+                clearInterval(analysisInterval);
+              }
+
+              return;
+            }
+          }
+
+          latestLandmarks = parsed;
+          // 랜드마크가 유효하면 버퍼에 추가
+          if (latestLandmarks && Array.isArray(latestLandmarks) && latestLandmarks.length > 0) {
+            landmarkBuffer.push({
+              timestamp: Date.now(),
+              landmarks: latestLandmarks
+            });
+          }
+        } catch (err) {
+          console.error("WS message error: ", err);
         }
-      } catch (err) {
-        console.error("WS message error: ", err);
-      }
-    });
+      });
 
     socket.on("close", () => {
       clearInterval(analysisInterval);
