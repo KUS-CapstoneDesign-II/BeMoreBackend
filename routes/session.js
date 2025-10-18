@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const SessionManager = require('../services/session/SessionManager');
+const SessionReportGenerator = require('../services/report/SessionReportGenerator');
+
+// 리포트 생성기 초기화
+const reportGenerator = new SessionReportGenerator();
 
 /**
  * 세션 시작 API
@@ -442,6 +446,114 @@ router.get('/user/:userId', (req, res) => {
       success: false,
       error: {
         code: 'USER_SESSIONS_QUERY_ERROR',
+        message: error.message
+      }
+    });
+  }
+});
+
+/**
+ * 세션 리포트 생성 API (Phase 4)
+ * GET /api/session/:id/report
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "reportId": "report_...",
+ *     "metadata": { ... },
+ *     "analysis": { ... },
+ *     "emotionTimeline": { ... },
+ *     "vadTimeline": { ... },
+ *     "cbtDetails": { ... },
+ *     "statistics": { ... }
+ *   }
+ * }
+ */
+router.get('/:id/report', (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const session = SessionManager.getSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: `세션을 찾을 수 없습니다: ${sessionId}`
+        }
+      });
+    }
+
+    // 리포트 생성
+    const report = reportGenerator.generateReport(session);
+
+    res.json({
+      success: true,
+      data: report
+    });
+
+    console.log(`📊 세션 리포트 생성: ${sessionId}`);
+
+  } catch (error) {
+    console.error('❌ 리포트 생성 오류:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REPORT_GENERATION_ERROR',
+        message: error.message
+      }
+    });
+  }
+});
+
+/**
+ * 세션 리포트 텍스트 요약 API (Phase 4)
+ * GET /api/session/:id/report/summary
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "summary": "=== BeMore 심리 상담 세션 리포트 ===\n..."
+ *   }
+ * }
+ */
+router.get('/:id/report/summary', (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const session = SessionManager.getSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: `세션을 찾을 수 없습니다: ${sessionId}`
+        }
+      });
+    }
+
+    // 리포트 생성 및 텍스트 요약
+    const report = reportGenerator.generateReport(session);
+    const summary = reportGenerator.generateTextSummary(report);
+
+    res.json({
+      success: true,
+      data: {
+        reportId: report.reportId,
+        summary
+      }
+    });
+
+    console.log(`📄 세션 리포트 요약 생성: ${sessionId}`);
+
+  } catch (error) {
+    console.error('❌ 리포트 요약 생성 오류:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REPORT_SUMMARY_ERROR',
         message: error.message
       }
     });
