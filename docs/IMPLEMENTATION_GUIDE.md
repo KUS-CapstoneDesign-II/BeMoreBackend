@@ -31,33 +31,33 @@
 
 ```mermaid
 graph TB
-    subgraph "클라이언트"
-        A[웹캠/마이크] --> B[MediaPipe]
+    subgraph Client["클라이언트"]
+        A[웹캠 마이크] --> B[MediaPipe]
         A --> C[오디오 처리]
         B --> D[얼굴 랜드마크]
         C --> E[VAD 분석]
     end
 
-    subgraph "WebSocket 통신"
-        D --> F[/ws/landmarks]
-        E --> G[/ws/voice]
-        H[세션 제어] --> I[/ws/session]
+    subgraph WebSocket["WebSocket 통신"]
+        D --> F[WS Landmarks]
+        E --> G[WS Voice]
+        H[세션 제어] --> I[WS Session]
     end
 
-    subgraph "분석 엔진"
+    subgraph Analysis["분석 엔진"]
         F --> J[Gemini 멀티모달]
         G --> J
         K[STT] --> J
         J --> L[감정 분석]
     end
 
-    subgraph "CBT 엔진"
+    subgraph CBT["CBT 엔진"]
         L --> M[인지 왜곡 탐지]
         M --> N[소크라테스식 질문]
         M --> O[행동 과제 추천]
     end
 
-    subgraph "결과 출력"
+    subgraph Output["결과 출력"]
         N --> P[실시간 개입]
         O --> P
         P --> I
