@@ -1,0 +1,24 @@
+{
+  "type": "disqualifying-positive",
+  "name_ko": "긍정 부인",
+  "name_en": "Disqualifying the Positive",
+  "description": "긍정적 경험을 우연이나 운으로 치부",
+  "keywords": ["우연", "운", "그냥", "별거아냐", "실력아냐", "당연", "쉬워서", "누구나"],
+  "patterns": [
+    {
+      "regex": "(성공|잘|좋).*(우연|운|그냥|쉬워서)",
+      "severity": "high",
+      "example": "잘된 건 그냥 운이 좋았을 뿐이야"
+    },
+    {
+      "regex": "(칭찬|인정).*(별거|아냐|못해|아니)",
+      "severity": "medium",
+      "example": "칭찬받았지만 별거 아니야"
+    },
+    {
+      "regex": "(누구나|당연히|쉽게).*(할수|가능|된)",
+      "severity": "medium",
+      "example": "누구나 할 수 있는 거야"
+    }
+  ]
+}

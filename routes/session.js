@@ -319,6 +319,72 @@ router.delete('/:id', (req, res) => {
 });
 
 /**
+ * VAD 분석 결과 조회 API (Phase 2)
+ * GET /api/session/:id/vad-analysis
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "currentMetrics": { ... },
+ *     "psychological": { ... },
+ *     "history": [ ... ],
+ *     "timeSeries": [ ... ]
+ *   }
+ * }
+ */
+router.get('/:id/vad-analysis', (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const session = SessionManager.getSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: `세션을 찾을 수 없습니다: ${sessionId}`
+        }
+      });
+    }
+
+    // VAD 메트릭 및 심리 지표 조회
+    const currentMetrics = session.vadMetrics ? session.vadMetrics.calculate() : null;
+    const psychological = session.psychIndicators && currentMetrics
+      ? session.psychIndicators.analyze(currentMetrics)
+      : null;
+
+    const timeSeries = session.vadMetrics
+      ? session.vadMetrics.getTimeSeries(10000)
+      : [];
+
+    res.json({
+      success: true,
+      data: {
+        sessionId: session.sessionId,
+        currentMetrics,
+        psychological,
+        history: session.vadAnalysisHistory || [],
+        timeSeries,
+        lastUpdate: Date.now()
+      }
+    });
+
+    console.log(`📊 VAD 분석 결과 조회: ${sessionId}`);
+
+  } catch (error) {
+    console.error('❌ VAD 분석 조회 오류:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'VAD_ANALYSIS_ERROR',
+        message: error.message
+      }
+    });
+  }
+});
+
+/**
  * 세션 통계 API
  * GET /api/session/stats/summary
  */
