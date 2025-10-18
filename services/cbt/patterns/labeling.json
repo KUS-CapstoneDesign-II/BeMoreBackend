@@ -1,0 +1,24 @@
+{
+  "type": "labeling",
+  "name_ko": "낙인찍기",
+  "name_en": "Labeling",
+  "description": "자신이나 타인에게 부정적 꼬리표를 붙이는 사고",
+  "keywords": ["나는", "~자야", "~충이야", "~같아", "쓰레기", "바보", "멍청이", "무능력"],
+  "patterns": [
+    {
+      "regex": "(나는|내가).*(실패자|바보|멍청이|무능|쓰레기)",
+      "severity": "high",
+      "example": "나는 완전 실패자야"
+    },
+    {
+      "regex": "(나는|내가).*(~자야|~충이야|~같아)",
+      "severity": "medium",
+      "example": "나는 패배자야"
+    },
+    {
+      "regex": "(사람|인간).*(가치|쓸모|의미).*(없|안|못)",
+      "severity": "high",
+      "example": "나는 쓸모없는 사람이야"
+    }
+  ]
+}

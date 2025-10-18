@@ -1,0 +1,24 @@
+{
+  "type": "magnification",
+  "name_ko": "확대/축소",
+  "name_en": "Magnification/Minimization",
+  "description": "실수는 확대하고 성취는 축소하는 사고",
+  "keywords": ["엄청", "너무", "진짜", "완전", "대단한", "작은", "별거아닌", "하찮은"],
+  "patterns": [
+    {
+      "regex": "(실수|실패|문제).*(엄청|너무|진짜|큰|심각)",
+      "severity": "high",
+      "example": "작은 실수가 엄청난 문제야"
+    },
+    {
+      "regex": "(성공|성취|잘).*(작은|별거|하찮|사소)",
+      "severity": "high",
+      "example": "성공한 건 별거 아냐"
+    },
+    {
+      "regex": "(크게|대단히|엄청).*(나쁜|안좋|문제)",
+      "severity": "medium",
+      "example": "이건 크게 나쁜 일이야"
+    }
+  ]
+}

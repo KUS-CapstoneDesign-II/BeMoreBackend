@@ -1,0 +1,24 @@
+{
+  "type": "catastrophizing",
+  "name_ko": "파국화",
+  "name_en": "Catastrophizing",
+  "description": "최악의 시나리오를 가정하는 사고 패턴",
+  "keywords": ["끝이야", "망했어", "최악", "절망", "끝장", "망", "죽었어", "완전히", "틀렸어"],
+  "patterns": [
+    {
+      "regex": "(시험|발표|면접|프로젝트).*(망|실패).*(인생|끝|절망)",
+      "severity": "high",
+      "example": "시험 망치면 인생 끝이야"
+    },
+    {
+      "regex": "(이제|완전히|정말).*(끝|망|절망)",
+      "severity": "medium",
+      "example": "이제 완전히 끝났어"
+    },
+    {
+      "regex": "(최악|worst).*(되|일어|생기)",
+      "severity": "medium",
+      "example": "최악의 상황이 될 거야"
+    }
+  ]
+}

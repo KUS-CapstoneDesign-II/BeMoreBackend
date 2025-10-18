@@ -1,4 +1,5 @@
 const { analyzeExpression } = require('../gemini/gemini');
+const InterventionGenerator = require('../cbt/InterventionGenerator');
 
 // 10초 분석 주기 (기존 60초에서 단축)
 const ANALYSIS_INTERVAL_MS = 10 * 1000;
@@ -7,6 +8,7 @@ const ANALYSIS_INTERVAL_MS = 10 * 1000;
  * Landmarks WebSocket 핸들러
  * - 얼굴 표정 데이터 수신
  * - 10초마다 Gemini 감정 분석 실행
+ * - Phase 3: CBT 인지 왜곡 탐지 및 개입
  * - 세션 버퍼에 데이터 누적
  *
  * @param {WebSocket} ws - WebSocket 연결
@@ -14,6 +16,10 @@ const ANALYSIS_INTERVAL_MS = 10 * 1000;
  */
 function handleLandmarks(ws, session) {
   let frameCount = 0;
+
+  // CBT 개입 생성기 초기화
+  const interventionGenerator = new InterventionGenerator();
+  session.interventionGenerator = interventionGenerator;
 
   console.log(`🎭 Landmarks 핸들러 시작: ${session.sessionId}`);
 
@@ -46,18 +52,44 @@ function handleLandmarks(ws, session) {
       const emotion = await analyzeExpression(frames, sttText);
       console.log(`🎯 Gemini 분석 결과: ${emotion}`);
 
+      // Phase 3: CBT 인지 왜곡 탐지 및 개입
+      let cbtAnalysis = null;
+      if (sttText.length > 0) {
+        const context = {
+          emotion,
+          frameCount: frames.length,
+          timestamp: Date.now()
+        };
+
+        cbtAnalysis = await interventionGenerator.analyze(sttText, context);
+
+        if (cbtAnalysis.hasDistortions) {
+          console.log(`🔍 인지 왜곡 탐지: ${cbtAnalysis.detections.length}개`);
+          cbtAnalysis.detections.forEach(d => {
+            console.log(`   - ${d.name_ko} (${d.severity}, 신뢰도: ${d.confidence})`);
+          });
+
+          if (cbtAnalysis.needsIntervention && cbtAnalysis.intervention) {
+            console.log(`🎯 치료적 개입: ${cbtAnalysis.intervention.distortionName}`);
+            console.log(`   - 질문: ${cbtAnalysis.intervention.questions.length}개`);
+            console.log(`   - 과제: ${cbtAnalysis.intervention.tasks.length}개`);
+          }
+        }
+      }
+
       // 감정 결과 저장
       const emotionData = {
         timestamp: Date.now(),
         emotion,
         frameCount: frames.length,
-        sttLength: sttText.length
+        sttLength: sttText.length,
+        cbtAnalysis: cbtAnalysis  // CBT 분석 결과 포함
       };
       session.emotions.push(emotionData);
 
       // 클라이언트에게 결과 전송
       if (ws.readyState === 1) {  // 1 = OPEN
-        ws.send(JSON.stringify({
+        const responseData = {
           type: 'emotion_update',
           data: {
             emotion,
@@ -65,7 +97,26 @@ function handleLandmarks(ws, session) {
             frameCount: frames.length,
             sttSnippet: sttText.slice(0, 100)
           }
-        }));
+        };
+
+        // CBT 개입이 있으면 포함
+        if (cbtAnalysis && cbtAnalysis.needsIntervention && cbtAnalysis.intervention) {
+          responseData.data.intervention = {
+            distortionType: cbtAnalysis.intervention.distortionType,
+            distortionName: cbtAnalysis.intervention.distortionName,
+            severity: cbtAnalysis.intervention.severity,
+            urgency: cbtAnalysis.intervention.urgency,
+            questions: cbtAnalysis.intervention.questions,
+            tasks: cbtAnalysis.intervention.tasks.map(t => ({
+              title: t.title,
+              description: t.description,
+              difficulty: t.difficulty,
+              duration: t.duration
+            }))
+          };
+        }
+
+        ws.send(JSON.stringify(responseData));
         console.log(`📤 감정 업데이트 전송: ${emotion}`);
       }
 
