@@ -1,0 +1,24 @@
+{
+  "type": "should-statements",
+  "name_ko": "당위적 사고",
+  "name_en": "Should Statements",
+  "description": "경직된 규칙을 자신과 타인에게 적용하는 사고",
+  "keywords": ["~해야", "~해야만", "~해야지", "반드시", "의무", "마땅히", "~라야", "~어야"],
+  "patterns": [
+    {
+      "regex": "(~해야만|반드시).*(한다|해|돼)",
+      "severity": "high",
+      "example": "나는 완벽해야만 해"
+    },
+    {
+      "regex": "(~해야|~어야|~라야).*(하는데|하지만|못해)",
+      "severity": "medium",
+      "example": "잘해야 하는데 못하고 있어"
+    },
+    {
+      "regex": "(의무|마땅히|당연히).*(~해야|~어야)",
+      "severity": "medium",
+      "example": "나는 당연히 성공해야 해"
+    }
+  ]
+}

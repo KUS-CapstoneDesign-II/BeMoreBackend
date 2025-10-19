@@ -1,0 +1,24 @@
+{
+  "type": "overgeneralization",
+  "name_ko": "과잉일반화",
+  "name_en": "Overgeneralization",
+  "description": "한 번의 경험을 일반적인 규칙으로 확대 해석",
+  "keywords": ["늘", "언제나", "매번", "또", "역시", "당연", "계속", "또다시"],
+  "patterns": [
+    {
+      "regex": "(또|또다시|역시).*(실패|안돼|망)",
+      "severity": "high",
+      "example": "또 실패했어, 역시 나는 안돼"
+    },
+    {
+      "regex": "(매번|언제나|항상).*(그래|똑같|반복)",
+      "severity": "medium",
+      "example": "매번 똑같아"
+    },
+    {
+      "regex": "(한번|하나).*(모든|전부|다)",
+      "severity": "medium",
+      "example": "한 번 실수로 모든 게 망쳤어"
+    }
+  ]
+}

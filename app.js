@@ -4,7 +4,8 @@ const path = require("path");
 const { WebSocketServer } = require("ws");
 const dotenv = require("dotenv");
 const sttRouter = require("./routes/stt");
-const { setupLandmarkSocket } = require("./services/socket/setupLandmarkSocket");
+const sessionRouter = require("./routes/session");
+const { setupWebSockets } = require("./services/socket/setupWebSockets");
 
 dotenv.config();
 
@@ -13,10 +14,12 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 app.use(express.json());
-app.use("/api", sttRouter);
+app.use("/api/stt", sttRouter);
+app.use("/api/session", sessionRouter);
 app.use(express.static(path.join(__dirname, "public")));
 
-setupLandmarkSocket(wss);
+// WebSocket 3채널 라우터 설정
+setupWebSockets(wss);
 
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {

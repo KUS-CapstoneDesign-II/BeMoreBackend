@@ -1,0 +1,9 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+✅ SessionManager 초기화 완료
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+✅ WebSocket 3채널 라우터 설정 완료
+🚀 서버 실행 중: http://localhost:8000
+✅ 세션 생성: sess_1760779751664_266db1ca (사용자: vad_test_user, 상담사: vad_test_counselor)
+📡 세션 시작 API 호출 성공: sess_1760779751664_266db1ca
+📊 VAD 분석 결과 조회: sess_1760779751664_266db1ca
