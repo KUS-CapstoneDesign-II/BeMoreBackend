@@ -2546,6 +2546,68 @@
       event.preventDefault();
     };
 
+    // ✅ 전역 에러 핸들러 (B.3)
+    window.addEventListener('error', (event) => {
+      console.error('🚨 전역 에러:', event.error);
+
+      const errorInfo = {
+        message: event.error?.message || event.message || '알 수 없는 오류',
+        stack: event.error?.stack || '',
+        filename: event.filename || '',
+        lineno: event.lineno || 0,
+        colno: event.colno || 0,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        sessionId: sessionId || 'no-session'
+      };
+
+      // 콘솔 로그
+      console.error('📋 에러 상세:', errorInfo);
+
+      // 사용자에게 토스트 표시
+      showToast('시스템 오류가 발생했습니다', '🚨', 3000);
+
+      // 서버로 에러 로그 전송 (optional)
+      if (sessionId) {
+        fetch('/api/error/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(errorInfo)
+        }).catch(err => console.error('에러 로그 전송 실패:', err));
+      }
+
+      // 에러 전파 방지 (선택적)
+      // event.preventDefault();
+    });
+
+    // ✅ Promise rejection 핸들러
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('🚨 Unhandled Promise Rejection:', event.reason);
+
+      const errorInfo = {
+        type: 'unhandledrejection',
+        reason: event.reason?.message || event.reason?.toString() || '알 수 없는 Promise 오류',
+        stack: event.reason?.stack || '',
+        timestamp: new Date().toISOString(),
+        url: window.location.href,
+        sessionId: sessionId || 'no-session'
+      };
+
+      console.error('📋 Promise 에러 상세:', errorInfo);
+
+      showToast('비동기 작업 중 오류가 발생했습니다', '⚠️', 3000);
+
+      // 서버로 에러 로그 전송
+      if (sessionId) {
+        fetch('/api/error/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(errorInfo)
+        }).catch(err => console.error('에러 로그 전송 실패:', err));
+      }
+    });
+
     // 앱 시작
     initApp();
 
