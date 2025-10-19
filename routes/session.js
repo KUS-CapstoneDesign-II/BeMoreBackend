@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const SessionManager = require('../services/session/SessionManager');
 const SessionReportGenerator = require('../services/report/SessionReportGenerator');
+const errorHandler = require('../services/ErrorHandler');
 
 // 리포트 생성기 초기화
 const reportGenerator = new SessionReportGenerator();
@@ -76,7 +77,11 @@ router.post('/start', (req, res) => {
     console.log(`📡 세션 시작 API 호출 성공: ${session.sessionId}`);
 
   } catch (error) {
-    console.error('❌ 세션 시작 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session-start',
+      level: errorHandler.levels.ERROR,
+      metadata: { userId: req.body.userId, counselorId: req.body.counselorId }
+    });
     res.status(500).json({
       success: false,
       error: {
@@ -141,7 +146,11 @@ router.get('/:id', (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ 세션 조회 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session-query',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.sessionId }
+    });
     res.status(500).json({
       success: false,
       error: {
@@ -183,7 +192,11 @@ router.post('/:id/pause', (req, res) => {
     console.log(`⏸️ 세션 일시정지 API 호출: ${sessionId}`);
 
   } catch (error) {
-    console.error('❌ 세션 일시정지 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session-pause',
+      level: errorHandler.levels.WARN,
+      metadata: { sessionId: req.params.sessionId }
+    });
     res.status(400).json({
       success: false,
       error: {
@@ -225,7 +238,11 @@ router.post('/:id/resume', (req, res) => {
     console.log(`▶️ 세션 재개 API 호출: ${sessionId}`);
 
   } catch (error) {
-    console.error('❌ 세션 재개 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session-resume',
+      level: errorHandler.levels.WARN,
+      metadata: { sessionId: req.params.id }
+    });
     res.status(400).json({
       success: false,
       error: {
@@ -270,7 +287,11 @@ router.post('/:id/end', (req, res) => {
     console.log(`✅ 세션 종료 API 호출: ${sessionId}`);
 
   } catch (error) {
-    console.error('❌ 세션 종료 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session-end',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id }
+    });
     res.status(400).json({
       success: false,
       error: {
