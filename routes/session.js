@@ -256,16 +256,38 @@ router.post('/:id/end', (req, res) => {
     const sessionId = req.params.id;
     const session = SessionManager.endSession(sessionId);
 
-    res.json({
-      success: true,
-      data: {
-        sessionId: session.sessionId,
-        status: session.status,
-        endedAt: session.endedAt,
-        duration: SessionManager.getSessionDuration(sessionId),
-        emotionCount: session.emotions.length
-      }
-    });
+     //======================================================================================================================================
+    // 기본 응답 데이터
+    const responseData = {
+      sessionId: session.sessionId,
+      status: session.status,
+      endedAt: session.endedAt,
+      duration: SessionManager.getSessionDuration(sessionId),
+      emotionCount: session.emotions.length
+    };
+
+    // 쿼리로 includeReport=true 가 오면 최종 리포트 생성
+    if (req.query && req.query.includeReport === 'true') {
+      const { generateFinalReport } = require('../services/report/FinalReportService');
+
+      generateFinalReport(session)
+        .then((report) => {
+          responseData.finalReport = report;
+          res.json({ success: true, data: responseData });
+        })
+        .catch((err) => {
+          console.error('최종 리포트 생성 오류:', err);
+          // 리포트 생성 실패해도 세션 종료 자체는 성공 응답
+          responseData.finalReportError = err.message;
+          res.json({ success: true, data: responseData });
+        });
+
+      console.log(`✅ 세션 종료 및 리포트 생성 API 호출: ${sessionId}`);
+      return;
+    }
+
+    res.json({ success: true, data: responseData });
+     //======================================================================================================================================
 
     console.log(`✅ 세션 종료 API 호출: ${sessionId}`);
 

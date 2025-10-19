@@ -1,3 +1,4 @@
+// 이 코드의 기능은 landmarkHandler.js 에 통합됨 (참고용)
 const fs = require('fs');
 const path = require('path');
 const { analyzeExpression, generateDetailedReport } = require("../gemini/gemini");

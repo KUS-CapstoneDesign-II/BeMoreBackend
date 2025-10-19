@@ -256,15 +256,44 @@
 
 
 
-      const res = await fetch(`/api/session/${sessionId}/end`, { method: 'POST' });
-      const data = await res.json();
-      console.log('✅ 종료:', data);
+      //======================================================================================================================================
+      // includeReport=true 로 서버에 요청하여 최종 리포트 생성
+      statusDiv.innerHTML = '<div>⏳ 세션 종료 중... 최종 리포트 생성 요청 중</div>';
+      try {
+        const res = await fetch(`/api/session/${sessionId}/end?includeReport=true`, { method: 'POST' });
+        const data = await res.json();
+        console.log('✅ 종료 응답:', data);
 
-      // WebSocket 연결 종료
-      if (landmarksWs) landmarksWs.close();
-      if (voiceWs) voiceWs.close();
-      if (sessionWs) sessionWs.close();
+        if (data && data.success && data.data && data.data.finalReport) {
+          const report = data.data.finalReport;
+          // 짧은 요약 표시
+          statusDiv.innerHTML = `<div>✅ 세션 종료 및 리포트 생성 완료</div><div><b>감정:</b> ${report.emotion || 'N/A'}</div><div><b>프레임 수:</b> ${report.framesCount}</div>`;
+
+          // JSON 파일로 다운로드 링크 생성
+          const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${report.reportId || 'bmore_report'}.json`;
+          a.textContent = '리포트 다운로드';
+          a.style.display = 'block';
+          a.style.marginTop = '8px';
+          statusDiv.appendChild(a);
+        } else {
+          statusDiv.innerHTML = '<div>✅ 세션 종료 완료 (리포트 없음)</div>';
+        }
+      } catch (err) {
+        console.error('세션 종료/리포트 요청 실패:', err);
+        statusDiv.innerHTML = `<div>❌ 종료 실패: ${err.message}</div>`;
+      } finally {
+        // WebSocket 연결 종료
+        if (landmarksWs) landmarksWs.close();
+        if (voiceWs) voiceWs.close();
+        if (sessionWs) sessionWs.close();
+      }
     }
+
+     //======================================================================================================================================
 
     // ====== MediaPipe FaceMesh 설정 ======
     const faceMesh = new FaceMesh({
