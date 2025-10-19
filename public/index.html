@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8" />
   <title>BeMore - Emotion Analyzer Demo</title>
   <style>
-    video, canvas {
+    video,
+    canvas {
       position: absolute;
       top: 0;
       left: 0;
@@ -49,9 +51,20 @@
       opacity: 0.8;
     }
 
-    .btn-pause { background: #ff9800; color: white; }
-    .btn-resume { background: #4caf50; color: white; }
-    .btn-end { background: #f44336; color: white; }
+    .btn-pause {
+      background: #ff9800;
+      color: white;
+    }
+
+    .btn-resume {
+      background: #4caf50;
+      color: white;
+    }
+
+    .btn-end {
+      background: #f44336;
+      color: white;
+    }
   </style>
 </head>
 
@@ -222,6 +235,27 @@
 
     async function endSession() {
       if (!sessionId) return;
+
+
+      // 1. STT 전송 반복 종료
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+        recordingInterval = null;
+      }
+
+      // 2. MediaRecorder 정지
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+
+      // 3. 마이크 스트림 트랙 중지
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+        audioStream = null;
+      }
+
+
+
       const res = await fetch(`/api/session/${sessionId}/end`, { method: 'POST' });
       const data = await res.json();
       console.log('✅ 종료:', data);
@@ -388,4 +422,5 @@
     };
   </script>
 </body>
+
 </html>
