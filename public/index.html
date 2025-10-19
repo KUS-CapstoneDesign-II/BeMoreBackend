@@ -637,6 +637,10 @@
     let lastFpsTime = Date.now();
     let fpsCounter = 0;
 
+    // ✅ VAD 상태 관리 (STT 조건부 실행용)
+    let vadHistory = []; // 최근 5초간 VAD 결과 저장
+    let isSpeechActive = false; // 현재 음성 활동 여부
+
     // 주요 랜드마크 인덱스
     const KEY_LANDMARKS = {
       eyes: [33, 133, 160, 144, 158, 153, 145, 159, 246, 163, 362, 263, 387, 373, 385, 380, 374, 386, 466, 390],
@@ -645,6 +649,29 @@
       nose: [1, 2, 98, 327, 4, 5, 195, 197],
       contour: [10, 338, 297, 332, 284, 251, 389, 356, 454, 234]
     };
+
+    // ✅ STT 호출 여부 판단 (VAD 기반)
+    function shouldTranscribe() {
+      // VAD 히스토리가 없으면 STT 호출 (초기 상태)
+      if (vadHistory.length === 0) {
+        return true;
+      }
+
+      // 최근 5초간 음성 활동 비율 계산
+      const speechEvents = vadHistory.filter(v => v.isSpeech);
+      const speechRatio = speechEvents.length / vadHistory.length;
+
+      // 임계값: 최근 5초 중 30% 이상 음성 활동이 있었으면 STT 호출
+      const SPEECH_THRESHOLD = 0.3;
+
+      if (speechRatio >= SPEECH_THRESHOLD) {
+        console.log(`✅ STT 호출: 음성 활동 ${(speechRatio * 100).toFixed(1)}%`);
+        return true;
+      } else {
+        console.log(`❌ STT 생략: 음성 활동 ${(speechRatio * 100).toFixed(1)}% (임계값: ${SPEECH_THRESHOLD * 100}%)`);
+        return false;
+      }
+    }
 
     // 랜드마크 압축
     function compressLandmarks(landmarks) {
@@ -898,8 +925,34 @@
       };
       voiceWs.onmessage = (event) => {
         const message = JSON.parse(event.data);
+
         if (message.type === 'vad_analysis') {
           updateVAD(message.data);
+        } else if (message.type === 'vad_realtime') {
+          // ✅ 실시간 VAD 결과 수신
+          const vadData = message.data;
+          const now = Date.now();
+
+          // VAD 히스토리에 추가
+          vadHistory.push({
+            timestamp: now,
+            isSpeech: vadData.isSpeech,
+            probability: vadData.probability,
+            energy: vadData.energy
+          });
+
+          // 5초 이상 오래된 데이터 제거
+          vadHistory = vadHistory.filter(v => now - v.timestamp < 5000);
+
+          // 현재 음성 활동 상태 업데이트
+          isSpeechActive = vadData.isSpeech;
+
+          // 디버깅 로그 (10개마다)
+          if (vadHistory.length % 10 === 0) {
+            const speechCount = vadHistory.filter(v => v.isSpeech).length;
+            const speechRatio = (speechCount / vadHistory.length * 100).toFixed(1);
+            console.log(`🎤 VAD 상태: 음성 ${speechRatio}% (최근 ${vadHistory.length}개)`);
+          }
         }
       };
 
@@ -1080,6 +1133,50 @@
       });
       initAndStartRecorder(audioStream);
 
+      // ✅ 실시간 음량 기반 VAD 구현
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(audioStream);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 1024;
+      microphone.connect(analyser);
+
+      // 100ms마다 음량 측정
+      setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+
+        // 평균 음량 계산
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+        // 음성 감지 임계값 (0-255 사이, 25 이상이면 음성으로 판단)
+        const VOICE_THRESHOLD = 25;
+        const isSpeech = average > VOICE_THRESHOLD;
+
+        // VAD 히스토리에 직접 추가
+        const now = Date.now();
+        vadHistory.push({
+          timestamp: now,
+          isSpeech: isSpeech,
+          probability: isSpeech ? 0.8 : 0.2,
+          energy: average
+        });
+
+        // 5초 이상 오래된 데이터 제거
+        vadHistory = vadHistory.filter(v => now - v.timestamp < 5000);
+
+        isSpeechActive = isSpeech;
+
+        // 디버깅 (50개마다)
+        if (vadHistory.length % 50 === 0) {
+          const speechCount = vadHistory.filter(v => v.isSpeech).length;
+          const speechRatio = (speechCount / vadHistory.length * 100).toFixed(1);
+          console.log(`🎤 VAD 상태: 음성 ${speechRatio}% (평균 음량: ${average.toFixed(0)})`);
+        }
+      }, 100);
+
+
       recordingInterval = setInterval(async () => {
         if (mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
@@ -1096,6 +1193,13 @@
         const blob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" });
 
         if (blob.size < 500) {
+          initAndStartRecorder(audioStream);
+          return;
+        }
+
+        // ✅ VAD 체크: 음성 활동이 없으면 STT 생략
+        if (!shouldTranscribe()) {
+          console.log('⏭️ STT 생략: 음성 활동 감지되지 않음');
           initAndStartRecorder(audioStream);
           return;
         }
