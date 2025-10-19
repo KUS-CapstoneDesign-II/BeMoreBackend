@@ -490,14 +490,124 @@
     .timeline::-webkit-scrollbar-thumb:hover {
       background: #764ba2;
     }
+
+    /* 로딩 오버레이 */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-message {
+      margin-top: 24px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #374151;
+      text-align: center;
+    }
+
+    .loading-progress {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    /* WebSocket 연결 상태 */
+    .connection-status {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .connection-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .status-dot.connected {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+
+    .status-dot.connecting {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.disconnected {
+      background: #ef4444;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
   </style>
 </head>
 
 <body>
+  <!-- 로딩 오버레이 -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-message" id="loadingMessage">시스템 초기화 중...</div>
+    <div class="loading-progress" id="loadingProgress"></div>
+  </div>
+
   <!-- 헤더 -->
   <div class="header">
     <h1>🧠 BeMore - AI 심리 상담</h1>
     <div class="header-info">
+      <div class="connection-status">
+        <div class="connection-item">
+          <span id="landmarksStatus" class="status-dot connecting"></span>
+          <span>표정 분석</span>
+        </div>
+        <div class="connection-item">
+          <span id="voiceStatus" class="status-dot connecting"></span>
+          <span>음성 분석</span>
+        </div>
+        <div class="connection-item">
+          <span id="sessionStatus" class="status-dot connecting"></span>
+          <span>세션</span>
+        </div>
+      </div>
       <div class="status-badge active" id="headerStatus">
         <span id="statusIcon">●</span>
         <span id="statusText">초기화 중...</span>
@@ -875,6 +985,53 @@
       addTimelineItem('cbt', `CBT 개입: ${intervention.distortionName}`);
     }
 
+    // ✅ 로딩 상태 관리
+    function showLoading(message, progress = '') {
+      const overlay = document.getElementById('loadingOverlay');
+      const messageEl = document.getElementById('loadingMessage');
+      const progressEl = document.getElementById('loadingProgress');
+
+      if (overlay) overlay.classList.remove('hidden');
+      if (messageEl) messageEl.textContent = message;
+      if (progressEl) progressEl.textContent = progress;
+
+      console.log(`🔄 로딩: ${message}${progress ? ` (${progress})` : ''}`);
+    }
+
+    function hideLoading() {
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) {
+        overlay.classList.add('hidden');
+        console.log('✅ 로딩 완료');
+      }
+    }
+
+    // ✅ WebSocket 연결 상태 업데이트
+    function updateConnectionStatus(channel, status) {
+      const statusIds = {
+        'landmarks': 'landmarksStatus',
+        'voice': 'voiceStatus',
+        'session': 'sessionStatus'
+      };
+
+      const statusDot = document.getElementById(statusIds[channel]);
+      if (!statusDot) return;
+
+      // 기존 클래스 제거
+      statusDot.classList.remove('connected', 'connecting', 'disconnected');
+
+      // 새 상태 적용
+      statusDot.classList.add(status);
+
+      const statusEmoji = {
+        'connected': '🟢',
+        'connecting': '🟡',
+        'disconnected': '🔴'
+      };
+
+      console.log(`${statusEmoji[status]} ${channel} 채널: ${status}`);
+    }
+
     // ✅ 실시간 음량 UI 업데이트
     function updateVolumeUI(volume, isSpeech) {
       const volumeBarEl = document.getElementById('volumeBar');
@@ -957,10 +1114,19 @@
 
     function connectWebSockets(wsUrls) {
       // Landmarks 채널
+      updateConnectionStatus('landmarks', 'connecting');
       landmarksWs = new WebSocket(wsUrls.landmarks);
       landmarksWs.onopen = () => {
         console.log('✅ Landmarks 채널 연결');
+        updateConnectionStatus('landmarks', 'connected');
         addTimelineItem('system', 'Landmarks 채널 연결됨');
+      };
+      landmarksWs.onclose = () => {
+        updateConnectionStatus('landmarks', 'disconnected');
+      };
+      landmarksWs.onerror = (error) => {
+        console.error('❌ Landmarks 에러:', error);
+        updateConnectionStatus('landmarks', 'disconnected');
       };
       landmarksWs.onmessage = (event) => {
         const message = JSON.parse(event.data);
@@ -975,10 +1141,19 @@
       };
 
       // Voice 채널
+      updateConnectionStatus('voice', 'connecting');
       voiceWs = new WebSocket(wsUrls.voice);
       voiceWs.onopen = () => {
         console.log('✅ Voice 채널 연결');
+        updateConnectionStatus('voice', 'connected');
         addTimelineItem('system', 'Voice 채널 연결됨');
+      };
+      voiceWs.onclose = () => {
+        updateConnectionStatus('voice', 'disconnected');
+      };
+      voiceWs.onerror = (error) => {
+        console.error('❌ Voice 에러:', error);
+        updateConnectionStatus('voice', 'disconnected');
       };
       voiceWs.onmessage = (event) => {
         const message = JSON.parse(event.data);
@@ -1014,10 +1189,19 @@
       };
 
       // Session 채널
+      updateConnectionStatus('session', 'connecting');
       sessionWs = new WebSocket(wsUrls.session);
       sessionWs.onopen = () => {
         console.log('✅ Session 채널 연결');
+        updateConnectionStatus('session', 'connected');
         addTimelineItem('system', 'Session 채널 연결됨');
+      };
+      sessionWs.onclose = () => {
+        updateConnectionStatus('session', 'disconnected');
+      };
+      sessionWs.onerror = (error) => {
+        console.error('❌ Session 에러:', error);
+        updateConnectionStatus('session', 'disconnected');
       };
       sessionWs.onmessage = (event) => {
         const message = JSON.parse(event.data);
@@ -1335,22 +1519,36 @@
     // 앱 초기화
     async function initApp() {
       try {
+        // 1단계: 초기 설정
+        showLoading('시스템 초기화 중...', '1/4');
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         // VAD 임계값 슬라이더 초기화
         initVolumeThresholdControl();
 
+        // 2단계: 세션 생성
+        showLoading('서버 연결 중...', '2/4');
         await startSession();
 
-        // 카메라/마이크 권한 요청
+        // 3단계: 카메라/마이크 권한 요청
         try {
+          showLoading('카메라 권한 확인 중...', '3/4');
           await camera.start();
+
+          showLoading('마이크 권한 확인 중...', '4/4');
           await startMicRecording();
+
+          // 모든 초기화 완료
+          hideLoading();
           updateStatus('active', '세션 활성');
         } catch (permissionError) {
+          hideLoading();
           console.error('카메라/마이크 권한 오류:', permissionError);
           alert('카메라와 마이크 권한이 필요합니다.\n\n브라우저 설정에서 권한을 허용해주세요:\n1. 주소창 왼쪽의 자물쇠 아이콘 클릭\n2. 카메라와 마이크 권한 허용\n3. 페이지 새로고침');
           updateStatus('ended', '권한 필요');
         }
       } catch (error) {
+        hideLoading();
         updateStatus('ended', '초기화 실패');
         console.error('초기화 오류:', error);
         alert('초기화 실패: ' + error.message);
