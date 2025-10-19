@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BeMore - AI 심리 상담 시스템</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
   <style>
     * {
       margin: 0;
@@ -1102,12 +1103,21 @@
     async function initApp() {
       try {
         await startSession();
-        camera.start();
-        await startMicRecording();
-        updateStatus('active', '세션 활성');
+
+        // 카메라/마이크 권한 요청
+        try {
+          await camera.start();
+          await startMicRecording();
+          updateStatus('active', '세션 활성');
+        } catch (permissionError) {
+          console.error('카메라/마이크 권한 오류:', permissionError);
+          alert('카메라와 마이크 권한이 필요합니다.\n\n브라우저 설정에서 권한을 허용해주세요:\n1. 주소창 왼쪽의 자물쇠 아이콘 클릭\n2. 카메라와 마이크 권한 허용\n3. 페이지 새로고침');
+          updateStatus('ended', '권한 필요');
+        }
       } catch (error) {
         updateStatus('ended', '초기화 실패');
-        console.error(error);
+        console.error('초기화 오류:', error);
+        alert('초기화 실패: ' + error.message);
       }
     }
 
