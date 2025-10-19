@@ -8,6 +8,7 @@ const OpenAI = require("openai");
 const dotenv = require("dotenv");
 const { toFile } = require("openai/uploads"); // 💡 toFile 함수 임포트
 const { updateSpeechText } = require("../services/memory");
+const errorHandler = require("../services/ErrorHandler");
 
 dotenv.config();
 const router = express.Router();
@@ -71,7 +72,10 @@ function isSilent(audioPath) {
     console.log(`🎚 평균 음량: ${meanVolume} dB`);
     return meanVolume < -50; // 🔇 -50dB 이하 → 무음 판단 (더 엄격하게)
   } catch (err) {
-    console.error("무음 감지 실패:", err);
+    errorHandler.handle(err, {
+      module: 'stt-silence-detection',
+      metadata: { audioPath }
+    });
     return false;
   }
 }
@@ -137,11 +141,21 @@ router.post("/transcribe", upload.single("audio"), async (req, res) => {
     updateSpeechText(text);
     res.json({ text });
   } catch (err) {
-    console.error("❌ STT 변환 실패:", err);
+    errorHandler.handle(err, {
+      module: 'stt-transcribe',
+      level: errorHandler.levels.ERROR,
+      metadata: { filePath, fileSize: stats.size }
+    });
     res.json({ text: "" });
   } finally {
     fs.unlink(filePath, (err) => {
-      if (err) console.error("임시 파일 삭제 실패:", err);
+      if (err) {
+        errorHandler.handle(err, {
+          module: 'stt-cleanup',
+          level: errorHandler.levels.WARN,
+          metadata: { filePath }
+        });
+      }
     });
   }
 });

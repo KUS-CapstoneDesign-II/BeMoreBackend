@@ -1949,6 +1949,50 @@
       }
     }
 
+    // ✅ 전역 에러 핸들러 (Error Boundaries)
+    window.onerror = (message, source, lineno, colno, error) => {
+      console.error('🚨 Global Error:', {
+        message,
+        source,
+        line: lineno,
+        column: colno,
+        error
+      });
+
+      showErrorModal({
+        icon: '🚨',
+        title: '예상치 못한 오류 발생',
+        message: error?.message || message || '알 수 없는 오류가 발생했습니다.',
+        solutions: [
+          '1. 페이지를 새로고침해주세요',
+          '2. 브라우저 콘솔(F12)에서 자세한 오류를 확인하세요',
+          '3. 문제가 지속되면 관리자에게 문의하세요'
+        ]
+      });
+
+      // 에러가 발생했지만 앱은 계속 실행
+      return true;
+    };
+
+    // ✅ Unhandled Promise Rejection 핸들러
+    window.onunhandledrejection = (event) => {
+      console.error('🚨 Unhandled Promise Rejection:', event.reason);
+
+      showErrorModal({
+        icon: '⚠️',
+        title: '비동기 작업 오류',
+        message: event.reason?.message || '비동기 작업 중 오류가 발생했습니다.',
+        solutions: [
+          '1. 네트워크 연결을 확인해주세요',
+          '2. 페이지를 새로고침해주세요',
+          '3. 문제가 지속되면 관리자에게 문의하세요'
+        ]
+      });
+
+      // 기본 동작 방지
+      event.preventDefault();
+    };
+
     // 앱 시작
     initApp();
 
