@@ -20,4 +20,9 @@ function clearSpeechBuffer(upToTimestamp) {
   speechBuffer = speechBuffer.filter(item => item.timestamp > upToTimestamp);
 }
 
-module.exports = { updateSpeechText, getAccumulatedSpeechText, clearSpeechBuffer };
+// 전체 버퍼 초기화 (사용자 종료 시 호출)
+function clearAllSpeechBuffer() {
+  speechBuffer = [];
+}
+
+module.exports = { updateSpeechText, getAccumulatedSpeechText, clearSpeechBuffer, clearAllSpeechBuffer };
