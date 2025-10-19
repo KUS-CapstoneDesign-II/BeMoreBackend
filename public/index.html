@@ -601,9 +601,9 @@
           <div style="margin-bottom: 15px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-size: 13px; color: #6b7280;">임계값</label>
-              <span id="thresholdValue" style="font-weight: bold; color: #667eea;">25</span>
+              <span id="thresholdValue" style="font-weight: bold; color: #667eea;">8</span>
             </div>
-            <input type="range" id="volumeThreshold" min="5" max="80" value="25"
+            <input type="range" id="volumeThreshold" min="5" max="80" value="8"
                    style="width: 100%; cursor: pointer;">
             <div style="font-size: 11px; color: #9ca3af; margin-top: 5px;">
               낮음 (민감) ←→ 높음 (둔감)
@@ -675,7 +675,7 @@
     // ✅ VAD 상태 관리 (STT 조건부 실행용)
     let vadHistory = []; // 최근 5초간 VAD 결과 저장
     let isSpeechActive = false; // 현재 음성 활동 여부
-    let voiceThreshold = 25; // 음량 임계값 (동적 조정 가능)
+    let voiceThreshold = 8; // 음량 임계값 (최적값: 8, 조정 가능)
 
     // 주요 랜드마크 인덱스
     const KEY_LANDMARKS = {
