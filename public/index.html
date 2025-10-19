@@ -122,6 +122,50 @@
       z-index: 5;
     }
 
+    /* STT 자막 */
+    .stt-subtitle {
+      position: absolute;
+      bottom: 80px;
+      left: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: white;
+      z-index: 6;
+      font-size: 16px;
+      line-height: 1.5;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .stt-subtitle.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .stt-subtitle.fadeout {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .stt-subtitle-icon {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 18px;
+    }
+
+    .stt-subtitle-text {
+      display: inline;
+      font-weight: 400;
+    }
+
     .video-stats {
       display: flex;
       gap: 20px;
@@ -1014,6 +1058,12 @@
         <video id="input_video" autoplay playsinline></video>
         <canvas id="output_canvas"></canvas>
 
+        <!-- STT 자막 -->
+        <div id="sttSubtitle" class="stt-subtitle">
+          <span class="stt-subtitle-icon">💬</span>
+          <span class="stt-subtitle-text" id="sttSubtitleText"></span>
+        </div>
+
         <div class="video-overlay">
           <div class="video-stats">
             <div class="stat-item">
@@ -1456,6 +1506,43 @@
       }, duration);
 
       console.log(`💬 토스트: ${message}`);
+    }
+
+    // ✅ STT 자막 표시
+    let subtitleTimeout = null;
+    function showSubtitle(text, duration = 4000) {
+      const subtitle = document.getElementById('sttSubtitle');
+      const subtitleText = document.getElementById('sttSubtitleText');
+
+      if (!subtitle || !subtitleText) return;
+
+      // 이전 타이머 취소
+      if (subtitleTimeout) {
+        clearTimeout(subtitleTimeout);
+      }
+
+      // 자막 텍스트 설정
+      subtitleText.textContent = text;
+
+      // fadeout 클래스 제거 (있다면)
+      subtitle.classList.remove('fadeout');
+
+      // show 클래스 추가 (나타나기)
+      subtitle.classList.add('show');
+
+      console.log(`💬 자막 표시: ${text}`);
+
+      // duration 후 페이드아웃
+      subtitleTimeout = setTimeout(() => {
+        subtitle.classList.add('fadeout');
+        subtitle.classList.remove('show');
+
+        // 애니메이션 완료 후 초기화
+        setTimeout(() => {
+          subtitle.classList.remove('fadeout');
+          subtitleText.textContent = '';
+        }, 300);
+      }, duration);
     }
 
     // ✅ 마이크 상태 표시
@@ -2191,6 +2278,9 @@
           if (data.text) {
             console.log("🗣️ STT:", data.text);
             addTimelineItem('stt', `발화: ${data.text.substring(0, 30)}...`);
+
+            // ✅ 카메라 영역에 자막 표시 (4초 동안)
+            showSubtitle(data.text, 4000);
 
             // ✅ 텍스트 인식 완료 토스트 알림
             showToast(`인식됨: "${data.text.length > 30 ? data.text.substring(0, 30) + '...' : data.text}"`, '🗣️', 2000);
