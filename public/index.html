@@ -579,6 +579,192 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
+
+    /* 에러 모달 */
+    .error-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    }
+
+    .error-modal.hidden {
+      display: none;
+    }
+
+    .error-content {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .error-icon {
+      font-size: 48px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .error-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f2937;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .error-message {
+      font-size: 14px;
+      color: #6b7280;
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .error-solutions {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .error-solutions-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+
+    .error-solution-item {
+      font-size: 13px;
+      color: #6b7280;
+      padding: 6px 0;
+      line-height: 1.5;
+    }
+
+    .error-button {
+      width: 100%;
+      padding: 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .error-button:hover {
+      background: #5568d3;
+    }
+
+    /* 토스트 알림 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: white;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 9998;
+      animation: slideIn 0.3s ease-out;
+      max-width: 400px;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.fadeOut {
+      animation: slideOut 0.3s ease-out forwards;
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+    }
+
+    .toast-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .toast-message {
+      font-size: 14px;
+      color: #374151;
+      flex: 1;
+    }
+
+    /* 마이크 상태 표시 */
+    .mic-indicator {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #667eea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      z-index: 9998;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .mic-indicator.idle {
+      background: #9ca3af;
+      box-shadow: 0 2px 8px rgba(156, 163, 175, 0.3);
+    }
+
+    .mic-indicator.listening {
+      background: #667eea;
+      animation: pulse 2s infinite;
+    }
+
+    .mic-indicator.processing {
+      background: #f59e0b;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+      50% {
+        transform: scale(1.1);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+      }
+    }
   </style>
 </head>
 
@@ -588,6 +774,25 @@
     <div class="loading-spinner"></div>
     <div class="loading-message" id="loadingMessage">시스템 초기화 중...</div>
     <div class="loading-progress" id="loadingProgress"></div>
+  </div>
+
+  <!-- 에러 모달 -->
+  <div id="errorModal" class="error-modal hidden">
+    <div class="error-content">
+      <div class="error-icon" id="errorIcon">⚠️</div>
+      <div class="error-title" id="errorTitle">오류 발생</div>
+      <div class="error-message" id="errorMessage"></div>
+      <div class="error-solutions" id="errorSolutions" style="display: none;">
+        <div class="error-solutions-title">해결 방법:</div>
+        <div id="errorSolutionsList"></div>
+      </div>
+      <button class="error-button" onclick="closeErrorModal()">확인</button>
+    </div>
+  </div>
+
+  <!-- 마이크 상태 표시 -->
+  <div id="micIndicator" class="mic-indicator idle">
+    🔇
   </div>
 
   <!-- 헤더 -->
@@ -1006,6 +1211,84 @@
       }
     }
 
+    // ✅ 에러 모달 관리
+    function showErrorModal(options) {
+      const { title, message, solutions, icon = '⚠️' } = options;
+
+      const modal = document.getElementById('errorModal');
+      const iconEl = document.getElementById('errorIcon');
+      const titleEl = document.getElementById('errorTitle');
+      const messageEl = document.getElementById('errorMessage');
+      const solutionsContainer = document.getElementById('errorSolutions');
+      const solutionsList = document.getElementById('errorSolutionsList');
+
+      iconEl.textContent = icon;
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+
+      if (solutions && solutions.length > 0) {
+        solutionsList.innerHTML = solutions.map(s =>
+          `<div class="error-solution-item">${s}</div>`
+        ).join('');
+        solutionsContainer.style.display = 'block';
+      } else {
+        solutionsContainer.style.display = 'none';
+      }
+
+      modal.classList.remove('hidden');
+      console.error(`❌ ${title}: ${message}`);
+    }
+
+    function closeErrorModal() {
+      const modal = document.getElementById('errorModal');
+      modal.classList.add('hidden');
+    }
+
+    // ✅ 토스트 알림 표시
+    let toastTimeout = null;
+    function showToast(message, icon = 'ℹ️', duration = 3000) {
+      // 기존 토스트 제거
+      const existingToast = document.querySelector('.toast');
+      if (existingToast) {
+        existingToast.remove();
+      }
+
+      // 새 토스트 생성
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-message">${message}</div>
+      `;
+      document.body.appendChild(toast);
+
+      // 자동 제거
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('fadeOut');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+
+      console.log(`💬 토스트: ${message}`);
+    }
+
+    // ✅ 마이크 상태 표시
+    function showMicrophoneIndicator(state) {
+      const indicator = document.getElementById('micIndicator');
+      if (!indicator) return;
+
+      indicator.classList.remove('idle', 'listening', 'processing');
+      indicator.classList.add(state);
+
+      const icons = {
+        'idle': '🔇',
+        'listening': '🎤',
+        'processing': '⏳'
+      };
+
+      indicator.textContent = icons[state] || '🔇';
+    }
+
     // ✅ WebSocket 연결 상태 업데이트
     function updateConnectionStatus(channel, status) {
       const statusIds = {
@@ -1056,11 +1339,20 @@
           this.retryDelay = 1000;
           updateConnectionStatus(this.name.toLowerCase(), 'connected');
           addTimelineItem('system', `${this.name} 채널 연결됨`);
+
+          // ✅ 연결 성공 토스트
+          if (this.retryCount === 0) {
+            showToast(`${this.name} 채널 연결됨`, '✅', 1500);
+          }
         };
 
         this.ws.onclose = () => {
           console.log(`🔌 ${this.name} 채널 연결 종료`);
           updateConnectionStatus(this.name.toLowerCase(), 'disconnected');
+
+          // ✅ 연결 끊김 토스트
+          showToast(`${this.name} 채널 연결 끊김`, '⚠️', 2000);
+
           if (this.shouldReconnect) {
             this.reconnect();
           }
@@ -1082,6 +1374,9 @@
         if (this.retryCount >= this.maxRetries) {
           console.error(`🚨 ${this.name} 재연결 실패 (최대 시도 횟수 초과)`);
           addTimelineItem('error', `${this.name} 연결 실패`);
+
+          // ✅ 재연결 실패 토스트
+          showToast(`${this.name} 연결 실패`, '🚨', 3000);
           return;
         }
 
@@ -1089,6 +1384,9 @@
         updateConnectionStatus(this.name.toLowerCase(), 'connecting');
 
         console.log(`🔄 ${this.name} 재연결 시도 ${this.retryCount}/${this.maxRetries} (${this.retryDelay}ms 후)`);
+
+        // ✅ 재연결 시도 토스트
+        showToast(`${this.name} 재연결 중... (${this.retryCount}/${this.maxRetries})`, '🔄', 1500);
 
         setTimeout(() => {
           this.connect();
@@ -1406,7 +1704,16 @@
         mediaRecorder.start();
       } catch (err) {
         console.error("MediaRecorder 초기화 실패:", err);
-        alert("오디오 녹음을 시작할 수 없습니다.\n브라우저가 오디오 녹음을 지원하지 않을 수 있습니다.\n\nChrome, Firefox, Edge 브라우저를 사용해주세요.");
+        showErrorModal({
+          icon: '🎤',
+          title: '오디오 녹음 시작 실패',
+          message: '브라우저가 오디오 녹음을 지원하지 않을 수 있습니다.',
+          solutions: [
+            '1. Chrome, Firefox, 또는 Edge 브라우저를 사용해주세요',
+            '2. 브라우저를 최신 버전으로 업데이트하세요',
+            '3. HTTPS 연결을 사용 중인지 확인하세요'
+          ]
+        });
       }
     };
 
@@ -1420,6 +1727,9 @@
         }
       });
       initAndStartRecorder(audioStream);
+
+      // ✅ 초기 마이크 상태 설정
+      showMicrophoneIndicator('listening');
 
       // ✅ 실시간 음량 기반 VAD 구현
       const audioContext = new AudioContext();
@@ -1440,6 +1750,11 @@
 
         // 음성 감지 (동적 임계값 사용)
         const isSpeech = average > voiceThreshold;
+
+        // ✅ 음성 감지 시 마이크 상태 업데이트
+        if (isSpeech && average > voiceThreshold * 1.5) {
+          showMicrophoneIndicator('listening');
+        }
 
         // VAD 히스토리에 직접 추가
         const now = Date.now();
@@ -1490,6 +1805,7 @@
         // ✅ VAD 체크: 음성 활동이 없으면 STT 생략
         if (!shouldTranscribe()) {
           console.log('⏭️ STT 생략: 음성 활동 감지되지 않음');
+          showMicrophoneIndicator('idle'); // 대기 상태로 전환
           initAndStartRecorder(audioStream);
           return;
         }
@@ -1499,6 +1815,9 @@
         initAndStartRecorder(audioStream);
 
         try {
+          // ✅ STT 처리 중 표시
+          showMicrophoneIndicator('processing');
+
           const res = await fetch("/api/stt/transcribe", {
             method: "POST",
             body: formData
@@ -1509,15 +1828,25 @@
             console.log("🗣️ STT:", data.text);
             addTimelineItem('stt', `발화: ${data.text.substring(0, 30)}...`);
 
+            // ✅ 텍스트 인식 완료 토스트 알림
+            showToast(`인식됨: "${data.text.length > 30 ? data.text.substring(0, 30) + '...' : data.text}"`, '🗣️', 2000);
+
+            // ✅ 듣는 상태로 전환
+            showMicrophoneIndicator('listening');
+
             if (voiceWs) {
               voiceWs.send(JSON.stringify({
                 type: 'stt_text',
                 data: { text: data.text }
               }));
             }
+          } else {
+            // 텍스트 없으면 대기 상태로
+            showMicrophoneIndicator('idle');
           }
         } catch (err) {
           console.error("STT 오류:", err);
+          showMicrophoneIndicator('idle'); // 오류 시 대기 상태로
         }
       }, 5000);
     }
@@ -1591,14 +1920,32 @@
         } catch (permissionError) {
           hideLoading();
           console.error('카메라/마이크 권한 오류:', permissionError);
-          alert('카메라와 마이크 권한이 필요합니다.\n\n브라우저 설정에서 권한을 허용해주세요:\n1. 주소창 왼쪽의 자물쇠 아이콘 클릭\n2. 카메라와 마이크 권한 허용\n3. 페이지 새로고침');
+          showErrorModal({
+            icon: '🎥',
+            title: '카메라/마이크 권한 필요',
+            message: '심리 상담을 위해 카메라와 마이크 접근 권한이 필요합니다.',
+            solutions: [
+              '1. 주소창 왼쪽의 자물쇠 아이콘을 클릭하세요',
+              '2. 카메라와 마이크 권한을 "허용"으로 변경하세요',
+              '3. 페이지를 새로고침하세요'
+            ]
+          });
           updateStatus('ended', '권한 필요');
         }
       } catch (error) {
         hideLoading();
         updateStatus('ended', '초기화 실패');
         console.error('초기화 오류:', error);
-        alert('초기화 실패: ' + error.message);
+        showErrorModal({
+          icon: '❌',
+          title: '시스템 초기화 실패',
+          message: `초기화 중 오류가 발생했습니다: ${error.message}`,
+          solutions: [
+            '1. 페이지를 새로고침해주세요',
+            '2. 브라우저를 최신 버전으로 업데이트하세요',
+            '3. Chrome, Firefox, Edge 브라우저를 사용해주세요'
+          ]
+        });
       }
     }
 
