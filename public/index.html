@@ -1032,6 +1032,92 @@
       console.log(`${statusEmoji[status]} ${channel} 채널: ${status}`);
     }
 
+    // ✅ 자동 재연결 WebSocket 클래스
+    class ReconnectingWebSocket {
+      constructor(url, name, maxRetries = 5) {
+        this.url = url;
+        this.name = name;
+        this.maxRetries = maxRetries;
+        this.retryCount = 0;
+        this.retryDelay = 1000; // 시작 1초
+        this.ws = null;
+        this.onMessageCallback = null;
+        this.shouldReconnect = true;
+        this.connect();
+      }
+
+      connect() {
+        updateConnectionStatus(this.name.toLowerCase(), 'connecting');
+        this.ws = new WebSocket(this.url);
+
+        this.ws.onopen = () => {
+          console.log(`✅ ${this.name} 채널 연결 성공`);
+          this.retryCount = 0;
+          this.retryDelay = 1000;
+          updateConnectionStatus(this.name.toLowerCase(), 'connected');
+          addTimelineItem('system', `${this.name} 채널 연결됨`);
+        };
+
+        this.ws.onclose = () => {
+          console.log(`🔌 ${this.name} 채널 연결 종료`);
+          updateConnectionStatus(this.name.toLowerCase(), 'disconnected');
+          if (this.shouldReconnect) {
+            this.reconnect();
+          }
+        };
+
+        this.ws.onerror = (err) => {
+          console.error(`❌ ${this.name} 에러:`, err);
+          updateConnectionStatus(this.name.toLowerCase(), 'disconnected');
+        };
+
+        this.ws.onmessage = (event) => {
+          if (this.onMessageCallback) {
+            this.onMessageCallback(event);
+          }
+        };
+      }
+
+      reconnect() {
+        if (this.retryCount >= this.maxRetries) {
+          console.error(`🚨 ${this.name} 재연결 실패 (최대 시도 횟수 초과)`);
+          addTimelineItem('error', `${this.name} 연결 실패`);
+          return;
+        }
+
+        this.retryCount++;
+        updateConnectionStatus(this.name.toLowerCase(), 'connecting');
+
+        console.log(`🔄 ${this.name} 재연결 시도 ${this.retryCount}/${this.maxRetries} (${this.retryDelay}ms 후)`);
+
+        setTimeout(() => {
+          this.connect();
+        }, this.retryDelay);
+
+        // Exponential backoff
+        this.retryDelay = Math.min(this.retryDelay * 2, 30000); // 최대 30초
+      }
+
+      send(data) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(data);
+        } else {
+          console.warn(`⚠️ ${this.name} 전송 실패: 연결되지 않음`);
+        }
+      }
+
+      onMessage(callback) {
+        this.onMessageCallback = callback;
+      }
+
+      close() {
+        this.shouldReconnect = false;
+        if (this.ws) {
+          this.ws.close();
+        }
+      }
+    }
+
     // ✅ 실시간 음량 UI 업데이트
     function updateVolumeUI(volume, isSpeech) {
       const volumeBarEl = document.getElementById('volumeBar');
@@ -1113,22 +1199,9 @@
     }
 
     function connectWebSockets(wsUrls) {
-      // Landmarks 채널
-      updateConnectionStatus('landmarks', 'connecting');
-      landmarksWs = new WebSocket(wsUrls.landmarks);
-      landmarksWs.onopen = () => {
-        console.log('✅ Landmarks 채널 연결');
-        updateConnectionStatus('landmarks', 'connected');
-        addTimelineItem('system', 'Landmarks 채널 연결됨');
-      };
-      landmarksWs.onclose = () => {
-        updateConnectionStatus('landmarks', 'disconnected');
-      };
-      landmarksWs.onerror = (error) => {
-        console.error('❌ Landmarks 에러:', error);
-        updateConnectionStatus('landmarks', 'disconnected');
-      };
-      landmarksWs.onmessage = (event) => {
+      // Landmarks 채널 - 자동 재연결
+      landmarksWs = new ReconnectingWebSocket(wsUrls.landmarks, 'Landmarks');
+      landmarksWs.onMessage((event) => {
         const message = JSON.parse(event.data);
         if (message.type === 'emotion_update') {
           updateEmotion(message.data);
@@ -1138,24 +1211,11 @@
             updateCBT({ intervention: message.data.intervention });
           }
         }
-      };
+      });
 
-      // Voice 채널
-      updateConnectionStatus('voice', 'connecting');
-      voiceWs = new WebSocket(wsUrls.voice);
-      voiceWs.onopen = () => {
-        console.log('✅ Voice 채널 연결');
-        updateConnectionStatus('voice', 'connected');
-        addTimelineItem('system', 'Voice 채널 연결됨');
-      };
-      voiceWs.onclose = () => {
-        updateConnectionStatus('voice', 'disconnected');
-      };
-      voiceWs.onerror = (error) => {
-        console.error('❌ Voice 에러:', error);
-        updateConnectionStatus('voice', 'disconnected');
-      };
-      voiceWs.onmessage = (event) => {
+      // Voice 채널 - 자동 재연결
+      voiceWs = new ReconnectingWebSocket(wsUrls.voice, 'Voice');
+      voiceWs.onMessage((event) => {
         const message = JSON.parse(event.data);
 
         if (message.type === 'vad_analysis') {
@@ -1186,29 +1246,16 @@
             console.log(`🎤 VAD 상태: 음성 ${speechRatio}% (최근 ${vadHistory.length}개)`);
           }
         }
-      };
+      });
 
-      // Session 채널
-      updateConnectionStatus('session', 'connecting');
-      sessionWs = new WebSocket(wsUrls.session);
-      sessionWs.onopen = () => {
-        console.log('✅ Session 채널 연결');
-        updateConnectionStatus('session', 'connected');
-        addTimelineItem('system', 'Session 채널 연결됨');
-      };
-      sessionWs.onclose = () => {
-        updateConnectionStatus('session', 'disconnected');
-      };
-      sessionWs.onerror = (error) => {
-        console.error('❌ Session 에러:', error);
-        updateConnectionStatus('session', 'disconnected');
-      };
-      sessionWs.onmessage = (event) => {
+      // Session 채널 - 자동 재연결
+      sessionWs = new ReconnectingWebSocket(wsUrls.session, 'Session');
+      sessionWs.onMessage((event) => {
         const message = JSON.parse(event.data);
         if (message.type === 'status_update') {
           updateSessionInfo(message.data);
         }
-      };
+      });
     }
 
     async function pauseSession() {
@@ -1288,7 +1335,7 @@
 
         // 데이터 전송 (30fps → 10fps)
         frameCount++;
-        if (frameCount % 3 === 0 && landmarksWs && landmarksWs.readyState === WebSocket.OPEN) {
+        if (frameCount % 3 === 0 && landmarksWs) {
           const compressed = compressLandmarks(results.multiFaceLandmarks);
 
           // 압축된 데이터가 유효한 경우에만 전송
@@ -1462,7 +1509,7 @@
             console.log("🗣️ STT:", data.text);
             addTimelineItem('stt', `발화: ${data.text.substring(0, 30)}...`);
 
-            if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
+            if (voiceWs) {
               voiceWs.send(JSON.stringify({
                 type: 'stt_text',
                 data: { text: data.text }
