@@ -2,117 +2,1278 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>BeMore - Emotion Analyzer Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BeMore - AI 심리 상담 시스템</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 헤더 */
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 20px 40px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+
+    .header-info {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .status-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge.active {
+      background: #10b981;
+      color: white;
+    }
+
+    .status-badge.paused {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .status-badge.ended {
+      background: #ef4444;
+      color: white;
+    }
+
+    /* 메인 컨테이너 */
+    .container {
+      max-width: 1400px;
+      margin: 40px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 30px;
+    }
+
+    /* 비디오 섹션 */
+    .video-section {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #000;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
     video, canvas {
       position: absolute;
       top: 0;
       left: 0;
+      width: 100%;
+      height: 100%;
       transform: scaleX(-1);
     }
 
-    #status {
-      position: fixed;
-      top: 10px;
-      left: 10px;
+    .video-overlay {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
       background: rgba(0, 0, 0, 0.7);
-      color: white;
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
       padding: 15px;
-      border-radius: 8px;
-      font-family: sans-serif;
-      z-index: 10;
-      max-width: 400px;
+      color: white;
+      z-index: 5;
     }
 
-    #controls {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 15px;
+    /* STT 자막 */
+    .stt-subtitle {
+      position: absolute;
+      bottom: 80px;
+      left: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
       border-radius: 8px;
-      font-family: sans-serif;
-      z-index: 10;
+      padding: 12px 16px;
+      color: white;
+      z-index: 6;
+      font-size: 16px;
+      line-height: 1.5;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      max-height: 120px;
+      overflow-y: auto;
     }
 
-    button {
-      margin: 5px;
-      padding: 10px 15px;
-      cursor: pointer;
-      border: none;
-      border-radius: 5px;
+    .stt-subtitle.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .stt-subtitle.fadeout {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .stt-subtitle-icon {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 18px;
+    }
+
+    .stt-subtitle-text {
+      display: inline;
+      font-weight: 400;
+    }
+
+    .video-stats {
+      display: flex;
+      gap: 20px;
       font-size: 14px;
     }
 
-    button:hover {
-      opacity: 0.8;
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .btn-pause { background: #ff9800; color: white; }
-    .btn-resume { background: #4caf50; color: white; }
-    .btn-end { background: #f44336; color: white; }
+    /* 컨트롤 버튼 */
+    .controls {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-pause {
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      color: white;
+    }
+
+    .btn-resume {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .btn-end {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 사이드바 */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title .icon {
+      font-size: 24px;
+    }
+
+    /* 세션 정보 */
+    .session-info {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      background: #f9fafb;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .info-label {
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .info-value {
+      color: #1f2937;
+      font-weight: 600;
+    }
+
+    /* 감정 분석 */
+    .emotion-display {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea15, #764ba215);
+      border-radius: 15px;
+      margin-bottom: 15px;
+    }
+
+    .emotion-icon {
+      font-size: 60px;
+      margin-bottom: 10px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .emotion-text {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 5px;
+    }
+
+    .emotion-confidence {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    /* VAD 지표 */
+    .vad-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .metric-card {
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* CBT 개입 */
+    .intervention {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border-left: 4px solid #f59e0b;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .intervention-title {
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .intervention-question {
+      color: #78350f;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 8px 0;
+      border-bottom: 1px dashed #fbbf24;
+    }
+
+    .intervention-question:last-child {
+      border-bottom: none;
+    }
+
+    /* 리스크 레벨 */
+    .risk-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .risk-indicator.low {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .risk-indicator.medium {
+      background: #fed7aa;
+      color: #92400e;
+    }
+
+    .risk-indicator.high {
+      background: #fecaca;
+      color: #991b1b;
+    }
+
+    .risk-indicator.critical {
+      background: #fca5a5;
+      color: #7f1d1d;
+      font-weight: 700;
+    }
+
+    /* 타임라인 */
+    .timeline {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 25px;
+      bottom: -15px;
+      width: 2px;
+      background: #e5e7eb;
+    }
+
+    .timeline-item:last-child::before {
+      display: none;
+    }
+
+    .timeline-dot {
+      width: 18px;
+      height: 18px;
+      background: #667eea;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px #667eea;
+    }
+
+    .timeline-content {
+      flex: 1;
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .timeline-time {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .timeline-text {
+      font-size: 13px;
+      color: #1f2937;
+      font-weight: 500;
+    }
+
+    /* 로딩 */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid #667eea30;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 반응형 */
+    @media (max-width: 1200px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        grid-column: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 15px 20px;
+      }
+
+      .header h1 {
+        font-size: 20px;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .vad-metrics {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 스크롤바 스타일링 */
+    .timeline::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .timeline::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    .timeline::-webkit-scrollbar-thumb {
+      background: #667eea;
+      border-radius: 10px;
+    }
+
+    .timeline::-webkit-scrollbar-thumb:hover {
+      background: #764ba2;
+    }
+
+    /* 로딩 오버레이 */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-message {
+      margin-top: 24px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #374151;
+      text-align: center;
+    }
+
+    .loading-progress {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    /* WebSocket 연결 상태 */
+    .connection-status {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .connection-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .status-dot.connected {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+
+    .status-dot.connecting {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.disconnected {
+      background: #ef4444;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* 에러 모달 */
+    .error-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    }
+
+    .error-modal.hidden {
+      display: none;
+    }
+
+    .error-content {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .error-icon {
+      font-size: 48px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .error-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f2937;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .error-message {
+      font-size: 14px;
+      color: #6b7280;
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .error-solutions {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .error-solutions-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+
+    .error-solution-item {
+      font-size: 13px;
+      color: #6b7280;
+      padding: 6px 0;
+      line-height: 1.5;
+    }
+
+    .error-button {
+      width: 100%;
+      padding: 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .error-button:hover {
+      background: #5568d3;
+    }
+
+    /* 토스트 알림 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: white;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 9998;
+      animation: slideIn 0.3s ease-out;
+      max-width: 400px;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.fadeOut {
+      animation: slideOut 0.3s ease-out forwards;
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+    }
+
+    .toast-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .toast-message {
+      font-size: 14px;
+      color: #374151;
+      flex: 1;
+    }
+
+    /* 마이크 상태 표시 */
+    .mic-indicator {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #667eea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      z-index: 9998;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .mic-indicator.idle {
+      background: #9ca3af;
+      box-shadow: 0 2px 8px rgba(156, 163, 175, 0.3);
+    }
+
+    .mic-indicator.listening {
+      background: #667eea;
+      animation: pulse 2s infinite;
+    }
+
+    .mic-indicator.processing {
+      background: #f59e0b;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+      50% {
+        transform: scale(1.1);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+      }
+    }
+
+    /* 리포트 모달 */
+    .report-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10001;
+      backdrop-filter: blur(8px);
+    }
+
+    .report-modal.hidden {
+      display: none;
+    }
+
+    .report-content {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 900px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+    }
+
+    .report-header {
+      text-align: center;
+      margin-bottom: 32px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 24px;
+    }
+
+    .report-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 8px;
+    }
+
+    .report-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .report-section {
+      margin-bottom: 32px;
+    }
+
+    .report-section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .report-section-icon {
+      font-size: 20px;
+    }
+
+    .report-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .report-stat-card {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      border-left: 4px solid #667eea;
+    }
+
+    .report-stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .report-stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .report-risk-indicator {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .report-risk-indicator.low {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .report-risk-indicator.medium {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .report-risk-indicator.high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .report-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .report-list-item {
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .report-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 2px solid #e5e7eb;
+    }
+
+    .report-btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .report-btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .report-btn-primary:hover {
+      background: #5568d3;
+    }
+
+    .report-btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .report-btn-secondary:hover {
+      background: #d1d5db;
+    }
   </style>
 </head>
 
 <body>
-  <div id="status">
-    <div>🎥 초기화 중...</div>
-    <div id="session-info"></div>
-    <div id="emotion-info"></div>
+  <!-- 로딩 오버레이 -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-message" id="loadingMessage">시스템 초기화 중...</div>
+    <div class="loading-progress" id="loadingProgress"></div>
   </div>
 
-  <div id="controls">
-    <button class="btn-pause" onclick="pauseSession()">⏸️ 일시정지</button>
-    <button class="btn-resume" onclick="resumeSession()">▶️ 재개</button>
-    <button class="btn-end" onclick="endSession()">⏹️ 종료</button>
+  <!-- 에러 모달 -->
+  <div id="errorModal" class="error-modal hidden">
+    <div class="error-content">
+      <div class="error-icon" id="errorIcon">⚠️</div>
+      <div class="error-title" id="errorTitle">오류 발생</div>
+      <div class="error-message" id="errorMessage"></div>
+      <div class="error-solutions" id="errorSolutions" style="display: none;">
+        <div class="error-solutions-title">해결 방법:</div>
+        <div id="errorSolutionsList"></div>
+      </div>
+      <button class="error-button" onclick="closeErrorModal()">확인</button>
+    </div>
   </div>
 
-  <video id="input_video" autoplay playsinline></video>
-  <canvas id="output_canvas"></canvas>
+  <!-- 마이크 상태 표시 -->
+  <div id="micIndicator" class="mic-indicator idle">
+    🔇
+  </div>
+
+  <!-- 리포트 모달 -->
+  <div id="reportModal" class="report-modal hidden">
+    <div class="report-content">
+      <div class="report-header">
+        <div class="report-title">📊 세션 리포트</div>
+        <div class="report-subtitle" id="reportSubtitle">세션 분석 결과</div>
+      </div>
+
+      <div id="reportBody">
+        <!-- 리포트 내용이 동적으로 삽입됩니다 -->
+      </div>
+
+      <div class="report-buttons">
+        <button class="report-btn report-btn-secondary" onclick="closeReportModal()">닫기</button>
+        <button class="report-btn report-btn-primary" onclick="downloadReport()">다운로드</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 헤더 -->
+  <div class="header">
+    <h1>🧠 BeMore - AI 심리 상담</h1>
+    <div class="header-info">
+      <div class="connection-status">
+        <div class="connection-item">
+          <span id="landmarksStatus" class="status-dot connecting"></span>
+          <span>표정 분석</span>
+        </div>
+        <div class="connection-item">
+          <span id="voiceStatus" class="status-dot connecting"></span>
+          <span>음성 분석</span>
+        </div>
+        <div class="connection-item">
+          <span id="sessionStatus" class="status-dot connecting"></span>
+          <span>세션</span>
+        </div>
+      </div>
+      <div class="status-badge active" id="headerStatus">
+        <span id="statusIcon">●</span>
+        <span id="statusText">초기화 중...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 컨테이너 -->
+  <div class="container">
+    <!-- 비디오 섹션 -->
+    <div class="video-section">
+      <div class="video-container">
+        <video id="input_video" autoplay playsinline></video>
+        <canvas id="output_canvas"></canvas>
+
+        <!-- STT 자막 -->
+        <div id="sttSubtitle" class="stt-subtitle">
+          <span class="stt-subtitle-icon">💬</span>
+          <span class="stt-subtitle-text" id="sttSubtitleText"></span>
+        </div>
+
+        <div class="video-overlay">
+          <div class="video-stats">
+            <div class="stat-item">
+              <span>📹</span>
+              <span id="fpsCounter">0 FPS</span>
+            </div>
+            <div class="stat-item">
+              <span>🎯</span>
+              <span id="landmarkCount">0개 랜드마크</span>
+            </div>
+            <div class="stat-item">
+              <span>⏱️</span>
+              <span id="sessionDuration">00:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-pause" onclick="pauseSession()" id="pauseBtn">
+          <span>⏸️</span>
+          <span>일시정지</span>
+        </button>
+        <button class="btn btn-resume" onclick="resumeSession()" id="resumeBtn" disabled>
+          <span>▶️</span>
+          <span>재개</span>
+        </button>
+        <button class="btn btn-end" onclick="endSession()" id="endBtn">
+          <span>⏹️</span>
+          <span>종료</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 사이드바 -->
+    <div class="sidebar">
+      <!-- 세션 정보 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">📊</span>
+          <span>세션 정보</span>
+        </div>
+        <div class="session-info" id="sessionInfo">
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>세션 생성 중...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 감정 분석 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">😊</span>
+          <span>감정 분석</span>
+        </div>
+        <div id="emotionDisplay">
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>분석 대기 중...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VAD 분석 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">🎤</span>
+          <span>음성 분석 (VAD)</span>
+        </div>
+        <div id="vadDisplay">
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>음성 감지 중...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VAD 음량 조정 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">🔊</span>
+          <span>음량 임계값 설정</span>
+        </div>
+        <div style="padding: 15px;">
+          <div style="margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="font-size: 13px; color: #6b7280;">임계값</label>
+              <span id="thresholdValue" style="font-weight: bold; color: #667eea;">8</span>
+            </div>
+            <input type="range" id="volumeThreshold" min="5" max="80" value="8"
+                   style="width: 100%; cursor: pointer;">
+            <div style="font-size: 11px; color: #9ca3af; margin-top: 5px;">
+              낮음 (민감) ←→ 높음 (둔감)
+            </div>
+          </div>
+
+          <div style="background: #f9fafb; border-radius: 6px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; color: #6b7280;">현재 음량</span>
+              <span id="currentVolume" style="font-weight: bold; color: #10b981;">0</span>
+            </div>
+            <div style="height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden;">
+              <div id="volumeBar" style="height: 100%; width: 0%; background: linear-gradient(to right, #10b981, #fbbf24, #ef4444); transition: width 0.15s;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <span style="font-size: 11px; color: #6b7280;">음성 감지</span>
+              <span id="speechStatus" style="font-weight: bold; font-size: 12px;">❌</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CBT 개입 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">💡</span>
+          <span>치료적 개입</span>
+        </div>
+        <div id="cbtDisplay">
+          <p style="color: #9ca3af; text-align: center; padding: 20px;">
+            아직 개입이 필요하지 않습니다
+          </p>
+        </div>
+      </div>
+
+      <!-- 타임라인 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">📝</span>
+          <span>세션 타임라인</span>
+        </div>
+        <div class="timeline" id="timeline">
+          <!-- 동적으로 추가됨 -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 
   <script>
-    const statusDiv = document.getElementById("status");
-    const sessionInfo = document.getElementById("session-info");
-    const emotionInfo = document.getElementById("emotion-info");
+    // DOM 요소
     const videoElement = document.getElementById("input_video");
     const canvasElement = document.getElementById("output_canvas");
     const canvasCtx = canvasElement.getContext("2d");
 
-    // ====== 주요 랜드마크 인덱스 (468개 → 68개 중간 정밀도) ======
-    // CBT 인지 왜곡 탐지에 최적화된 68개 포인트
+    // 상태 관리
+    let sessionId = null;
+    let sessionStatus = 'initializing';
+    let landmarksWs = null;
+    let voiceWs = null;
+    let sessionWs = null;
+    let sessionStartTime = null;
+    let frameCount = 0;
+    let lastFpsTime = Date.now();
+    let fpsCounter = 0;
+
+    // ✅ VAD 상태 관리 (STT 조건부 실행용)
+    let vadHistory = []; // 최근 5초간 VAD 결과 저장
+    let isSpeechActive = false; // 현재 음성 활동 여부
+    let voiceThreshold = 8; // 음량 임계값 (최적값: 8, 조정 가능)
+
+    // 주요 랜드마크 인덱스
     const KEY_LANDMARKS = {
-      // 눈 영역 (20개) - 눈 뜨기, 눈가 주름 (Duchenne marker)
-      eyes: [
-        33, 133, 160, 144, 158, 153, 145, 159, 246, 163,  // 왼쪽 눈
-        362, 263, 387, 373, 385, 380, 374, 386, 466, 390  // 오른쪽 눈
-      ],
-
-      // 눈썹 영역 (10개) - AU1, AU2, AU4 (슬픔, 분노, 걱정)
-      eyebrows: [
-        70, 63, 105, 66, 107,   // 왼쪽 눈썹
-        300, 293, 334, 296, 336 // 오른쪽 눈썹
-      ],
-
-      // 입 영역 (20개) - AU12, AU15, AU17, AU20 (행복, 슬픔, 분노)
-      mouth: [
-        61, 291, 0, 17, 37, 39, 40, 185, 409, 267,
-        269, 270, 78, 308, 324, 318, 402, 317, 14, 87
-      ],
-
-      // 코 영역 (8개) - AU9 (코 주름, 혐오 감정)
+      eyes: [33, 133, 160, 144, 158, 153, 145, 159, 246, 163, 362, 263, 387, 373, 385, 380, 374, 386, 466, 390],
+      eyebrows: [70, 63, 105, 66, 107, 300, 293, 334, 296, 336],
+      mouth: [61, 291, 0, 17, 37, 39, 40, 185, 409, 267, 269, 270, 78, 308, 324, 318, 402, 317, 14, 87],
       nose: [1, 2, 98, 327, 4, 5, 195, 197],
-
-      // 얼굴 윤곽 (10개) - 얼굴 방향, 각도
       contour: [10, 338, 297, 332, 284, 251, 389, 356, 454, 234]
     };
 
-    // 랜드마크 압축 함수 (85% 대역폭 절감, 정확도 90%)
+    // ✅ STT 호출 여부 판단 (VAD 기반)
+    function shouldTranscribe() {
+      // VAD 히스토리가 없으면 STT 호출 (초기 상태)
+      if (vadHistory.length === 0) {
+        return true;
+      }
+
+      // 최근 5초간 음성 활동 비율 계산
+      const speechEvents = vadHistory.filter(v => v.isSpeech);
+      const speechRatio = speechEvents.length / vadHistory.length;
+
+      // 임계값: 최근 5초 중 30% 이상 음성 활동이 있었으면 STT 호출
+      const SPEECH_THRESHOLD = 0.3;
+
+      if (speechRatio >= SPEECH_THRESHOLD) {
+        console.log(`✅ STT 호출: 음성 활동 ${(speechRatio * 100).toFixed(1)}%`);
+        return true;
+      } else {
+        console.log(`❌ STT 생략: 음성 활동 ${(speechRatio * 100).toFixed(1)}% (임계값: ${SPEECH_THRESHOLD * 100}%)`);
+        return false;
+      }
+    }
+
+    // 랜드마크 압축
     function compressLandmarks(landmarks) {
+      // 얼굴이 감지되지 않은 경우 처리
+      if (!landmarks || landmarks.length === 0) {
+        return null;
+      }
+
       const face = landmarks[0];
+
+      // face 배열이 유효하지 않은 경우 처리
+      if (!face || face.length === 0) {
+        return null;
+      }
+
       const compressed = {
         eyes: [],
         eyebrows: [],
@@ -121,25 +1282,458 @@
         contour: []
       };
 
-      // 각 영역별로 좌표 추출
       for (const [region, indices] of Object.entries(KEY_LANDMARKS)) {
-        compressed[region] = indices.map(index => ({
-          x: face[index].x,
-          y: face[index].y,
-          z: face[index].z
-        }));
+        compressed[region] = indices
+          .filter(index => face[index]) // undefined 체크
+          .map(index => ({
+            x: face[index].x,
+            y: face[index].y,
+            z: face[index].z
+          }));
       }
 
       return compressed;
     }
 
-    // ====== 세션 관리 ======
-    let sessionId = null;
-    let landmarksWs = null;
-    let voiceWs = null;
-    let sessionWs = null;
+    // UI 업데이트 함수들
+    function updateStatus(status, text) {
+      sessionStatus = status;
+      const badge = document.getElementById('headerStatus');
+      const statusText = document.getElementById('statusText');
+      const statusIcon = document.getElementById('statusIcon');
 
-    // 세션 시작
+      badge.className = `status-badge ${status}`;
+      statusText.textContent = text;
+      statusIcon.textContent = status === 'active' ? '●' : status === 'paused' ? '⏸' : '⏹';
+    }
+
+    function updateSessionInfo(data) {
+      const container = document.getElementById('sessionInfo');
+      container.innerHTML = `
+        <div class="info-row">
+          <span class="info-label">세션 ID</span>
+          <span class="info-value">${data.sessionId.substring(0, 20)}...</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">상태</span>
+          <span class="info-value">${data.status}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">감정 분석 횟수</span>
+          <span class="info-value">${data.emotionCount || 0}회</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">경과 시간</span>
+          <span class="info-value" id="elapsedTime">00:00</span>
+        </div>
+      `;
+    }
+
+    function updateEmotion(data) {
+      const container = document.getElementById('emotionDisplay');
+      const emotionIcons = {
+        '기쁨': '😊',
+        '슬픔': '😢',
+        '분노': '😠',
+        '불안': '😰',
+        '평온': '😌',
+        '중립': '😐'
+      };
+
+      container.innerHTML = `
+        <div class="emotion-display">
+          <div class="emotion-icon">${emotionIcons[data.emotion] || '😐'}</div>
+          <div class="emotion-text">${data.emotion}</div>
+          <div class="emotion-confidence">프레임: ${data.frameCount || 0}개</div>
+        </div>
+      `;
+
+      addTimelineItem('emotion', `감정: ${data.emotion}`);
+    }
+
+    function updateVAD(data) {
+      const container = document.getElementById('vadDisplay');
+      const metrics = data.metrics;
+      const psychological = data.psychological;
+
+      let html = '';
+
+      // 리스크 레벨
+      if (psychological && psychological.riskLevel) {
+        const riskLabels = {
+          low: '낮음',
+          medium: '보통',
+          high: '높음',
+          critical: '위험'
+        };
+        html += `
+          <div class="risk-indicator ${psychological.riskLevel}">
+            <span>⚠️</span>
+            <span>위험도: ${riskLabels[psychological.riskLevel]}</span>
+          </div>
+        `;
+      }
+
+      // 메트릭
+      if (metrics) {
+        html += `
+          <div class="vad-metrics">
+            <div class="metric-card">
+              <div class="metric-value">${metrics.speechRate ? metrics.speechRate.toFixed(1) : 0}%</div>
+              <div class="metric-label">발화 비율</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${metrics.avgSpeechDuration ? (metrics.avgSpeechDuration/1000).toFixed(1) : 0}s</div>
+              <div class="metric-label">평균 발화</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${metrics.speechTurnCount || 0}</div>
+              <div class="metric-label">발화 횟수</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${metrics.interruptionRate ? metrics.interruptionRate.toFixed(1) : 0}%</div>
+              <div class="metric-label">중단 비율</div>
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function updateCBT(data) {
+      const container = document.getElementById('cbtDisplay');
+      const intervention = data.intervention;
+
+      if (!intervention) return;
+
+      let html = `
+        <div class="intervention">
+          <div class="intervention-title">
+            🎯 ${intervention.distortionName} 감지됨 (${intervention.severity})
+          </div>
+      `;
+
+      if (intervention.questions && intervention.questions.length > 0) {
+        intervention.questions.slice(0, 3).forEach(q => {
+          html += `<div class="intervention-question">❓ ${q}</div>`;
+        });
+      }
+
+      html += `</div>`;
+      container.innerHTML = html;
+
+      addTimelineItem('cbt', `CBT 개입: ${intervention.distortionName}`);
+    }
+
+    // ✅ 로딩 상태 관리
+    function showLoading(message, progress = '') {
+      const overlay = document.getElementById('loadingOverlay');
+      const messageEl = document.getElementById('loadingMessage');
+      const progressEl = document.getElementById('loadingProgress');
+
+      if (overlay) overlay.classList.remove('hidden');
+      if (messageEl) messageEl.textContent = message;
+      if (progressEl) progressEl.textContent = progress;
+
+      console.log(`🔄 로딩: ${message}${progress ? ` (${progress})` : ''}`);
+    }
+
+    function hideLoading() {
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) {
+        overlay.classList.add('hidden');
+        console.log('✅ 로딩 완료');
+      }
+    }
+
+    // ✅ 에러 모달 관리
+    function showErrorModal(options) {
+      const { title, message, solutions, icon = '⚠️' } = options;
+
+      const modal = document.getElementById('errorModal');
+      const iconEl = document.getElementById('errorIcon');
+      const titleEl = document.getElementById('errorTitle');
+      const messageEl = document.getElementById('errorMessage');
+      const solutionsContainer = document.getElementById('errorSolutions');
+      const solutionsList = document.getElementById('errorSolutionsList');
+
+      iconEl.textContent = icon;
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+
+      if (solutions && solutions.length > 0) {
+        solutionsList.innerHTML = solutions.map(s =>
+          `<div class="error-solution-item">${s}</div>`
+        ).join('');
+        solutionsContainer.style.display = 'block';
+      } else {
+        solutionsContainer.style.display = 'none';
+      }
+
+      modal.classList.remove('hidden');
+      console.error(`❌ ${title}: ${message}`);
+    }
+
+    function closeErrorModal() {
+      const modal = document.getElementById('errorModal');
+      modal.classList.add('hidden');
+    }
+
+    // ✅ 토스트 알림 표시
+    let toastTimeout = null;
+    function showToast(message, icon = 'ℹ️', duration = 3000) {
+      // 기존 토스트 제거
+      const existingToast = document.querySelector('.toast');
+      if (existingToast) {
+        existingToast.remove();
+      }
+
+      // 새 토스트 생성
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-message">${message}</div>
+      `;
+      document.body.appendChild(toast);
+
+      // 자동 제거
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('fadeOut');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+
+      console.log(`💬 토스트: ${message}`);
+    }
+
+    // ✅ STT 자막 표시
+    let subtitleTimeout = null;
+    function showSubtitle(text, duration = 4000) {
+      const subtitle = document.getElementById('sttSubtitle');
+      const subtitleText = document.getElementById('sttSubtitleText');
+
+      if (!subtitle || !subtitleText) return;
+
+      // 이전 타이머 취소
+      if (subtitleTimeout) {
+        clearTimeout(subtitleTimeout);
+      }
+
+      // 자막 텍스트 설정
+      subtitleText.textContent = text;
+
+      // fadeout 클래스 제거 (있다면)
+      subtitle.classList.remove('fadeout');
+
+      // show 클래스 추가 (나타나기)
+      subtitle.classList.add('show');
+
+      console.log(`💬 자막 표시: ${text}`);
+
+      // duration 후 페이드아웃
+      subtitleTimeout = setTimeout(() => {
+        subtitle.classList.add('fadeout');
+        subtitle.classList.remove('show');
+
+        // 애니메이션 완료 후 초기화
+        setTimeout(() => {
+          subtitle.classList.remove('fadeout');
+          subtitleText.textContent = '';
+        }, 300);
+      }, duration);
+    }
+
+    // ✅ 마이크 상태 표시
+    function showMicrophoneIndicator(state) {
+      const indicator = document.getElementById('micIndicator');
+      if (!indicator) return;
+
+      indicator.classList.remove('idle', 'listening', 'processing');
+      indicator.classList.add(state);
+
+      const icons = {
+        'idle': '🔇',
+        'listening': '🎤',
+        'processing': '⏳'
+      };
+
+      indicator.textContent = icons[state] || '🔇';
+    }
+
+    // ✅ WebSocket 연결 상태 업데이트
+    function updateConnectionStatus(channel, status) {
+      const statusIds = {
+        'landmarks': 'landmarksStatus',
+        'voice': 'voiceStatus',
+        'session': 'sessionStatus'
+      };
+
+      const statusDot = document.getElementById(statusIds[channel]);
+      if (!statusDot) return;
+
+      // 기존 클래스 제거
+      statusDot.classList.remove('connected', 'connecting', 'disconnected');
+
+      // 새 상태 적용
+      statusDot.classList.add(status);
+
+      const statusEmoji = {
+        'connected': '🟢',
+        'connecting': '🟡',
+        'disconnected': '🔴'
+      };
+
+      console.log(`${statusEmoji[status]} ${channel} 채널: ${status}`);
+    }
+
+    // ✅ 자동 재연결 WebSocket 클래스
+    class ReconnectingWebSocket {
+      constructor(url, name, maxRetries = 5) {
+        this.url = url;
+        this.name = name;
+        this.maxRetries = maxRetries;
+        this.retryCount = 0;
+        this.retryDelay = 1000; // 시작 1초
+        this.ws = null;
+        this.onMessageCallback = null;
+        this.shouldReconnect = true;
+        this.connect();
+      }
+
+      connect() {
+        updateConnectionStatus(this.name.toLowerCase(), 'connecting');
+        this.ws = new WebSocket(this.url);
+
+        this.ws.onopen = () => {
+          console.log(`✅ ${this.name} 채널 연결 성공`);
+          this.retryCount = 0;
+          this.retryDelay = 1000;
+          updateConnectionStatus(this.name.toLowerCase(), 'connected');
+          addTimelineItem('system', `${this.name} 채널 연결됨`);
+
+          // ✅ 연결 성공 토스트
+          if (this.retryCount === 0) {
+            showToast(`${this.name} 채널 연결됨`, '✅', 1500);
+          }
+        };
+
+        this.ws.onclose = () => {
+          console.log(`🔌 ${this.name} 채널 연결 종료`);
+          updateConnectionStatus(this.name.toLowerCase(), 'disconnected');
+
+          // ✅ 연결 끊김 토스트
+          showToast(`${this.name} 채널 연결 끊김`, '⚠️', 2000);
+
+          if (this.shouldReconnect) {
+            this.reconnect();
+          }
+        };
+
+        this.ws.onerror = (err) => {
+          console.error(`❌ ${this.name} 에러:`, err);
+          updateConnectionStatus(this.name.toLowerCase(), 'disconnected');
+        };
+
+        this.ws.onmessage = (event) => {
+          if (this.onMessageCallback) {
+            this.onMessageCallback(event);
+          }
+        };
+      }
+
+      reconnect() {
+        if (this.retryCount >= this.maxRetries) {
+          console.error(`🚨 ${this.name} 재연결 실패 (최대 시도 횟수 초과)`);
+          addTimelineItem('error', `${this.name} 연결 실패`);
+
+          // ✅ 재연결 실패 토스트
+          showToast(`${this.name} 연결 실패`, '🚨', 3000);
+          return;
+        }
+
+        this.retryCount++;
+        updateConnectionStatus(this.name.toLowerCase(), 'connecting');
+
+        console.log(`🔄 ${this.name} 재연결 시도 ${this.retryCount}/${this.maxRetries} (${this.retryDelay}ms 후)`);
+
+        // ✅ 재연결 시도 토스트
+        showToast(`${this.name} 재연결 중... (${this.retryCount}/${this.maxRetries})`, '🔄', 1500);
+
+        setTimeout(() => {
+          this.connect();
+        }, this.retryDelay);
+
+        // Exponential backoff
+        this.retryDelay = Math.min(this.retryDelay * 2, 30000); // 최대 30초
+      }
+
+      send(data) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(data);
+        } else {
+          console.warn(`⚠️ ${this.name} 전송 실패: 연결되지 않음`);
+        }
+      }
+
+      onMessage(callback) {
+        this.onMessageCallback = callback;
+      }
+
+      close() {
+        this.shouldReconnect = false;
+        if (this.ws) {
+          this.ws.close();
+        }
+      }
+    }
+
+    // ✅ 실시간 음량 UI 업데이트
+    function updateVolumeUI(volume, isSpeech) {
+      const volumeBarEl = document.getElementById('volumeBar');
+      const currentVolumeEl = document.getElementById('currentVolume');
+      const speechStatusEl = document.getElementById('speechStatus');
+
+      if (!volumeBarEl || !currentVolumeEl || !speechStatusEl) return;
+
+      // 음량 바 업데이트 (0-255 → 0-100%)
+      const volumePercent = Math.min((volume / 255) * 100, 100);
+      volumeBarEl.style.width = `${volumePercent}%`;
+
+      // 현재 음량 텍스트 업데이트
+      currentVolumeEl.textContent = volume.toFixed(0);
+      currentVolumeEl.style.color = isSpeech ? '#10b981' : '#6b7280';
+
+      // 음성 감지 상태 업데이트
+      speechStatusEl.textContent = isSpeech ? '✅ 감지됨' : '❌';
+      speechStatusEl.style.color = isSpeech ? '#10b981' : '#ef4444';
+    }
+
+    function addTimelineItem(type, text) {
+      const timeline = document.getElementById('timeline');
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ko-KR');
+
+      const item = document.createElement('div');
+      item.className = 'timeline-item';
+      item.innerHTML = `
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-time">${timeStr}</div>
+          <div class="timeline-text">${text}</div>
+        </div>
+      `;
+
+      timeline.insertBefore(item, timeline.firstChild);
+
+      // 최대 10개만 유지
+      while (timeline.children.length > 10) {
+        timeline.removeChild(timeline.lastChild);
+      }
+    }
+
+    // 세션 관리
     async function startSession() {
       try {
         const response = await fetch('/api/session/start', {
@@ -152,87 +1746,312 @@
         });
 
         const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.error.message);
-        }
+        if (!result.success) throw new Error(result.error.message);
 
         sessionId = result.data.sessionId;
-        sessionInfo.innerHTML = `<b>세션 ID:</b> ${sessionId}<br><b>상태:</b> active`;
+        sessionStartTime = Date.now();
 
-        // WebSocket 3채널 연결
+        updateStatus('active', '세션 활성');
+        updateSessionInfo({
+          sessionId: sessionId,
+          status: 'active',
+          emotionCount: 0
+        });
+
         connectWebSockets(result.data.wsUrls);
+        addTimelineItem('system', '세션 시작됨');
 
         return sessionId;
       } catch (error) {
         console.error('세션 시작 오류:', error);
-        statusDiv.textContent = `❌ 세션 시작 실패: ${error.message}`;
+        updateStatus('ended', '세션 실패');
         throw error;
       }
     }
 
-    // WebSocket 3채널 연결
     function connectWebSockets(wsUrls) {
-      // 1. Landmarks 채널
-      landmarksWs = new WebSocket(wsUrls.landmarks);
-      landmarksWs.onopen = () => console.log('✅ Landmarks 채널 연결');
-      landmarksWs.onmessage = (event) => {
+      // Landmarks 채널 - 자동 재연결
+      landmarksWs = new ReconnectingWebSocket(wsUrls.landmarks, 'Landmarks');
+      landmarksWs.onMessage((event) => {
         const message = JSON.parse(event.data);
         if (message.type === 'emotion_update') {
-          emotionInfo.innerHTML = `<b>😃 감정:</b> ${message.data.emotion}<br><b>프레임:</b> ${message.data.frameCount}`;
+          updateEmotion(message.data);
+
+          // CBT 개입이 있으면 표시
+          if (message.data.intervention) {
+            updateCBT({ intervention: message.data.intervention });
+          }
         }
-      };
+      });
 
-      // 2. Voice 채널
-      voiceWs = new WebSocket(wsUrls.voice);
-      voiceWs.onopen = () => console.log('✅ Voice 채널 연결');
-      voiceWs.onmessage = (event) => {
+      // Voice 채널 - 자동 재연결
+      voiceWs = new ReconnectingWebSocket(wsUrls.voice, 'Voice');
+      voiceWs.onMessage((event) => {
         const message = JSON.parse(event.data);
-        if (message.type === 'stt_received') {
-          console.log('✅ STT 수신 확인');
+
+        if (message.type === 'vad_analysis') {
+          updateVAD(message.data);
+        } else if (message.type === 'vad_realtime') {
+          // ✅ 실시간 VAD 결과 수신
+          const vadData = message.data;
+          const now = Date.now();
+
+          // VAD 히스토리에 추가
+          vadHistory.push({
+            timestamp: now,
+            isSpeech: vadData.isSpeech,
+            probability: vadData.probability,
+            energy: vadData.energy
+          });
+
+          // 5초 이상 오래된 데이터 제거
+          vadHistory = vadHistory.filter(v => now - v.timestamp < 5000);
+
+          // 현재 음성 활동 상태 업데이트
+          isSpeechActive = vadData.isSpeech;
+
+          // 디버깅 로그 (10개마다)
+          if (vadHistory.length % 10 === 0) {
+            const speechCount = vadHistory.filter(v => v.isSpeech).length;
+            const speechRatio = (speechCount / vadHistory.length * 100).toFixed(1);
+            console.log(`🎤 VAD 상태: 음성 ${speechRatio}% (최근 ${vadHistory.length}개)`);
+          }
         }
-      };
+      });
 
-      // 3. Session 채널
-      sessionWs = new WebSocket(wsUrls.session);
-      sessionWs.onopen = () => console.log('✅ Session 채널 연결');
-      sessionWs.onmessage = (event) => {
+      // Session 채널 - 자동 재연결
+      sessionWs = new ReconnectingWebSocket(wsUrls.session, 'Session');
+      sessionWs.onMessage((event) => {
         const message = JSON.parse(event.data);
-        console.log('Session 메시지:', message);
-
         if (message.type === 'status_update') {
-          sessionInfo.innerHTML = `<b>세션 ID:</b> ${sessionId}<br><b>상태:</b> ${message.data.status}<br><b>감정 수:</b> ${message.data.emotionCount}`;
+          updateSessionInfo(message.data);
         }
-      };
+      });
     }
 
-    // 세션 제어 함수들
     async function pauseSession() {
       if (!sessionId) return;
       const res = await fetch(`/api/session/${sessionId}/pause`, { method: 'POST' });
       const data = await res.json();
-      console.log('⏸️ 일시정지:', data);
+      updateStatus('paused', '일시정지됨');
+      document.getElementById('pauseBtn').disabled = true;
+      document.getElementById('resumeBtn').disabled = false;
+      addTimelineItem('system', '세션 일시정지');
     }
 
     async function resumeSession() {
       if (!sessionId) return;
       const res = await fetch(`/api/session/${sessionId}/resume`, { method: 'POST' });
       const data = await res.json();
-      console.log('▶️ 재개:', data);
+      updateStatus('active', '세션 활성');
+      document.getElementById('pauseBtn').disabled = false;
+      document.getElementById('resumeBtn').disabled = true;
+      addTimelineItem('system', '세션 재개');
     }
 
     async function endSession() {
       if (!sessionId) return;
+
       const res = await fetch(`/api/session/${sessionId}/end`, { method: 'POST' });
       const data = await res.json();
-      console.log('✅ 종료:', data);
 
-      // WebSocket 연결 종료
+      updateStatus('ended', '세션 종료');
+      document.getElementById('pauseBtn').disabled = true;
+      document.getElementById('endBtn').disabled = true;
+
       if (landmarksWs) landmarksWs.close();
       if (voiceWs) voiceWs.close();
       if (sessionWs) sessionWs.close();
+
+      addTimelineItem('system', '세션 종료됨');
+
+      // ✅ 리포트 자동 표시
+      setTimeout(async () => {
+        await showReport();
+      }, 1500);
     }
 
-    // ====== MediaPipe FaceMesh 설정 ======
+    // ✅ 리포트 표시 함수
+    async function showReport() {
+      if (!sessionId) {
+        showToast('세션 ID가 없습니다', '⚠️');
+        return;
+      }
+
+      try {
+        showLoading('리포트 생성 중...', '');
+
+        const response = await fetch(`/api/session/${sessionId}/report`);
+        const result = await response.json();
+
+        hideLoading();
+
+        if (!result.success) {
+          throw new Error(result.error?.message || '리포트 생성 실패');
+        }
+
+        const report = result.data;
+        displayReport(report);
+
+      } catch (error) {
+        hideLoading();
+        console.error('리포트 생성 오류:', error);
+        showErrorModal({
+          icon: '📊',
+          title: '리포트 생성 실패',
+          message: error.message,
+          solutions: [
+            '1. 세션이 정상적으로 진행되었는지 확인하세요',
+            '2. 네트워크 연결을 확인하세요',
+            '3. 잠시 후 다시 시도하세요'
+          ]
+        });
+      }
+    }
+
+    // ✅ 리포트 렌더링
+    function displayReport(report) {
+      const modal = document.getElementById('reportModal');
+      const body = document.getElementById('reportBody');
+      const subtitle = document.getElementById('reportSubtitle');
+
+      const { metadata, analysis, statistics } = report;
+
+      // 서브타이틀 업데이트
+      subtitle.textContent = `세션 ID: ${metadata.sessionId} | ${metadata.durationFormatted}`;
+
+      // 리포트 본문 HTML 생성
+      body.innerHTML = `
+        <!-- 종합 평가 -->
+        <div class="report-section">
+          <div class="report-section-title">
+            <span class="report-section-icon">📈</span>
+            <span>종합 평가</span>
+          </div>
+          <div class="report-stat-grid">
+            <div class="report-stat-card">
+              <div class="report-stat-label">심리 위험도</div>
+              <div class="report-stat-value">
+                ${statistics.overall.riskScore}/100
+                <span class="report-risk-indicator ${statistics.overall.riskLevel}">
+                  ${statistics.overall.riskLevel.toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <div class="report-stat-card">
+              <div class="report-stat-label">감정 상태</div>
+              <div class="report-stat-value" style="font-size: 18px;">${statistics.overall.emotionalState}</div>
+            </div>
+            <div class="report-stat-card">
+              <div class="report-stat-label">의사소통 패턴</div>
+              <div class="report-stat-value" style="font-size: 18px;">${statistics.overall.communicationPattern}</div>
+            </div>
+            <div class="report-stat-card">
+              <div class="report-stat-label">인지 패턴</div>
+              <div class="report-stat-value" style="font-size: 18px;">${statistics.overall.cognitivePattern}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 세션 통계 -->
+        <div class="report-section">
+          <div class="report-section-title">
+            <span class="report-section-icon">📊</span>
+            <span>세션 통계</span>
+          </div>
+          <div class="report-stat-grid">
+            <div class="report-stat-card">
+              <div class="report-stat-label">감정 분석 횟수</div>
+              <div class="report-stat-value">${statistics.session.totalEmotionAnalyses}회</div>
+            </div>
+            <div class="report-stat-card">
+              <div class="report-stat-label">VAD 분석 횟수</div>
+              <div class="report-stat-value">${statistics.session.totalVADAnalyses}회</div>
+            </div>
+            <div class="report-stat-card">
+              <div class="report-stat-label">인지 왜곡 탐지</div>
+              <div class="report-stat-value">${statistics.session.totalCBTDistortions}건</div>
+            </div>
+            <div class="report-stat-card">
+              <div class="report-stat-label">치료적 개입</div>
+              <div class="report-stat-value">${statistics.session.totalInterventions}회</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 주요 관찰 사항 -->
+        <div class="report-section">
+          <div class="report-section-title">
+            <span class="report-section-icon">🔍</span>
+            <span>주요 관찰 사항</span>
+          </div>
+          <ul class="report-list">
+            ${analysis.overallAssessment.keyObservations.map(obs =>
+              `<li class="report-list-item">${obs}</li>`
+            ).join('')}
+          </ul>
+        </div>
+
+        <!-- 권장 사항 -->
+        <div class="report-section">
+          <div class="report-section-title">
+            <span class="report-section-icon">💡</span>
+            <span>권장 사항</span>
+          </div>
+          <ul class="report-list">
+            ${analysis.recommendations.slice(0, 5).map(rec =>
+              `<li class="report-list-item">
+                <strong>[${rec.priority}]</strong> ${rec.title}<br>
+                <span style="color: #6b7280; font-size: 13px;">${rec.description}</span>
+              </li>`
+            ).join('')}
+          </ul>
+        </div>
+      `;
+
+      // 모달 표시
+      modal.classList.remove('hidden');
+      console.log('📊 리포트 표시 완료');
+    }
+
+    // ✅ 리포트 닫기
+    function closeReportModal() {
+      const modal = document.getElementById('reportModal');
+      modal.classList.add('hidden');
+    }
+
+    // ✅ 리포트 다운로드
+    async function downloadReport() {
+      if (!sessionId) return;
+
+      try {
+        const response = await fetch(`/api/session/${sessionId}/report/summary`);
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error('리포트 다운로드 실패');
+        }
+
+        // 텍스트 파일로 다운로드
+        const blob = new Blob([result.data.summary], { type: 'text/plain;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bemore_report_${sessionId}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast('리포트 다운로드 완료', '✅', 2000);
+
+      } catch (error) {
+        console.error('리포트 다운로드 오류:', error);
+        showToast('리포트 다운로드 실패', '❌', 2000);
+      }
+    }
+
+    // MediaPipe 설정
     const faceMesh = new FaceMesh({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
     });
@@ -244,7 +2063,6 @@
       minTrackingConfidence: 0.5
     });
 
-    let frameCount = 0;
     faceMesh.onResults((results) => {
       canvasElement.width = videoElement.videoWidth;
       canvasElement.height = videoElement.videoHeight;
@@ -252,38 +2070,53 @@
       canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
       if (results.multiFaceLandmarks) {
-        // 전체 랜드마크 시각화
+        // 랜드마크 시각화
         for (const landmarks of results.multiFaceLandmarks) {
           for (const point of landmarks) {
             const x = point.x * canvasElement.width;
             const y = point.y * canvasElement.height;
             canvasCtx.beginPath();
             canvasCtx.arc(x, y, 1.5, 0, 2 * Math.PI);
-            canvasCtx.fillStyle = "red";
+            canvasCtx.fillStyle = "#667eea";
             canvasCtx.fill();
           }
         }
 
-        // 압축된 데이터 전송 (30fps → 10fps로 전송)
+        // 데이터 전송 (30fps → 10fps)
         frameCount++;
-        if (frameCount % 3 === 0 && landmarksWs && landmarksWs.readyState === WebSocket.OPEN) {
+        if (frameCount % 3 === 0 && landmarksWs) {
           const compressed = compressLandmarks(results.multiFaceLandmarks);
-          landmarksWs.send(JSON.stringify({
-            type: 'landmarks',
-            data: compressed
-          }));
+
+          // 압축된 데이터가 유효한 경우에만 전송
+          if (compressed) {
+            landmarksWs.send(JSON.stringify({
+              type: 'landmarks',
+              data: compressed
+            }));
+
+            document.getElementById('landmarkCount').textContent = `68개 랜드마크`;
+          }
+        }
+
+        // FPS 계산
+        fpsCounter++;
+        const now = Date.now();
+        if (now - lastFpsTime >= 1000) {
+          document.getElementById('fpsCounter').textContent = `${fpsCounter} FPS`;
+          fpsCounter = 0;
+          lastFpsTime = now;
         }
       }
     });
 
-    // ====== 카메라 시작 ======
+    // 카메라 시작
     const camera = new Camera(videoElement, {
       onFrame: async () => await faceMesh.send({ image: videoElement }),
       width: 640,
       height: 480
     });
 
-    // ====== 마이크 녹음 및 STT 전송 ======
+    // 마이크 녹음
     let mediaRecorder;
     let audioChunks = [];
     let audioStream;
@@ -295,20 +2128,110 @@
       }
 
       audioChunks = [];
-      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm; codecs=opus" });
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunks.push(e.data);
+      // 브라우저 호환성을 위한 mimeType 선택
+      let mimeType = "audio/webm; codecs=opus";
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "audio/webm";
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = "audio/mp4";
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ""; // 브라우저 기본값 사용
+          }
         }
-      };
+      }
 
-      mediaRecorder.start();
+      try {
+        mediaRecorder = mimeType
+          ? new MediaRecorder(stream, { mimeType })
+          : new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunks.push(e.data);
+          }
+        };
+
+        mediaRecorder.start();
+      } catch (err) {
+        console.error("MediaRecorder 초기화 실패:", err);
+        showErrorModal({
+          icon: '🎤',
+          title: '오디오 녹음 시작 실패',
+          message: '브라우저가 오디오 녹음을 지원하지 않을 수 있습니다.',
+          solutions: [
+            '1. Chrome, Firefox, 또는 Edge 브라우저를 사용해주세요',
+            '2. 브라우저를 최신 버전으로 업데이트하세요',
+            '3. HTTPS 연결을 사용 중인지 확인하세요'
+          ]
+        });
+      }
     };
 
     async function startMicRecording() {
-      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000
+        }
+      });
       initAndStartRecorder(audioStream);
+
+      // ✅ 초기 마이크 상태 설정
+      showMicrophoneIndicator('listening');
+
+      // ✅ 실시간 음량 기반 VAD 구현
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(audioStream);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 1024;
+      microphone.connect(analyser);
+
+      // 100ms마다 음량 측정 및 UI 업데이트
+      setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+
+        // 평균 음량 계산
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+        // 음성 감지 (동적 임계값 사용)
+        const isSpeech = average > voiceThreshold;
+
+        // ✅ 음성 감지 시 마이크 상태 업데이트
+        if (isSpeech && average > voiceThreshold * 1.5) {
+          showMicrophoneIndicator('listening');
+        }
+
+        // VAD 히스토리에 직접 추가
+        const now = Date.now();
+        vadHistory.push({
+          timestamp: now,
+          isSpeech: isSpeech,
+          probability: isSpeech ? 0.8 : 0.2,
+          energy: average
+        });
+
+        // 5초 이상 오래된 데이터 제거
+        vadHistory = vadHistory.filter(v => now - v.timestamp < 5000);
+
+        isSpeechActive = isSpeech;
+
+        // ✅ 실시간 UI 업데이트
+        updateVolumeUI(average, isSpeech);
+
+        // 디버깅 (50개마다)
+        if (vadHistory.length % 50 === 0) {
+          const speechCount = vadHistory.filter(v => v.isSpeech).length;
+          const speechRatio = (speechCount / vadHistory.length * 100).toFixed(1);
+          console.log(`🎤 VAD: 음성 ${speechRatio}% | 현재 음량: ${average.toFixed(0)} | 임계값: ${voiceThreshold}`);
+        }
+      }, 100);
+
 
       recordingInterval = setInterval(async () => {
         if (mediaRecorder.state === 'recording') {
@@ -330,55 +2253,204 @@
           return;
         }
 
+        // ✅ VAD 체크: 음성 활동이 없으면 STT 생략
+        if (!shouldTranscribe()) {
+          console.log('⏭️ STT 생략: 음성 활동 감지되지 않음');
+          showMicrophoneIndicator('idle'); // 대기 상태로 전환
+          initAndStartRecorder(audioStream);
+          return;
+        }
+
         const formData = new FormData();
         formData.append("audio", blob, `speech_${Date.now()}.webm`);
         initAndStartRecorder(audioStream);
 
         try {
+          // ✅ STT 처리 중 표시
+          showMicrophoneIndicator('processing');
+
           const res = await fetch("/api/stt/transcribe", {
             method: "POST",
             body: formData
           });
           const data = await res.json();
-          console.log("🗣️ STT 결과:", data.text);
 
-          // Voice 채널로 STT 텍스트 전송
-          if (voiceWs && voiceWs.readyState === WebSocket.OPEN && data.text) {
-            voiceWs.send(JSON.stringify({
-              type: 'stt_text',
-              data: { text: data.text }
-            }));
+          if (data.text) {
+            console.log("🗣️ STT:", data.text);
+            addTimelineItem('stt', `발화: ${data.text.substring(0, 30)}...`);
+
+            // ✅ 카메라 영역에 자막 표시 (4초 동안)
+            showSubtitle(data.text, 4000);
+
+            // ✅ 텍스트 인식 완료 토스트 알림
+            showToast(`인식됨: "${data.text.length > 30 ? data.text.substring(0, 30) + '...' : data.text}"`, '🗣️', 2000);
+
+            // ✅ 듣는 상태로 전환
+            showMicrophoneIndicator('listening');
+
+            if (voiceWs) {
+              voiceWs.send(JSON.stringify({
+                type: 'stt_text',
+                data: { text: data.text }
+              }));
+            }
+          } else {
+            // 텍스트 없으면 대기 상태로
+            showMicrophoneIndicator('idle');
           }
         } catch (err) {
-          console.error("STT 업로드 실패:", err);
+          console.error("STT 오류:", err);
+          showMicrophoneIndicator('idle'); // 오류 시 대기 상태로
         }
       }, 5000);
-
-      statusDiv.textContent = "🎤 음성 녹음 중 + 얼굴 추적 중";
     }
 
-    // ====== 앱 초기화 ======
+    // 시간 업데이트
+    setInterval(() => {
+      if (sessionStartTime && sessionStatus === 'active') {
+        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        const elapsedEl = document.getElementById('elapsedTime');
+        const durationEl = document.getElementById('sessionDuration');
+        if (elapsedEl) elapsedEl.textContent = timeStr;
+        if (durationEl) durationEl.textContent = timeStr;
+      }
+    }, 1000);
+
+    // ✅ VAD 임계값 슬라이더 초기화
+    function initVolumeThresholdControl() {
+      const slider = document.getElementById('volumeThreshold');
+      const valueDisplay = document.getElementById('thresholdValue');
+
+      if (!slider || !valueDisplay) return;
+
+      // 로컬 스토리지에서 저장된 임계값 불러오기
+      const savedThreshold = localStorage.getItem('vadVolumeThreshold');
+      if (savedThreshold) {
+        voiceThreshold = parseInt(savedThreshold);
+        slider.value = voiceThreshold;
+        valueDisplay.textContent = voiceThreshold;
+      }
+
+      // 슬라이더 변경 이벤트
+      slider.addEventListener('input', (e) => {
+        voiceThreshold = parseInt(e.target.value);
+        valueDisplay.textContent = voiceThreshold;
+        localStorage.setItem('vadVolumeThreshold', voiceThreshold);
+        console.log(`🔊 음량 임계값 변경: ${voiceThreshold}`);
+      });
+
+      console.log(`✅ VAD 임계값 컨트롤 초기화 완료 (임계값: ${voiceThreshold})`);
+    }
+
+    // 앱 초기화
     async function initApp() {
       try {
-        // 1. 세션 시작
+        // 1단계: 초기 설정
+        showLoading('시스템 초기화 중...', '1/4');
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // VAD 임계값 슬라이더 초기화
+        initVolumeThresholdControl();
+
+        // 2단계: 세션 생성
+        showLoading('서버 연결 중...', '2/4');
         await startSession();
 
-        // 2. 카메라 시작
-        camera.start();
+        // 3단계: 카메라/마이크 권한 요청
+        try {
+          showLoading('카메라 권한 확인 중...', '3/4');
+          await camera.start();
 
-        // 3. 마이크 시작
-        await startMicRecording();
+          showLoading('마이크 권한 확인 중...', '4/4');
+          await startMicRecording();
 
-        statusDiv.innerHTML = '<div>✅ 모든 시스템 초기화 완료</div>';
+          // 모든 초기화 완료
+          hideLoading();
+          updateStatus('active', '세션 활성');
+        } catch (permissionError) {
+          hideLoading();
+          console.error('카메라/마이크 권한 오류:', permissionError);
+          showErrorModal({
+            icon: '🎥',
+            title: '카메라/마이크 권한 필요',
+            message: '심리 상담을 위해 카메라와 마이크 접근 권한이 필요합니다.',
+            solutions: [
+              '1. 주소창 왼쪽의 자물쇠 아이콘을 클릭하세요',
+              '2. 카메라와 마이크 권한을 "허용"으로 변경하세요',
+              '3. 페이지를 새로고침하세요'
+            ]
+          });
+          updateStatus('ended', '권한 필요');
+        }
       } catch (error) {
-        statusDiv.innerHTML = `<div>❌ 초기화 실패: ${error.message}</div>`;
+        hideLoading();
+        updateStatus('ended', '초기화 실패');
+        console.error('초기화 오류:', error);
+        showErrorModal({
+          icon: '❌',
+          title: '시스템 초기화 실패',
+          message: `초기화 중 오류가 발생했습니다: ${error.message}`,
+          solutions: [
+            '1. 페이지를 새로고침해주세요',
+            '2. 브라우저를 최신 버전으로 업데이트하세요',
+            '3. Chrome, Firefox, Edge 브라우저를 사용해주세요'
+          ]
+        });
       }
     }
+
+    // ✅ 전역 에러 핸들러 (Error Boundaries)
+    window.onerror = (message, source, lineno, colno, error) => {
+      console.error('🚨 Global Error:', {
+        message,
+        source,
+        line: lineno,
+        column: colno,
+        error
+      });
+
+      showErrorModal({
+        icon: '🚨',
+        title: '예상치 못한 오류 발생',
+        message: error?.message || message || '알 수 없는 오류가 발생했습니다.',
+        solutions: [
+          '1. 페이지를 새로고침해주세요',
+          '2. 브라우저 콘솔(F12)에서 자세한 오류를 확인하세요',
+          '3. 문제가 지속되면 관리자에게 문의하세요'
+        ]
+      });
+
+      // 에러가 발생했지만 앱은 계속 실행
+      return true;
+    };
+
+    // ✅ Unhandled Promise Rejection 핸들러
+    window.onunhandledrejection = (event) => {
+      console.error('🚨 Unhandled Promise Rejection:', event.reason);
+
+      showErrorModal({
+        icon: '⚠️',
+        title: '비동기 작업 오류',
+        message: event.reason?.message || '비동기 작업 중 오류가 발생했습니다.',
+        solutions: [
+          '1. 네트워크 연결을 확인해주세요',
+          '2. 페이지를 새로고침해주세요',
+          '3. 문제가 지속되면 관리자에게 문의하세요'
+        ]
+      });
+
+      // 기본 동작 방지
+      event.preventDefault();
+    };
 
     // 앱 시작
     initApp();
 
-    // 페이지를 떠날 때 정리
+    // 정리
     window.onbeforeunload = () => {
       clearInterval(recordingInterval);
       if (mediaRecorder && mediaRecorder.stream) {

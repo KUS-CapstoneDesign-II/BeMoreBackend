@@ -1,4 +1,5 @@
 const { GoogleGenAI } = require("@google/genai");
+const errorHandler = require("../ErrorHandler");
 require("dotenv").config();
 
 const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
@@ -87,7 +88,16 @@ async function analyzeExpression(accumulatedData, speechText = "") {
     console.log("Gemini 전송 완료", speechText);
     return res.text.trim().split("\n").pop();
   } catch (err) {
-    console.error("Gemini Error:", err);
+    errorHandler.handle(err, {
+      module: 'gemini-analysis',
+      level: errorHandler.levels.ERROR,
+      metadata: {
+        framesCount,
+        speechTextLength: speechText?.length || 0,
+        mouthMove,
+        browMove
+      }
+    });
     return "분석 실패";
   }
 }

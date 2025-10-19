@@ -8,6 +8,7 @@ const OpenAI = require("openai");
 const dotenv = require("dotenv");
 const { toFile } = require("openai/uploads"); // 💡 toFile 함수 임포트
 const { updateSpeechText } = require("../services/memory");
+const errorHandler = require("../services/ErrorHandler");
 
 dotenv.config();
 const router = express.Router();
@@ -33,10 +34,26 @@ const INVALID_PATTERNS = [
   "영상이 도움이 되셨다면",
   "감사합니다",
   "구독해주세요",
-  "고맙습니다.",
+  "고맙습니다",
   "다음 영상에서 만나요",
   "오늘도 시청해 주셔서",
+  "오늘도 영상 봐주셔서",
+  "영상 봐주셔서",
+  "마블 시네마틱",
+  "데드풀",
+  "올버린",
+  "유니버스",
+  "스튜디오",
+  "데이터플레이커",
+  "\\.",  // 점 하나만 있는 경우
+  "\\.\\.+",  // 점이 여러개인 경우
 ];
+
+// 🔢 숫자만 있는지 체크 (1,2,3,4,5 같은 패턴)
+function isOnlyNumbers(text) {
+  const cleaned = text.replace(/[\s,،]+/g, ''); // 공백과 쉼표 제거
+  return /^[\d]+$/.test(cleaned);
+}
 
 // 🎧 무음 감지 (ffmpeg mean_volume 이용)
 function isSilent(audioPath) {
@@ -53,9 +70,12 @@ function isSilent(audioPath) {
 
     const meanVolume = parseFloat(match[1]);
     console.log(`🎚 평균 음량: ${meanVolume} dB`);
-    return meanVolume < -45; // 🔇 -45dB 이하 → 무음 판단
+    return meanVolume < -50; // 🔇 -50dB 이하 → 무음 판단 (더 엄격하게)
   } catch (err) {
-    console.error("무음 감지 실패:", err);
+    errorHandler.handle(err, {
+      module: 'stt-silence-detection',
+      metadata: { audioPath }
+    });
     return false;
   }
 }
@@ -103,6 +123,13 @@ router.post("/transcribe", upload.single("audio"), async (req, res) => {
 
     // ✅ 3. 텍스트 필터링
     let text = cleanTranscript(result.text);
+
+    // 숫자만 있는 텍스트 필터링
+    if (text && isOnlyNumbers(text)) {
+      console.log("🚫 숫자만 있는 텍스트 필터링됨:", text);
+      text = "";
+    }
+
     if (!text) {
       console.log("🚫 오탐 문장 필터링됨:", result.text);
       text = "";
@@ -114,11 +141,21 @@ router.post("/transcribe", upload.single("audio"), async (req, res) => {
     updateSpeechText(text);
     res.json({ text });
   } catch (err) {
-    console.error("❌ STT 변환 실패:", err);
+    errorHandler.handle(err, {
+      module: 'stt-transcribe',
+      level: errorHandler.levels.ERROR,
+      metadata: { filePath, fileSize: stats.size }
+    });
     res.json({ text: "" });
   } finally {
     fs.unlink(filePath, (err) => {
-      if (err) console.error("임시 파일 삭제 실패:", err);
+      if (err) {
+        errorHandler.handle(err, {
+          module: 'stt-cleanup',
+          level: errorHandler.levels.WARN,
+          metadata: { filePath }
+        });
+      }
     });
   }
 });
