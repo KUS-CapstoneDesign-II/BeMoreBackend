@@ -591,6 +591,41 @@
         </div>
       </div>
 
+      <!-- VAD 음량 조정 -->
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">🔊</span>
+          <span>음량 임계값 설정</span>
+        </div>
+        <div style="padding: 15px;">
+          <div style="margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="font-size: 13px; color: #6b7280;">임계값</label>
+              <span id="thresholdValue" style="font-weight: bold; color: #667eea;">25</span>
+            </div>
+            <input type="range" id="volumeThreshold" min="5" max="80" value="25"
+                   style="width: 100%; cursor: pointer;">
+            <div style="font-size: 11px; color: #9ca3af; margin-top: 5px;">
+              낮음 (민감) ←→ 높음 (둔감)
+            </div>
+          </div>
+
+          <div style="background: #f9fafb; border-radius: 6px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; color: #6b7280;">현재 음량</span>
+              <span id="currentVolume" style="font-weight: bold; color: #10b981;">0</span>
+            </div>
+            <div style="height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden;">
+              <div id="volumeBar" style="height: 100%; width: 0%; background: linear-gradient(to right, #10b981, #fbbf24, #ef4444); transition: width 0.15s;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <span style="font-size: 11px; color: #6b7280;">음성 감지</span>
+              <span id="speechStatus" style="font-weight: bold; font-size: 12px;">❌</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- CBT 개입 -->
       <div class="card">
         <div class="card-title">
@@ -640,6 +675,7 @@
     // ✅ VAD 상태 관리 (STT 조건부 실행용)
     let vadHistory = []; // 최근 5초간 VAD 결과 저장
     let isSpeechActive = false; // 현재 음성 활동 여부
+    let voiceThreshold = 25; // 음량 임계값 (동적 조정 가능)
 
     // 주요 랜드마크 인덱스
     const KEY_LANDMARKS = {
@@ -837,6 +873,27 @@
       container.innerHTML = html;
 
       addTimelineItem('cbt', `CBT 개입: ${intervention.distortionName}`);
+    }
+
+    // ✅ 실시간 음량 UI 업데이트
+    function updateVolumeUI(volume, isSpeech) {
+      const volumeBarEl = document.getElementById('volumeBar');
+      const currentVolumeEl = document.getElementById('currentVolume');
+      const speechStatusEl = document.getElementById('speechStatus');
+
+      if (!volumeBarEl || !currentVolumeEl || !speechStatusEl) return;
+
+      // 음량 바 업데이트 (0-255 → 0-100%)
+      const volumePercent = Math.min((volume / 255) * 100, 100);
+      volumeBarEl.style.width = `${volumePercent}%`;
+
+      // 현재 음량 텍스트 업데이트
+      currentVolumeEl.textContent = volume.toFixed(0);
+      currentVolumeEl.style.color = isSpeech ? '#10b981' : '#6b7280';
+
+      // 음성 감지 상태 업데이트
+      speechStatusEl.textContent = isSpeech ? '✅ 감지됨' : '❌';
+      speechStatusEl.style.color = isSpeech ? '#10b981' : '#ef4444';
     }
 
     function addTimelineItem(type, text) {
@@ -1143,16 +1200,15 @@
       analyser.fftSize = 1024;
       microphone.connect(analyser);
 
-      // 100ms마다 음량 측정
+      // 100ms마다 음량 측정 및 UI 업데이트
       setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
 
         // 평균 음량 계산
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
-        // 음성 감지 임계값 (0-255 사이, 25 이상이면 음성으로 판단)
-        const VOICE_THRESHOLD = 25;
-        const isSpeech = average > VOICE_THRESHOLD;
+        // 음성 감지 (동적 임계값 사용)
+        const isSpeech = average > voiceThreshold;
 
         // VAD 히스토리에 직접 추가
         const now = Date.now();
@@ -1168,11 +1224,14 @@
 
         isSpeechActive = isSpeech;
 
+        // ✅ 실시간 UI 업데이트
+        updateVolumeUI(average, isSpeech);
+
         // 디버깅 (50개마다)
         if (vadHistory.length % 50 === 0) {
           const speechCount = vadHistory.filter(v => v.isSpeech).length;
           const speechRatio = (speechCount / vadHistory.length * 100).toFixed(1);
-          console.log(`🎤 VAD 상태: 음성 ${speechRatio}% (평균 음량: ${average.toFixed(0)})`);
+          console.log(`🎤 VAD: 음성 ${speechRatio}% | 현재 음량: ${average.toFixed(0)} | 임계값: ${voiceThreshold}`);
         }
       }, 100);
 
@@ -1247,9 +1306,38 @@
       }
     }, 1000);
 
+    // ✅ VAD 임계값 슬라이더 초기화
+    function initVolumeThresholdControl() {
+      const slider = document.getElementById('volumeThreshold');
+      const valueDisplay = document.getElementById('thresholdValue');
+
+      if (!slider || !valueDisplay) return;
+
+      // 로컬 스토리지에서 저장된 임계값 불러오기
+      const savedThreshold = localStorage.getItem('vadVolumeThreshold');
+      if (savedThreshold) {
+        voiceThreshold = parseInt(savedThreshold);
+        slider.value = voiceThreshold;
+        valueDisplay.textContent = voiceThreshold;
+      }
+
+      // 슬라이더 변경 이벤트
+      slider.addEventListener('input', (e) => {
+        voiceThreshold = parseInt(e.target.value);
+        valueDisplay.textContent = voiceThreshold;
+        localStorage.setItem('vadVolumeThreshold', voiceThreshold);
+        console.log(`🔊 음량 임계값 변경: ${voiceThreshold}`);
+      });
+
+      console.log(`✅ VAD 임계값 컨트롤 초기화 완료 (임계값: ${voiceThreshold})`);
+    }
+
     // 앱 초기화
     async function initApp() {
       try {
+        // VAD 임계값 슬라이더 초기화
+        initVolumeThresholdControl();
+
         await startSession();
 
         // 카메라/마이크 권한 요청
