@@ -648,7 +648,18 @@
 
     // 랜드마크 압축
     function compressLandmarks(landmarks) {
+      // 얼굴이 감지되지 않은 경우 처리
+      if (!landmarks || landmarks.length === 0) {
+        return null;
+      }
+
       const face = landmarks[0];
+
+      // face 배열이 유효하지 않은 경우 처리
+      if (!face || face.length === 0) {
+        return null;
+      }
+
       const compressed = {
         eyes: [],
         eyebrows: [],
@@ -658,11 +669,13 @@
       };
 
       for (const [region, indices] of Object.entries(KEY_LANDMARKS)) {
-        compressed[region] = indices.map(index => ({
-          x: face[index].x,
-          y: face[index].y,
-          z: face[index].z
-        }));
+        compressed[region] = indices
+          .filter(index => face[index]) // undefined 체크
+          .map(index => ({
+            x: face[index].x,
+            y: face[index].y,
+            z: face[index].z
+          }));
       }
 
       return compressed;
@@ -983,12 +996,16 @@
         frameCount++;
         if (frameCount % 3 === 0 && landmarksWs && landmarksWs.readyState === WebSocket.OPEN) {
           const compressed = compressLandmarks(results.multiFaceLandmarks);
-          landmarksWs.send(JSON.stringify({
-            type: 'landmarks',
-            data: compressed
-          }));
 
-          document.getElementById('landmarkCount').textContent = `68개 랜드마크`;
+          // 압축된 데이터가 유효한 경우에만 전송
+          if (compressed) {
+            landmarksWs.send(JSON.stringify({
+              type: 'landmarks',
+              data: compressed
+            }));
+
+            document.getElementById('landmarkCount').textContent = `68개 랜드마크`;
+          }
         }
 
         // FPS 계산
