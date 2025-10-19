@@ -3,41 +3,52 @@ require("dotenv").config();
 
 const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
-// Mediapipe 주요 랜드마크 인덱스
-const KEY_INDICES = {
-  LEFT_EYE_INNER: 33,
-  LEFT_EYE_OUTER: 133,
-  RIGHT_EYE_INNER: 362,
-  RIGHT_EYE_OUTER: 263,
-  NOSE_TIP: 1,
-  MOUTH_LEFT_CORNER: 61,
-  MOUTH_RIGHT_CORNER: 291,
-  CHIN: 152,
-  BROW_CENTER: 168,
+// 각 카테고리에서 사용할 대표 landmark 인덱스
+const LANDMARK_KEY_MAP = {
+  LEFT_EYE: { category: "eyes", idx: 0 },
+  RIGHT_EYE: { category: "eyes", idx: 1 },
+  LEFT_BROW: { category: "eyebrows", idx: 0 },
+  RIGHT_BROW: { category: "eyebrows", idx: 1 },
+  NOSE: { category: "nose", idx: 0 },
+  MOUTH_LEFT_CORNER: { category: "mouth", idx: 0 },
+  MOUTH_RIGHT_CORNER: { category: "mouth", idx: 6 },
+  CHIN: { category: "contour", idx: 8 }
 };
 
+/**
+ * 얼굴 표정과 STT를 기반으로 한 단어 감정 분석
+ * @param {Array} accumulatedData - session.landmarkBuffer
+ * @param {string} speechText - STT 텍스트
+ * @returns {string} 감정 단어
+ */
 async function analyzeExpression(accumulatedData, speechText = "") {
   if (!accumulatedData || accumulatedData.length === 0) return "데이터 없음";
 
-  // 얼굴 데이터가 있는 첫 번째 프레임을 초기값으로 사용
-  const firstValidFrame = accumulatedData.find(f => f.landmarks && f.landmarks[0]);
+  const firstValidFrame = accumulatedData.find(f => f.landmarks && f.landmarks.mouth?.length);
   if (!firstValidFrame) return "데이터 없음";
-  const initialLandmarks = firstValidFrame.landmarks[0];
+  const initialLandmarks = firstValidFrame.landmarks;
 
   const framesCount = accumulatedData.length;
-  const coordinateChanges = {};
 
-  for (const key in KEY_INDICES) {
+  // 좌표 변화 초기화
+  const coordinateChanges = {};
+  for (const key in LANDMARK_KEY_MAP) {
     coordinateChanges[key] = { min_y: Infinity, max_y: -Infinity, avg_y: 0 };
   }
 
-  accumulatedData.forEach((frame) => {
-    const face = frame.landmarks?.[0];
-    if (!face) return; // 얼굴 없으면 건너뜀
-    for (const key in KEY_INDICES) {
-      const idx = KEY_INDICES[key];
-      if (!face[idx] || !initialLandmarks[idx]) continue; // 안전 체크
-      const relY = face[idx].y - initialLandmarks[idx].y;
+  // 모든 프레임 순회
+  accumulatedData.forEach(frame => {
+    const f = frame.landmarks;
+    if (!f) return;
+
+    for (const key in LANDMARK_KEY_MAP) {
+      const { category, idx } = LANDMARK_KEY_MAP[key];
+      const arr = f[category];
+      if (!arr || !arr[idx]) continue;
+
+      const initialY = initialLandmarks[category][idx]?.y ?? arr[idx].y;
+      const relY = arr[idx].y - initialY;
+
       coordinateChanges[key].min_y = Math.min(coordinateChanges[key].min_y, relY);
       coordinateChanges[key].max_y = Math.max(coordinateChanges[key].max_y, relY);
       coordinateChanges[key].avg_y += relY;
@@ -48,17 +59,15 @@ async function analyzeExpression(accumulatedData, speechText = "") {
     coordinateChanges[key].avg_y /= framesCount;
   }
 
+  // summary 텍스트 생성
   let summaryText = `총 ${framesCount}프레임 동안의 얼굴 변화 요약:\n`;
   for (const key in coordinateChanges) {
     const d = coordinateChanges[key];
     summaryText += `- ${key}: min=${d.min_y.toFixed(3)}, max=${d.max_y.toFixed(3)}, avg=${d.avg_y.toFixed(3)}\n`;
   }
 
-  const mouthMove =
-    coordinateChanges.MOUTH_LEFT_CORNER.max_y - coordinateChanges.MOUTH_LEFT_CORNER.min_y;
-  const browMove =
-    coordinateChanges.BROW_CENTER.max_y - coordinateChanges.BROW_CENTER.min_y;
-
+  const mouthMove = coordinateChanges.MOUTH_LEFT_CORNER.max_y - coordinateChanges.MOUTH_LEFT_CORNER.min_y;
+  const browMove = coordinateChanges.LEFT_BROW.max_y - coordinateChanges.LEFT_BROW.min_y;
   summaryText += `입 움직임 폭=${mouthMove.toFixed(3)}, 눈썹 움직임 폭=${browMove.toFixed(3)}\n`;
   console.log("summaryText", summaryText);
 
@@ -83,8 +92,6 @@ async function analyzeExpression(accumulatedData, speechText = "") {
       model: "gemini-2.5-flash",
       contents: prompt,
     });
-
-    console.log("Gemini 전송 완료", speechText);
     return res.text.trim().split("\n").pop();
   } catch (err) {
     console.error("Gemini Error:", err);
@@ -92,34 +99,47 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   }
 }
 
+/**
+ * 얼굴 표정과 STT를 기반으로 구조화된 JSON 리포트 생성
+ * @param {Array} accumulatedData - session.landmarkBuffer
+ * @param {string} speechText - STT 텍스트
+ * @returns {Object} { report, raw } 또는 error
+ */
 async function generateDetailedReport(accumulatedData, speechText = "") {
   if (!accumulatedData || accumulatedData.length === 0) return { error: '데이터 없음' };
 
-  // 재사용: 간단한 요약 텍스트 생성
-  const firstValidFrame = accumulatedData.find(f => f.landmarks && f.landmarks[0]);
-  const initialLandmarks = firstValidFrame ? firstValidFrame.landmarks[0] : null;
+  const firstValidFrame = accumulatedData.find(f => f.landmarks && f.landmarks.mouth?.length);
+  const initialLandmarks = firstValidFrame?.landmarks ?? null;
   const framesCount = accumulatedData.length;
+
   const coordinateChanges = {};
-  for (const key in KEY_INDICES) {
+  for (const key in LANDMARK_KEY_MAP) {
     coordinateChanges[key] = { min_y: Infinity, max_y: -Infinity, avg_y: 0 };
   }
-  accumulatedData.forEach((frame) => {
-    const face = frame.landmarks?.[0];
-    if (!face) return;
-    for (const key in KEY_INDICES) {
-      const idx = KEY_INDICES[key];
-      if (!face[idx] || !initialLandmarks[idx]) continue;
-      const relY = face[idx].y - initialLandmarks[idx].y;
+
+  accumulatedData.forEach(frame => {
+    const f = frame.landmarks;
+    if (!f) return;
+
+    for (const key in LANDMARK_KEY_MAP) {
+      const { category, idx } = LANDMARK_KEY_MAP[key];
+      const arr = f[category];
+      if (!arr || !arr[idx]) continue;
+
+      const initialY = initialLandmarks[category][idx]?.y ?? arr[idx].y;
+      const relY = arr[idx].y - initialY;
+
       coordinateChanges[key].min_y = Math.min(coordinateChanges[key].min_y, relY);
       coordinateChanges[key].max_y = Math.max(coordinateChanges[key].max_y, relY);
       coordinateChanges[key].avg_y += relY;
     }
   });
+
   for (const key in coordinateChanges) {
     coordinateChanges[key].avg_y /= framesCount;
   }
 
-  // 구조화된 프롬프트 생성: 감정 지표, 신뢰도, 권장 행동 등 (마지막 종합 지표 출력 예시)
+  // Gemini 프롬프트 생성
   const prompt = `
     당신은 심리상담 보조를 위한 감정 분석 전문가입니다. 아래 표정 요약과 발화(STT)를 사용해 구조화된 JSON 리포트를 생성하세요.
 
@@ -146,9 +166,7 @@ async function generateDetailedReport(accumulatedData, speechText = "") {
       contents: prompt,
     });
 
-    // Gemini 응답 파싱 시도: 텍스트에서 JSON 추출
     const text = res.text.trim();
-    // 빠른 파싱: 텍스트에서 첫 번째 '{'부터 '}' 쌍을 찾아 JSON 파싱
     const jsonStart = text.indexOf('{');
     const jsonEnd = text.lastIndexOf('}');
     if (jsonStart >= 0 && jsonEnd > jsonStart) {
@@ -161,7 +179,6 @@ async function generateDetailedReport(accumulatedData, speechText = "") {
         return { raw: text, error: '파싱 실패' };
       }
     }
-
     return { raw: text, error: 'JSON 미포함 응답' };
   } catch (err) {
     console.error('Gemini Error:', err);
