@@ -335,7 +335,7 @@
         initAndStartRecorder(audioStream);
 
         try {
-          const res = await fetch("/api/transcribe", {
+          const res = await fetch("/api/stt/transcribe", {
             method: "POST",
             body: formData
           });
