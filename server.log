@@ -1,9 +1,454 @@
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+
+> beforeme-backend@1.0.0 start
+> node app.js
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
 ✅ SessionManager 초기화 완료
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+🔬 MultimodalAnalyzer 초기화 완료
+📄 SessionReportGenerator 초기화 완료
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
 ✅ WebSocket 3채널 라우터 설정 완료
 🚀 서버 실행 중: http://localhost:8000
-✅ 세션 생성: sess_1760779751664_266db1ca (사용자: vad_test_user, 상담사: vad_test_counselor)
-📡 세션 시작 API 호출 성공: sess_1760779751664_266db1ca
-📊 VAD 분석 결과 조회: sess_1760779751664_266db1ca
+(node:79202) ExperimentalWarning: buffer.File is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+🗣️ STT 결과: 다음 영상에서 뵙겠습니다 안녕
+🚫 오탐 문장 필터링됨: 오늘도 영상 봐주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🗣️ STT 결과: 슈우우우우웅
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🗣️ STT 결과: 오늘도
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+⚠️ 세션 없음: sess_1760857690840_5bc9850e
+❌ 세션 종료 오류: Error: 세션을 찾을 수 없습니다: sess_1760857690840_5bc9850e
+    at SessionManager.endSession (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/services/session/SessionManager.js:154:13)
+    at /Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/routes/session.js:257:36
+    at Layer.handleRequest (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/lib/layer.js:152:17)
+    at next (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/lib/route.js:157:13)
+    at Route.dispatch (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/lib/route.js:117:3)
+    at handle (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/index.js:435:11)
+    at Layer.handleRequest (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/lib/layer.js:152:17)
+    at /Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/index.js:295:15
+    at param (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/index.js:600:14)
+    at param (/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/node_modules/router/index.js:610:14)
+✅ 세션 생성: sess_1760858607484_f180322d (사용자: demo_user_001, 상담사: demo_counselor_001)
+📡 세션 시작 API 호출 성공: sess_1760858607484_f180322d
+🔌 WebSocket 연결 시도: /ws/landmarks, sessionId: sess_1760858607484_f180322d
+✅ Landmarks 채널 연결: sess_1760858607484_f180322d
+🧠 CognitiveDistortionDetector 초기화 완료
+   - 패턴 수: 10개
+   - 탐지 임계값: 0.6
+🤔 SocraticQuestioner 초기화 완료
+📋 BehavioralTaskRecommender 초기화 완료
+   - 과제 카테고리: 10개
+🎯 InterventionGenerator 초기화 완료
+   - 개입 빈도 제한: 3회/세션
+🎭 Landmarks 핸들러 시작: sess_1760858607484_f180322d
+🔌 WebSocket 연결 시도: /ws/voice, sessionId: sess_1760858607484_f180322d
+✅ Voice 채널 연결: sess_1760858607484_f180322d
+🧠 PsychologicalIndicators 초기화 완료
+   임계값: {
+  prolongedSilenceThreshold: 5000,
+  highSilenceRateThreshold: 60,
+  rapidSpeechThreshold: 70,
+  interruptionRateThreshold: 40,
+  lowEnergyThreshold: 0.05
+}
+🎤 Voice 핸들러 시작: sess_1760858607484_f180322d
+🔌 WebSocket 연결 시도: /ws/session, sessionId: sess_1760858607484_f180322d
+✅ Session 채널 연결: sess_1760858607484_f180322d
+⚙️ Session 핸들러 시작: sess_1760858607484_f180322d
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 66, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🗣️ STT 결과: 아 아 아 아 하나 둘 셋 하나 둘 셋
+💬 STT 텍스트 수신: "아 아 아 아 하나 둘 셋 하나 둘 셋..."
+📦 Landmarks 프레임 수신: 100개 (버퍼: 34)
+🗣️ STT 결과: 하나둘셋 하나둘셋 하나둘셋 하나둘셋
+💬 STT 텍스트 수신: "하나둘셋 하나둘셋 하나둘셋 하나둘셋..."
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 41)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🗣️ STT 결과: 1 2 3 마이크 테스트 마이크 테스트 마이크 테스트 마이크 테스트 테스트
+💬 STT 텍스트 수신: "1 2 3 마이크 테스트 마이크 테스트 마이크 테스트 마이크 테스트 테스트..."
+📦 Landmarks 프레임 수신: 200개 (버퍼: 57)
+🚫 숫자만 있는 텍스트 필터링됨: 1 2 3 1 2 3 2 2 2 2 2 2 1 2 3
+🚫 오탐 문장 필터링됨: 1 2 3 1 2 3 2 2 2 2 2 2 1 2 3
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 41)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 숫자만 있는 텍스트 필터링됨: 1 2 3 4 5 6 7 8
+🚫 오탐 문장 필터링됨: 1 2 3 4 5 6 7 8
+🗣️ STT 결과: (빈 텍스트)
+🚫 숫자만 있는 텍스트 필터링됨: 1, 2, 3, 4, 5, 6, 7, 8
+🚫 오탐 문장 필터링됨: 1, 2, 3, 4, 5, 6, 7, 8
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 78, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📦 Landmarks 프레임 수신: 300개 (버퍼: 2)
+🚫 오탐 문장 필터링됨: 오늘도 영상 봐주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 숫자만 있는 텍스트 필터링됨: 1 2 3 4 5 6 7 8
+🚫 오탐 문장 필터링됨: 1 2 3 4 5 6 7 8
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🗣️ STT 결과: 수고하셨습니다
+💬 STT 텍스트 수신: "수고하셨습니다..."
+📦 Landmarks 프레임 수신: 400개 (버퍼: 25)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 7)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📦 Landmarks 프레임 수신: 500개 (버퍼: 48)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📦 Landmarks 프레임 수신: 600개 (버퍼: 71)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 숫자만 있는 텍스트 필터링됨: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 30 31 32 32 33 33 34 34 35 36 37 37 38 39 40 40 41 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42
+🚫 오탐 문장 필터링됨: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 30 31 32 32 33 33 34 34 35 36 37 37 38 39 40 40 41 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42
+🗣️ STT 결과: (빈 텍스트)
+🚫 숫자만 있는 텍스트 필터링됨: 8, 9, 10, 2, 3, 4, 5, 6, 7, 8, 9, 10
+🚫 오탐 문장 필터링됨: 8, 9, 10, 2, 3, 4, 5, 6, 7, 8, 9, 10
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📦 Landmarks 프레임 수신: 700개 (버퍼: 17)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📦 Landmarks 프레임 수신: 800개 (버퍼: 40)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 75, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 오늘도 영상 봐주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 39, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 오늘도 영상 봐주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 오늘도 시청해 주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+🗣️ STT 결과: ! 구독 좋아요 댓글 부탁드려요!
+💬 STT 텍스트 수신: "! 구독 좋아요 댓글 부탁드려요!..."
+🔌 WebSocket 종료: landmarks
+🔌 WebSocket 종료: voice
+🔌 WebSocket 종료: session
+✅ 세션 종료: sess_1760858607484_f180322d (지속 시간: 179초)
+✅ 세션 종료 API 호출: sess_1760858607484_f180322d
+🔌 Session 채널 종료: sess_1760858607484_f180322d
+🔌 Voice 채널 종료: sess_1760858607484_f180322d
+🔌 Landmarks 채널 종료: sess_1760858607484_f180322d
+✅ 세션 생성: sess_1760858787449_302609cd (사용자: demo_user_001, 상담사: demo_counselor_001)
+📡 세션 시작 API 호출 성공: sess_1760858787449_302609cd
+🔌 WebSocket 연결 시도: /ws/landmarks, sessionId: sess_1760858787449_302609cd
+✅ Landmarks 채널 연결: sess_1760858787449_302609cd
+🧠 CognitiveDistortionDetector 초기화 완료
+   - 패턴 수: 10개
+   - 탐지 임계값: 0.6
+🤔 SocraticQuestioner 초기화 완료
+📋 BehavioralTaskRecommender 초기화 완료
+   - 과제 카테고리: 10개
+🎯 InterventionGenerator 초기화 완료
+   - 개입 빈도 제한: 3회/세션
+🎭 Landmarks 핸들러 시작: sess_1760858787449_302609cd
+🔌 WebSocket 연결 시도: /ws/voice, sessionId: sess_1760858787449_302609cd
+✅ Voice 채널 연결: sess_1760858787449_302609cd
+🧠 PsychologicalIndicators 초기화 완료
+   임계값: {
+  prolongedSilenceThreshold: 5000,
+  highSilenceRateThreshold: 60,
+  rapidSpeechThreshold: 70,
+  interruptionRateThreshold: 40,
+  lowEnergyThreshold: 0.05
+}
+🎤 Voice 핸들러 시작: sess_1760858787449_302609cd
+🔌 WebSocket 연결 시도: /ws/session, sessionId: sess_1760858787449_302609cd
+✅ Session 채널 연결: sess_1760858787449_302609cd
+⚙️ Session 핸들러 시작: sess_1760858787449_302609cd
+📊 10초 주기 분석 시작 (frames: 72, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📦 Landmarks 프레임 수신: 100개 (버퍼: 28)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📊 10초 주기 분석 시작 (frames: 15, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📊 10초 주기 분석 시작 (frames: 18, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 시청해주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📦 Landmarks 프레임 수신: 200개 (버퍼: 18)
+🚫 오탐 문장 필터링됨: 오늘도 영상 봐주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📊 10초 주기 분석 시작 (frames: 31, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📦 Landmarks 프레임 수신: 300개 (버퍼: 10)
+🚫 오탐 문장 필터링됨: 오늘도 영상 봐주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 59, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📦 Landmarks 프레임 수신: 400개 (버퍼: 51)
+📊 10초 주기 분석 시작 (frames: 72, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 숫자만 있는 텍스트 필터링됨: 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 2, 2, 3, 3, 2, 3
+🚫 오탐 문장 필터링됨: 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 2, 2, 3, 3, 2, 3
+🗣️ STT 결과: (빈 텍스트)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📦 Landmarks 프레임 수신: 500개 (버퍼: 2)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📊 10초 주기 분석 시작 (frames: 7, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🔌 WebSocket 종료: landmarks
+🔌 WebSocket 종료: voice
+🔌 WebSocket 종료: session
+✅ 세션 종료: sess_1760858787449_302609cd (지속 시간: 202초)
+✅ 세션 종료 API 호출: sess_1760858787449_302609cd
+🔌 Voice 채널 종료: sess_1760858787449_302609cd
+🔌 Landmarks 채널 종료: sess_1760858787449_302609cd
+🔌 Session 채널 종료: sess_1760858787449_302609cd
+✅ 세션 생성: sess_1760858990419_1bc4240b (사용자: demo_user_001, 상담사: demo_counselor_001)
+📡 세션 시작 API 호출 성공: sess_1760858990419_1bc4240b
+🔌 WebSocket 연결 시도: /ws/landmarks, sessionId: sess_1760858990419_1bc4240b
+✅ Landmarks 채널 연결: sess_1760858990419_1bc4240b
+🧠 CognitiveDistortionDetector 초기화 완료
+   - 패턴 수: 10개
+   - 탐지 임계값: 0.6
+🤔 SocraticQuestioner 초기화 완료
+📋 BehavioralTaskRecommender 초기화 완료
+   - 과제 카테고리: 10개
+🎯 InterventionGenerator 초기화 완료
+   - 개입 빈도 제한: 3회/세션
+🎭 Landmarks 핸들러 시작: sess_1760858990419_1bc4240b
+🔌 WebSocket 연결 시도: /ws/voice, sessionId: sess_1760858990419_1bc4240b
+✅ Voice 채널 연결: sess_1760858990419_1bc4240b
+🧠 PsychologicalIndicators 초기화 완료
+   임계값: {
+  prolongedSilenceThreshold: 5000,
+  highSilenceRateThreshold: 60,
+  rapidSpeechThreshold: 70,
+  interruptionRateThreshold: 40,
+  lowEnergyThreshold: 0.05
+}
+🎤 Voice 핸들러 시작: sess_1760858990419_1bc4240b
+🔌 WebSocket 연결 시도: /ws/session, sessionId: sess_1760858990419_1bc4240b
+✅ Session 채널 연결: sess_1760858990419_1bc4240b
+⚙️ Session 핸들러 시작: sess_1760858990419_1bc4240b
+📊 10초 주기 분석 시작 (frames: 72, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🗣️ STT 결과: 안녕하십니까 테스트입니다 하나 둘 셋 마이크 테스트 마이크
+💬 STT 텍스트 수신: "안녕하십니까 테스트입니다 하나 둘 셋 마이크 테스트 마이크..."
+📦 Landmarks 프레임 수신: 100개 (버퍼: 28)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 32)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📊 10초 주기 분석 시작 (frames: 11, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🚫 오탐 문장 필터링됨: 오늘도 영상 봐주셔서 감사합니다.
+🗣️ STT 결과: (빈 텍스트)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+🗣️ STT 결과: !
+💬 STT 텍스트 수신: "!..."
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📦 Landmarks 프레임 수신: 200개 (버퍼: 40)
+📊 10초 주기 분석 시작 (frames: 49, stt_len: 1)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📊 10초 주기 분석 시작 (frames: 77, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📦 Landmarks 프레임 수신: 300개 (버퍼: 14)
+📊 10초 주기 분석 시작 (frames: 78, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📦 Landmarks 프레임 수신: 400개 (버퍼: 36)
+📊 10초 주기 분석 시작 (frames: 59, stt_len: 0)
+🎯 Gemini 분석 결과: 데이터 없음
+📤 감정 업데이트 전송: 데이터 없음
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)
+📭 Landmarks 버퍼 비어있음, 분석 건너뛰기
+🧠 VAD 분석 완료: 위험도 0/100 (low)

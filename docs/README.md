@@ -40,39 +40,7 @@ graph TB
 
 ---
 
-### **2. [개발 로드맵](./ROADMAP.md)** 🗺️
-
-**내용:**
-- 프로젝트 개요 및 핵심 가치
-- 현재 구현 상태 (v0.1.0 MVP)
-- 5단계 개발 계획 (12주)
-  - Phase 1: 기반 구축 (세션 관리 + WebSocket)
-  - Phase 2: VAD 통합 (음성 활동 감지)
-  - Phase 3: CBT 분석 (인지 왜곡 탐지)
-  - Phase 4: 통합 분석 & 리포트
-  - Phase 5: 최적화 & 고도화
-- 마일스톤 및 완료 조건
-- 기술 부채 및 리스크 관리
-- 성공 지표 (KPI)
-- 스프린트 계획 (Gantt 차트)
-
-**대상:**
-- 프로젝트 일정을 계획하는 PM
-- 구현 우선순위를 파악하고 싶은 개발자
-- 프로젝트 진행 상황을 추적하는 이해관계자
-
-**주요 타임라인:**
-```
-Week 1-2:  기반 구축 (세션 관리)
-Week 3-4:  VAD 통합
-Week 5-7:  CBT 분석
-Week 8-9:  통합 분석 & 리포트
-Week 10-12: 최적화 & DB 통합
-```
-
----
-
-### **3. [API 명세서](./API.md)** 📡
+### **2. [API 명세서](./API.md)** 📡
 
 **내용:**
 - REST API 엔드포인트 (12개)
@@ -108,6 +76,77 @@ ws://localhost:8000/ws/session?sessionId=xxx
 
 ---
 
+### **3. [개발 진행 상황 - 2025.10.18](./251018.md)** 📅
+
+**내용:**
+- Phase 1-4 핵심 기능 구현 완료 기록
+- Phase 1: 기본 세션 관리 & WebSocket 3채널 시스템
+- Phase 2: VAD (Voice Activity Detection) 시스템
+- Phase 3: CBT (인지행동치료) 시스템
+- Phase 4: 통합 분석 & 세션 리포트
+- 각 Phase별 구현 내용, 테스트 결과, 커밋 히스토리
+- 전체 시스템 아키텍처 및 데이터 흐름
+- 성능 지표 및 기술 스택
+
+**대상:**
+- 초기 개발 과정을 이해하고 싶은 팀원
+- Phase 1-4 구현 세부 사항이 필요한 개발자
+
+---
+
+### **4. [개발 진행 상황 - 2025.10.19](./251019.md)** 📅
+
+**내용:**
+- Phase 5: 안정성 및 사용성 개선 작업 기록
+- **A. 프론트엔드 UX 개선 (7개)**
+  - WebSocket 자동 재연결 시스템
+  - 로딩 상태 및 프로그레스 바
+  - 실시간 STT 자막 표시
+  - 에러 모달 및 피드백
+  - 세션 리포트 자동 표시
+  - WebSocket 연결 상태 표시
+  - VAD 임계값 동적 조정 UI
+- **B. 백엔드 안정성 개선 (5개)**
+  - 브라우저 호환성 체크
+  - 얼굴 감지 실패 처리
+  - STT 노이즈 필터링
+  - 글로벌 에러 핸들러
+  - 에러 로깅 표준화
+- **C. 성능 최적화 (3개)**
+  - VAD + STT 통합 (비용 50% 절감)
+  - VAD 임계값 최적화
+  - tmp 디렉토리 자동 생성
+- 총 17개 개선 사항 및 테스트 결과
+
+**대상:**
+- 최신 개선 사항을 파악하고 싶은 팀원
+- Phase 5 UX/안정성 개선 세부 사항이 필요한 개발자
+
+---
+
+### **5. [다음 단계 가이드](./NEXT_STEPS.md)** 🎯
+
+**내용:**
+- ✅ 완료된 기능 체크리스트
+- 📋 다음 단계 작업 목록
+- 🎯 우선순위별 분류 (High/Medium/Low)
+- 📅 예상 일정 및 작업 범위
+- Phase 6 계획 (MongoDB, 보안, 성능, 배포)
+
+**대상:**
+- 다음 작업을 계획하는 PM 및 개발자
+- 우선순위를 파악하고 싶은 팀원
+
+---
+
+### **6. 기타 기술 문서**
+
+- **[IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)**: 구현 가이드
+- **[LANDMARK_COMPARISON.md](./LANDMARK_COMPARISON.md)**: 랜드마크 압축 비교
+- **[IMPROVEMENT_PLAN.md](./IMPROVEMENT_PLAN.md)**: 개선 계획
+
+---
+
 ## 🚀 빠른 시작 가이드
 
 ### **프로젝트 이해하기**
@@ -117,15 +156,20 @@ ws://localhost:8000/ws/session?sessionId=xxx
    - 주요 컴포넌트 이해
    - 데이터 흐름 확인
 
-2. **[ROADMAP.md](./ROADMAP.md)** 개발 계획 확인
-   - 현재 구현 상태 파악
-   - 다음 단계 작업 확인
-   - 우선순위 이해
+2. **[251019.md](./251019.md)** 최신 개발 상황 확인
+   - Phase 5 안정성/UX 개선 사항
+   - 최신 기능 및 버그 수정
+   - 성능 최적화 내용
 
 3. **[API.md](./API.md)** API 명세 숙지
    - 엔드포인트 확인
    - 데이터 모델 이해
    - 통신 프로토콜 학습
+
+4. **[NEXT_STEPS.md](./NEXT_STEPS.md)** 다음 단계 확인
+   - 완료된 작업 체크리스트
+   - 우선순위별 작업 목록
+   - Phase 6 계획
 
 ---
 
@@ -133,10 +177,15 @@ ws://localhost:8000/ws/session?sessionId=xxx
 
 ```
 docs/
-├── README.md           # 📚 이 파일 (문서 인덱스)
-├── ARCHITECTURE.md     # 🏗️ 시스템 아키텍처
-├── ROADMAP.md          # 🗺️ 개발 로드맵
-└── API.md              # 📡 API 명세서
+├── README.md                   # 📚 이 파일 (문서 인덱스)
+├── ARCHITECTURE.md             # 🏗️ 시스템 아키텍처
+├── API.md                      # 📡 API 명세서
+├── 251018.md                   # 📅 Phase 1-4 구현 기록 (2025.10.18)
+├── 251019.md                   # 📅 Phase 5 안정성/UX 개선 (2025.10.19)
+├── NEXT_STEPS.md               # 🎯 다음 단계 가이드
+├── IMPLEMENTATION_GUIDE.md     # 📖 구현 가이드
+├── LANDMARK_COMPARISON.md      # 📊 랜드마크 압축 비교
+└── IMPROVEMENT_PLAN.md         # 📋 개선 계획
 ```
 
 ---
@@ -145,23 +194,30 @@ docs/
 
 ### **프론트엔드 개발자**
 1. ✅ [API.md](./API.md) - WebSocket 통신 방법
-2. ✅ [ARCHITECTURE.md](./ARCHITECTURE.md) - 클라이언트 계층 구조
-3. ✅ [ROADMAP.md](./ROADMAP.md) - Phase 1 프론트엔드 작업
+2. ✅ [251019.md](./251019.md) - UX 개선 사항 (Phase 5)
+3. ✅ [ARCHITECTURE.md](./ARCHITECTURE.md) - 클라이언트 계층 구조
 
 ### **백엔드 개발자**
 1. ✅ [ARCHITECTURE.md](./ARCHITECTURE.md) - 백엔드 계층 구조
 2. ✅ [API.md](./API.md) - REST/WebSocket 구현 명세
-3. ✅ [ROADMAP.md](./ROADMAP.md) - Phase 1-5 백엔드 작업
+3. ✅ [251019.md](./251019.md) - 안정성 개선 사항 (Phase 5)
+4. ✅ [NEXT_STEPS.md](./NEXT_STEPS.md) - 다음 작업 계획
 
 ### **데이터 사이언티스트**
 1. ✅ [ARCHITECTURE.md](./ARCHITECTURE.md) - AI 엔진 구조 (VAD, CBT)
-2. ✅ [ROADMAP.md](./ROADMAP.md) - Phase 2-3 AI 통합 계획
+2. ✅ [251018.md](./251018.md) - Phase 2-3 AI 통합 완료 내역
 3. ✅ [API.md](./API.md) - 데이터 모델 및 입출력 포맷
 
 ### **프로젝트 매니저**
-1. ✅ [ROADMAP.md](./ROADMAP.md) - 전체 일정 및 마일스톤
-2. ✅ [ARCHITECTURE.md](./ARCHITECTURE.md) - 기술 스택 및 리스크
-3. ✅ [API.md](./API.md) - 기능 명세
+1. ✅ [NEXT_STEPS.md](./NEXT_STEPS.md) - 완료 현황 및 다음 단계
+2. ✅ [251019.md](./251019.md) - 최신 개발 진행 상황
+3. ✅ [ARCHITECTURE.md](./ARCHITECTURE.md) - 기술 스택 및 리스크
+
+### **신규 팀원**
+1. ✅ [ARCHITECTURE.md](./ARCHITECTURE.md) - 시스템 전체 이해
+2. ✅ [251018.md](./251018.md) - Phase 1-4 개발 과정
+3. ✅ [251019.md](./251019.md) - Phase 5 개선 사항
+4. ✅ [API.md](./API.md) - API 사용법
 
 ---
 
@@ -182,8 +238,9 @@ docs/
 | 문서 | 업데이트 주기 | 담당자 |
 |------|--------------|--------|
 | ARCHITECTURE.md | 아키텍처 변경 시 | 백엔드 리드 |
-| ROADMAP.md | 매 스프린트 종료 시 | PM |
 | API.md | API 변경 시 | 백엔드 개발자 |
+| 251xxx.md | 매 Phase 완료 시 | 백엔드 개발자 |
+| NEXT_STEPS.md | Phase 종료 시 | PM |
 | README.md | 필요 시 | 전체 팀 |
 
 ### **변경 이력**
@@ -228,12 +285,17 @@ docs/
 
 ## 📊 문서 통계
 
-| 문서 | 줄 수 | 단어 수 | 다이어그램 수 |
-|------|-------|---------|--------------|
-| ARCHITECTURE.md | ~800 | ~3,500 | 8개 |
-| ROADMAP.md | ~900 | ~4,000 | 6개 |
-| API.md | ~1,200 | ~5,000 | 0개 |
-| **합계** | **~2,900** | **~12,500** | **14개** |
+| 문서 | 줄 수 | 다이어그램 수 | 상태 |
+|------|-------|--------------|------|
+| ARCHITECTURE.md | ~800 | 8개 | ✅ 최신 |
+| API.md | ~1,200 | 0개 | ✅ 최신 |
+| 251018.md | ~950 | 1개 | ✅ Phase 1-4 |
+| 251019.md | ~700 | 1개 | ✅ Phase 5 |
+| NEXT_STEPS.md | ~110 | 0개 | ✅ 최신 |
+| IMPLEMENTATION_GUIDE.md | ~600 | 2개 | ✅ 최신 |
+| LANDMARK_COMPARISON.md | ~200 | 1개 | ✅ 최신 |
+| IMPROVEMENT_PLAN.md | ~100 | 0개 | ✅ 최신 |
+| **합계** | **~4,660** | **13개** | - |
 
 ---
 
@@ -279,6 +341,7 @@ docs/
 
 ---
 
-**마지막 업데이트:** 2025-01-17
-**문서 버전:** 1.0.0
+**마지막 업데이트:** 2025-10-19
+**문서 버전:** 1.1.0
+**프로젝트 상태:** Phase 5 완료 (안정성/UX 개선)
 **관리자:** BeMore 개발팀

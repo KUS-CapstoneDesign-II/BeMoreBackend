@@ -166,6 +166,82 @@
       font-weight: 400;
     }
 
+    /* 로딩 오버레이 */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10002;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    .loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .loading-spinner {
+      width: 80px;
+      height: 80px;
+      border: 8px solid rgba(255, 255, 255, 0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 30px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-content {
+      text-align: center;
+      color: white;
+    }
+
+    .loading-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      letter-spacing: -0.5px;
+    }
+
+    .loading-message {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      min-height: 27px;
+    }
+
+    .loading-step {
+      font-size: 14px;
+      opacity: 0.8;
+      min-height: 21px;
+    }
+
+    .loading-progress {
+      width: 300px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      margin: 20px 0 10px 0;
+      overflow: hidden;
+    }
+
+    .loading-progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
     .video-stats {
       display: flex;
       gap: 20px;
@@ -983,8 +1059,14 @@
   <!-- 로딩 오버레이 -->
   <div id="loadingOverlay" class="loading-overlay">
     <div class="loading-spinner"></div>
-    <div class="loading-message" id="loadingMessage">시스템 초기화 중...</div>
-    <div class="loading-progress" id="loadingProgress"></div>
+    <div class="loading-content">
+      <div class="loading-title">🧠 BeMore</div>
+      <div class="loading-message" id="loadingMessage">시스템 초기화 중...</div>
+      <div class="loading-step" id="loadingStep"></div>
+      <div class="loading-progress">
+        <div class="loading-progress-bar" id="loadingProgressBar" style="width: 0%"></div>
+      </div>
+    </div>
   </div>
 
   <!-- 에러 모달 -->
@@ -1427,22 +1509,37 @@
     }
 
     // ✅ 로딩 상태 관리
-    function showLoading(message, progress = '') {
+    function showLoading(message, step = '', stepDetail = '') {
       const overlay = document.getElementById('loadingOverlay');
       const messageEl = document.getElementById('loadingMessage');
-      const progressEl = document.getElementById('loadingProgress');
+      const stepEl = document.getElementById('loadingStep');
+      const progressBar = document.getElementById('loadingProgressBar');
 
       if (overlay) overlay.classList.remove('hidden');
       if (messageEl) messageEl.textContent = message;
-      if (progressEl) progressEl.textContent = progress;
+      if (stepEl) stepEl.textContent = stepDetail;
 
-      console.log(`🔄 로딩: ${message}${progress ? ` (${progress})` : ''}`);
+      // 진행률 계산 (1/4, 2/4, 3/4, 4/4 → 25%, 50%, 75%, 100%)
+      if (step && progressBar) {
+        const match = step.match(/(\d+)\/(\d+)/);
+        if (match) {
+          const current = parseInt(match[1]);
+          const total = parseInt(match[2]);
+          const percent = (current / total) * 100;
+          progressBar.style.width = `${percent}%`;
+        }
+      }
+
+      console.log(`🔄 로딩: ${message}${step ? ` (${step})` : ''}${stepDetail ? ` - ${stepDetail}` : ''}`);
     }
 
     function hideLoading() {
       const overlay = document.getElementById('loadingOverlay');
       if (overlay) {
-        overlay.classList.add('hidden');
+        // 부드럽게 페이드아웃
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+        }, 300);
         console.log('✅ 로딩 완료');
       }
     }
@@ -2350,25 +2447,27 @@
     async function initApp() {
       try {
         // 1단계: 초기 설정
-        showLoading('시스템 초기화 중...', '1/4');
+        showLoading('시스템 초기화 중...', '1/4', 'VAD 설정 로드 중...');
         await new Promise(resolve => setTimeout(resolve, 300));
 
         // VAD 임계값 슬라이더 초기화
         initVolumeThresholdControl();
 
         // 2단계: 세션 생성
-        showLoading('서버 연결 중...', '2/4');
+        showLoading('서버 연결 중...', '2/4', 'WebSocket 연결 설정 중...');
         await startSession();
 
         // 3단계: 카메라/마이크 권한 요청
         try {
-          showLoading('카메라 권한 확인 중...', '3/4');
+          showLoading('카메라 권한 확인 중...', '3/4', '얼굴 인식 모델 준비 중...');
           await camera.start();
 
-          showLoading('마이크 권한 확인 중...', '4/4');
+          showLoading('마이크 권한 확인 중...', '4/4', '음성 분석 시스템 활성화 중...');
           await startMicRecording();
 
           // 모든 초기화 완료
+          showLoading('초기화 완료!', '4/4', '시스템이 준비되었습니다');
+          await new Promise(resolve => setTimeout(resolve, 500));
           hideLoading();
           updateStatus('active', '세션 활성');
         } catch (permissionError) {
@@ -2446,6 +2545,68 @@
       // 기본 동작 방지
       event.preventDefault();
     };
+
+    // ✅ 전역 에러 핸들러 (B.3)
+    window.addEventListener('error', (event) => {
+      console.error('🚨 전역 에러:', event.error);
+
+      const errorInfo = {
+        message: event.error?.message || event.message || '알 수 없는 오류',
+        stack: event.error?.stack || '',
+        filename: event.filename || '',
+        lineno: event.lineno || 0,
+        colno: event.colno || 0,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        sessionId: sessionId || 'no-session'
+      };
+
+      // 콘솔 로그
+      console.error('📋 에러 상세:', errorInfo);
+
+      // 사용자에게 토스트 표시
+      showToast('시스템 오류가 발생했습니다', '🚨', 3000);
+
+      // 서버로 에러 로그 전송 (optional)
+      if (sessionId) {
+        fetch('/api/error/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(errorInfo)
+        }).catch(err => console.error('에러 로그 전송 실패:', err));
+      }
+
+      // 에러 전파 방지 (선택적)
+      // event.preventDefault();
+    });
+
+    // ✅ Promise rejection 핸들러
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('🚨 Unhandled Promise Rejection:', event.reason);
+
+      const errorInfo = {
+        type: 'unhandledrejection',
+        reason: event.reason?.message || event.reason?.toString() || '알 수 없는 Promise 오류',
+        stack: event.reason?.stack || '',
+        timestamp: new Date().toISOString(),
+        url: window.location.href,
+        sessionId: sessionId || 'no-session'
+      };
+
+      console.error('📋 Promise 에러 상세:', errorInfo);
+
+      showToast('비동기 작업 중 오류가 발생했습니다', '⚠️', 3000);
+
+      // 서버로 에러 로그 전송
+      if (sessionId) {
+        fetch('/api/error/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(errorInfo)
+        }).catch(err => console.error('에러 로그 전송 실패:', err));
+      }
+    });
 
     // 앱 시작
     initApp();
