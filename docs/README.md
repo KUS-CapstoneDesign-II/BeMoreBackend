@@ -141,9 +141,8 @@ ws://localhost:8000/ws/session?sessionId=xxx
 
 ### **6. 기타 기술 문서**
 
-- **[IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)**: 구현 가이드
-- **[LANDMARK_COMPARISON.md](./LANDMARK_COMPARISON.md)**: 랜드마크 압축 비교
-- **[IMPROVEMENT_PLAN.md](./IMPROVEMENT_PLAN.md)**: 개선 계획
+- **[IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)**: 구현 가이드 - Phase 0~5 전체 구현 계획 및 가이드
+- **[LANDMARK_COMPARISON.md](./LANDMARK_COMPARISON.md)**: 랜드마크 압축 비교 - 9개/68개/468개 랜드마크 기술 분석
 
 ---
 
@@ -183,9 +182,8 @@ docs/
 ├── 251018.md                   # 📅 Phase 1-4 구현 기록 (2025.10.18)
 ├── 251019.md                   # 📅 Phase 5 안정성/UX 개선 (2025.10.19)
 ├── NEXT_STEPS.md               # 🎯 다음 단계 가이드
-├── IMPLEMENTATION_GUIDE.md     # 📖 구현 가이드
-├── LANDMARK_COMPARISON.md      # 📊 랜드마크 압축 비교
-└── IMPROVEMENT_PLAN.md         # 📋 개선 계획
+├── IMPLEMENTATION_GUIDE.md     # 📖 Phase 0-5 전체 구현 가이드
+└── LANDMARK_COMPARISON.md      # 📊 랜드마크 9/68/468 기술 분석
 ```
 
 ---
@@ -289,13 +287,12 @@ docs/
 |------|-------|--------------|------|
 | ARCHITECTURE.md | ~800 | 8개 | ✅ 최신 |
 | API.md | ~1,200 | 0개 | ✅ 최신 |
-| 251018.md | ~950 | 1개 | ✅ Phase 1-4 |
-| 251019.md | ~700 | 1개 | ✅ Phase 5 |
-| NEXT_STEPS.md | ~110 | 0개 | ✅ 최신 |
-| IMPLEMENTATION_GUIDE.md | ~600 | 2개 | ✅ 최신 |
-| LANDMARK_COMPARISON.md | ~200 | 1개 | ✅ 최신 |
-| IMPROVEMENT_PLAN.md | ~100 | 0개 | ✅ 최신 |
-| **합계** | **~4,660** | **13개** | - |
+| 251018.md | ~950 | 1개 | ✅ Phase 1-4 완료 |
+| 251019.md | ~1,000 | 1개 | ✅ Phase 5 완료 |
+| NEXT_STEPS.md | ~110 | 0개 | ✅ Phase 6 계획 |
+| IMPLEMENTATION_GUIDE.md | ~600 | 2개 | ✅ 전체 가이드 |
+| LANDMARK_COMPARISON.md | ~260 | 0개 | ✅ 기술 분석 |
+| **합계** | **~4,920** | **12개** | - |
 
 ---
 
