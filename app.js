@@ -3,6 +3,7 @@ const http = require("http");
 const path = require("path");
 const { WebSocketServer } = require("ws");
 const dotenv = require("dotenv");
+const cors = require("cors");
 const sttRouter = require("./routes/stt");
 const sessionRouter = require("./routes/session");
 const monitoringRouter = require("./routes/monitoring");
@@ -14,6 +15,14 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
+
+// CORS 설정 (프론트엔드 연동)
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json());
 app.use("/api/stt", sttRouter);
