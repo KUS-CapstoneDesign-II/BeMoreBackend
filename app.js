@@ -5,6 +5,7 @@ const { WebSocketServer } = require("ws");
 const dotenv = require("dotenv");
 const sttRouter = require("./routes/stt");
 const sessionRouter = require("./routes/session");
+const monitoringRouter = require("./routes/monitoring");
 const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
 
@@ -17,6 +18,7 @@ const wss = new WebSocketServer({ server });
 app.use(express.json());
 app.use("/api/stt", sttRouter);
 app.use("/api/session", sessionRouter);
+app.use("/api/monitoring", monitoringRouter);
 app.use(express.static(path.join(__dirname, "public")));
 
 // Health check endpoint
