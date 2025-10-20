@@ -1,5 +1,86 @@
 const VadMetrics = require('../vad/VadMetrics');
 const PsychologicalIndicators = require('../vad/PsychologicalIndicators');
+const ConversationEngine = require('../conversation/ConversationEngine');
+const errorHandler = require('../ErrorHandler');
+
+// ConversationEngine 싱글톤
+const conversationEngine = new ConversationEngine();
+
+/**
+ * AI 응답 생성 및 전송
+ *
+ * @param {Object} session - 세션 객체
+ * @param {string} userMessage - 사용자 발화 텍스트
+ * @param {WebSocket} ws - WebSocket 연결
+ */
+async function handleAIResponse(session, userMessage, ws) {
+  try {
+    // 컨텍스트 수집
+    const context = {
+      emotion: session.emotions.length > 0
+        ? session.emotions[session.emotions.length - 1].emotion
+        : null,
+      vad: session.vadMetrics ? session.vadMetrics.calculate() : null,
+      cbt: session.lastCBTAnalysis || null
+    };
+
+    // AI 응답 생성
+    console.log(`🤖 AI 응답 생성 시작: "${userMessage.slice(0, 30)}..."`);
+    const aiResponse = await conversationEngine.generateResponse(
+      session.sessionId,
+      userMessage,
+      context
+    );
+
+    console.log(`💡 AI 응답: "${aiResponse.response}" (${aiResponse.responseType})`);
+
+    // WebSocket으로 AI 응답 전송
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({
+        type: 'ai_response',
+        data: {
+          response: aiResponse.response,
+          responseType: aiResponse.responseType,
+          timestamp: Date.now(),
+          context: aiResponse.context
+        }
+      }));
+    }
+
+    // 세션에 AI 응답 저장
+    session.aiResponses = session.aiResponses || [];
+    session.aiResponses.push({
+      timestamp: Date.now(),
+      userMessage,
+      aiResponse: aiResponse.response,
+      responseType: aiResponse.responseType,
+      context
+    });
+
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'voice-handler-ai',
+      level: errorHandler.levels.ERROR,
+      metadata: {
+        sessionId: session.sessionId,
+        userMessage: userMessage.slice(0, 50)
+      }
+    });
+
+    // 에러 시 기본 응답 전송
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({
+        type: 'ai_response',
+        data: {
+          response: '죄송해요, 잠시 생각이 정리되지 않네요. 계속 이야기해 주세요.',
+          responseType: 'error_fallback',
+          timestamp: Date.now(),
+          error: true
+        }
+      }));
+    }
+  }
+}
 
 /**
  * Voice WebSocket 핸들러
@@ -110,6 +191,15 @@ function handleVoice(ws, session) {
               }
             }));
           }
+
+          // ✅ Phase 5: 실시간 AI 응답 생성
+          handleAIResponse(session, text, ws).catch(err => {
+            errorHandler.handle(err, {
+              module: 'voice-handler-ai',
+              level: errorHandler.levels.WARN,
+              metadata: { sessionId: session.sessionId, text: text.slice(0, 50) }
+            });
+          });
         }
 
       } else if (message.type === 'vad_result') {
@@ -148,7 +238,11 @@ function handleVoice(ws, session) {
       }
 
     } catch (error) {
-      console.error('❌ Voice 메시지 파싱 오류:', error);
+      errorHandler.handle(error, {
+        module: 'voice-handler',
+        level: errorHandler.levels.ERROR,
+        metadata: { sessionId: session.sessionId, messageType: 'parse_error' }
+      });
     }
   });
 
@@ -164,7 +258,11 @@ function handleVoice(ws, session) {
 
   // 에러 처리
   ws.on('error', (error) => {
-    console.error(`❌ Voice WebSocket 오류 (${session.sessionId}):`, error);
+    errorHandler.handle(error, {
+      module: 'voice-handler',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: session.sessionId, event: 'websocket_error' }
+    });
     session.wsConnections.voice = null;
   });
 
