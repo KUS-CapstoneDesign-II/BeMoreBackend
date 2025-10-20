@@ -127,6 +127,19 @@ function handleVoice(ws, session) {
         // VadMetrics에 이벤트 추가
         vadMetrics.addEvent(vadResult);
 
+        // ✅ 실시간 VAD 결과를 프론트로 전송 (STT 조건부 실행용)
+        if (ws.readyState === 1) {
+          ws.send(JSON.stringify({
+            type: 'vad_realtime',
+            data: {
+              isSpeech: vadResult.isSpeech,
+              probability: vadResult.isSpeech ? 0.8 : 0.2, // 간단한 확률값
+              energy: vadResult.energy,
+              timestamp: vadResult.timestamp
+            }
+          }));
+        }
+
         // 로깅 (10개마다)
         if (session.vadBuffer.length % 10 === 0) {
           const { summary } = vadMetrics.getSummary();

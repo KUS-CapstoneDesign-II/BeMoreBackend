@@ -1,5 +1,6 @@
 const { analyzeExpression, generateDetailedReport  } = require('../gemini/gemini');
 const InterventionGenerator = require('../cbt/InterventionGenerator');
+const errorHandler = require('../ErrorHandler');
 
 
 const fs = require('fs');
@@ -132,7 +133,15 @@ function handleLandmarks(ws, session) {
       }
 
     } catch (error) {
-      console.error(`❌ 감정 분석 오류 (${session.sessionId}):`, error);
+      errorHandler.handle(error, {
+        module: 'landmarks-analysis',
+        level: errorHandler.levels.ERROR,
+        sessionId: session.sessionId,
+        metadata: {
+          frameCount: session.landmarkBuffer.length,
+          sttBufferLength: session.sttBuffer.length
+        }
+      });
 
       // 에러를 클라이언트에 전송
       if (ws.readyState === 1) {
