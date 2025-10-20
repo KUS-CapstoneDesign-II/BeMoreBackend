@@ -1311,6 +1311,98 @@
     let isSpeechActive = false; // 현재 음성 활동 여부
     let voiceThreshold = 8; // 음량 임계값 (최적값: 8, 조정 가능)
 
+    // ✅ Phase 5: TTS (Text-to-Speech) 설정
+    let ttsEnabled = true; // TTS 활성화 여부
+    let ttsVoice = null; // 선택된 음성
+    const synth = window.speechSynthesis;
+
+    // TTS 음성 초기화
+    function initTTS() {
+      if (!synth) {
+        console.warn('⚠️ 이 브라우저는 TTS를 지원하지 않습니다.');
+        return;
+      }
+
+      // 한국어 음성 찾기
+      function loadVoices() {
+        const voices = synth.getVoices();
+        ttsVoice = voices.find(v => v.lang === 'ko-KR') || voices[0];
+
+        if (ttsVoice) {
+          console.log(`🔊 TTS 음성 설정: ${ttsVoice.name} (${ttsVoice.lang})`);
+        }
+      }
+
+      // 음성 로드 (일부 브라우저는 비동기)
+      if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = loadVoices;
+      }
+      loadVoices();
+    }
+
+    // TTS로 텍스트 읽기
+    function speakText(text, responseType = 'general_conversation') {
+      if (!ttsEnabled || !synth) return;
+
+      // 현재 재생 중인 TTS 중지
+      synth.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      // 음성 설정
+      if (ttsVoice) {
+        utterance.voice = ttsVoice;
+      }
+
+      utterance.lang = 'ko-KR';
+      utterance.rate = 1.0; // 속도 (0.1 ~ 10)
+      utterance.pitch = 1.0; // 음높이 (0 ~ 2)
+      utterance.volume = 1.0; // 음량 (0 ~ 1)
+
+      // 응답 타입에 따라 톤 조정
+      switch (responseType) {
+        case 'empathy_support':
+          utterance.rate = 0.9; // 약간 느리게
+          utterance.pitch = 0.95; // 약간 낮은 톤
+          break;
+        case 'positive_reinforcement':
+          utterance.rate = 1.1; // 약간 빠르게
+          utterance.pitch = 1.1; // 약간 높은 톤
+          break;
+        case 'cbt_intervention':
+          utterance.rate = 0.95; // 차분하게
+          utterance.pitch = 1.0; // 중립적
+          break;
+      }
+
+      // 이벤트 핸들러
+      utterance.onstart = () => {
+        console.log('🔊 TTS 재생 시작:', text.slice(0, 30) + '...');
+      };
+
+      utterance.onend = () => {
+        console.log('✅ TTS 재생 완료');
+      };
+
+      utterance.onerror = (event) => {
+        console.error('❌ TTS 에러:', event.error);
+      };
+
+      // 재생
+      synth.speak(utterance);
+    }
+
+    // TTS 토글 함수
+    function toggleTTS() {
+      ttsEnabled = !ttsEnabled;
+      const btn = document.getElementById('ttsToggleBtn');
+      if (btn) {
+        btn.textContent = ttsEnabled ? '🔊 TTS 끄기' : '🔇 TTS 켜기';
+      }
+      console.log(`🔊 TTS ${ttsEnabled ? '활성화' : '비활성화'}`);
+      showToast(ttsEnabled ? 'TTS 활성화' : 'TTS 비활성화', '🔊', 1500);
+    }
+
     // 주요 랜드마크 인덱스
     const KEY_LANDMARKS = {
       eyes: [33, 133, 160, 144, 158, 153, 145, 159, 246, 163, 362, 263, 387, 373, 385, 380, 374, 386, 466, 390],
@@ -1859,6 +1951,9 @@
         connectWebSockets(result.data.wsUrls);
         addTimelineItem('system', '세션 시작됨');
 
+        // ✅ Phase 5: TTS 초기화
+        initTTS();
+
         return sessionId;
       } catch (error) {
         console.error('세션 시작 오류:', error);
@@ -1914,6 +2009,16 @@
             const speechRatio = (speechCount / vadHistory.length * 100).toFixed(1);
             console.log(`🎤 VAD 상태: 음성 ${speechRatio}% (최근 ${vadHistory.length}개)`);
           }
+        } else if (message.type === 'ai_response') {
+          // ✅ Phase 5: AI 응답 수신 및 TTS 재생
+          const aiData = message.data;
+          console.log(`🤖 AI 응답 수신: "${aiData.response}"`);
+
+          // 타임라인에 AI 응답 추가
+          addTimelineItem('ai', `AI: ${aiData.response}`);
+
+          // Web Speech API를 사용한 TTS 재생
+          speakText(aiData.response, aiData.responseType);
         }
       });
 

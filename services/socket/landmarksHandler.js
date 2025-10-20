@@ -99,6 +99,11 @@ function handleLandmarks(ws, session) {
       };
       session.emotions.push(emotionData);
 
+      // ✅ Phase 5: CBT 분석 결과를 세션에 저장 (AI 응답 컨텍스트용)
+      if (cbtAnalysis) {
+        session.lastCBTAnalysis = cbtAnalysis;
+      }
+
       // 클라이언트에게 결과 전송
       if (ws.readyState === 1) {  // 1 = OPEN
         const responseData = {
@@ -178,7 +183,11 @@ function handleLandmarks(ws, session) {
       }
 
     } catch (error) {
-      console.error('❌ Landmarks 메시지 파싱 오류:', error);
+      errorHandler.handle(error, {
+        module: 'landmarks-handler',
+        level: errorHandler.levels.ERROR,
+        metadata: { sessionId: session.sessionId, messageType: 'parse_error' }
+      });
     }
   });
 
@@ -191,7 +200,11 @@ function handleLandmarks(ws, session) {
 
   // 에러 처리
   ws.on('error', (error) => {
-    console.error(`❌ Landmarks WebSocket 오류 (${session.sessionId}):`, error);
+    errorHandler.handle(error, {
+      module: 'landmarks-handler',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: session.sessionId, event: 'websocket_error' }
+    });
     clearInterval(analysisInterval);
     session.wsConnections.landmarks = null;
   });

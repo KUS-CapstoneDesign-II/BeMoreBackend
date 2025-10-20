@@ -50,7 +50,12 @@
       "Bash(curl -s http://localhost:8000)",
       "Bash(kill dffa0f)",
       "Bash(cat docs/NEXT_STEPS.md)",
-      "Bash(git restore --staged .claude/settings.local.json public/favicon.ico server.log)"
+      "Bash(git restore --staged .claude/settings.local.json public/favicon.ico server.log)",
+      "Bash(git restore docs/251018.md docs/README.md)",
+      "Bash(rm -f docs/251019.md)",
+      "Bash(git pull origin woo)",
+      "Bash(git pull --no-rebase origin woo)",
+      "Bash(git rm docs/IMPROVEMENT_PLAN.md)"
     ],
     "deny": [],
     "ask": []

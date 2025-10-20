@@ -354,7 +354,11 @@ router.delete('/:id', (req, res) => {
     console.log(`🗑️ 세션 삭제 API 호출: ${sessionId}`);
 
   } catch (error) {
-    console.error('❌ 세션 삭제 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id, endpoint: 'DELETE /api/session/:id' }
+    });
     res.status(500).json({
       success: false,
       error: {
@@ -420,7 +424,11 @@ router.get('/:id/vad-analysis', (req, res) => {
     console.log(`📊 VAD 분석 결과 조회: ${sessionId}`);
 
   } catch (error) {
-    console.error('❌ VAD 분석 조회 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id, endpoint: 'GET /api/session/:id/vad-analysis' }
+    });
     res.status(500).json({
       success: false,
       error: {
@@ -445,7 +453,11 @@ router.get('/stats/summary', (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ 세션 통계 조회 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session',
+      level: errorHandler.levels.ERROR,
+      metadata: { endpoint: 'GET /api/session/stats/summary' }
+    });
     res.status(500).json({
       success: false,
       error: {
@@ -484,7 +496,11 @@ router.get('/user/:userId', (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ 사용자별 세션 조회 오류:', error);
+    errorHandler.handle(error, {
+      module: 'session',
+      level: errorHandler.levels.ERROR,
+      metadata: { userId: req.params.userId, endpoint: 'GET /api/session/user/:userId' }
+    });
     res.status(500).json({
       success: false,
       error: {
@@ -539,7 +555,11 @@ router.get('/:id/report', (req, res) => {
     console.log(`📊 세션 리포트 생성: ${sessionId}`);
 
   } catch (error) {
-    console.error('❌ 리포트 생성 오류:', error);
+    errorHandler.handle(error, {
+      module: 'report',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id, endpoint: 'GET /api/session/:id/report' }
+    });
     res.status(500).json({
       success: false,
       error: {
@@ -592,7 +612,11 @@ router.get('/:id/report/summary', (req, res) => {
     console.log(`📄 세션 리포트 요약 생성: ${sessionId}`);
 
   } catch (error) {
-    console.error('❌ 리포트 요약 생성 오류:', error);
+    errorHandler.handle(error, {
+      module: 'report',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id, endpoint: 'GET /api/session/:id/report/summary' }
+    });
     res.status(500).json({
       success: false,
       error: {

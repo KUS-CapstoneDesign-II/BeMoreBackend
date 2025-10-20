@@ -17,6 +17,7 @@
     "@mediapipe/face_mesh": "^0.4.1633559619",
     "@ricky0123/vad-node": "^0.0.3",
     "compromise": "^14.14.4",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "formidable": "^3.5.4",
