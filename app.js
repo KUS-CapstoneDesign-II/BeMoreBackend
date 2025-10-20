@@ -5,8 +5,10 @@ const { WebSocketServer } = require("ws");
 const dotenv = require("dotenv");
 const sttRouter = require("./routes/stt");
 const sessionRouter = require("./routes/session");
+const surveyRouter = require("./routes/survey");
 const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
+const { sequelize } = require("./models");
 
 dotenv.config();
 
@@ -17,7 +19,17 @@ const wss = new WebSocketServer({ server });
 app.use(express.json());
 app.use("/api/stt", sttRouter);
 app.use("/api/session", sessionRouter);
+app.use("/api/survey", surveyRouter);
 app.use(express.static(path.join(__dirname, "public")));
+
+
+sequelize.sync({ force: false })
+  .then(() => {
+    console.log("✅ 데이터베이스 연결 성공");
+  }).catch((err) => {
+    console.error("❌ 데이터베이스 연결 실패:", err)
+  });
+
 
 // Health check endpoint
 app.get("/health", (req, res) => {
