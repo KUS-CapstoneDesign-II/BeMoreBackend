@@ -284,7 +284,8 @@ class ErrorHandler {
         metadata: {
           method: req.method,
           path: req.path,
-          ip: req.ip
+          ip: req.ip,
+          requestId: req.requestId
         }
       });
 
@@ -293,7 +294,8 @@ class ErrorHandler {
         error: {
           type: errorInfo.type,
           message: errorInfo.message,
-          timestamp: errorInfo.timestamp
+          timestamp: errorInfo.timestamp,
+          requestId: req.requestId
         }
       });
     };
