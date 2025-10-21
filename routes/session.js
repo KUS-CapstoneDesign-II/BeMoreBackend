@@ -3,9 +3,10 @@ const router = express.Router();
 const SessionManager = require('../services/session/SessionManager');
 const ctrl = require('../controllers/sessionController');
 const { z } = require('zod');
-const { validateBody, validateParams } = require('../middlewares/zod');
+const { validateBody, validateParams, validateQuery } = require('../middlewares/zod');
 const startSchema = z.object({ userId: z.string().min(1), counselorId: z.string().min(1) });
 const idParamSchema = z.object({ id: z.string().min(1) });
+const csvQuerySchema = z.object({ kind: z.enum(['vad','emotion']).optional() });
 const crypto = require('crypto');
 const SessionReportGenerator = require('../services/report/SessionReportGenerator');
 const PdfReportGenerator = require('../services/report/PdfReportGenerator');
@@ -789,6 +790,10 @@ router.get('/:id/report/summary', validateParams(idParamSchema), (req, res) => {
 
 router.get('/:id/report/pdf', validateParams(idParamSchema), (req, res) => {
   return ctrl.reportPdf(req, res);
+});
+
+router.get('/:id/report/csv', validateParams(idParamSchema), validateQuery(csvQuerySchema), (req, res) => {
+  return ctrl.reportCsv(req, res);
 });
 /*router.get('/:id/report/pdf', async (req, res) => {
   try {
