@@ -4,6 +4,8 @@ const path = require("path");
 const { WebSocketServer } = require("ws");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const sttRouter = require("./routes/stt");
 const sessionRouter = require("./routes/session");
 const monitoringRouter = require("./routes/monitoring");
@@ -18,6 +20,20 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+// 보안 헤더
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+}));
+
+// 기본 레이트 리미팅 (IP당 10분 600 요청)
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
 // CORS 설정 (프론트엔드 연동)
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -27,6 +43,12 @@ app.use(cors({
 }));
 
 app.use(express.json());
+// 환경 변수 유효성 체크 (필수 값)
+const requiredEnv = ['PORT'];
+const missing = requiredEnv.filter((k) => !process.env[k]);
+if (missing.length) {
+  console.warn(`⚠️ Missing required env: ${missing.join(', ')}`);
+}
 app.use("/api/stt", sttRouter);
 app.use("/api/session", sessionRouter);
 app.use("/api/monitoring", monitoringRouter);
