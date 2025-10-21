@@ -1,8 +1,8 @@
-const { GoogleGenAI } = require("@google/genai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const errorHandler = require("../ErrorHandler");
 require("dotenv").config();
 
-const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Mediapipe 주요 랜드마크 인덱스
 const KEY_INDICES = {
@@ -80,13 +80,10 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   `;
 
   try {
-    const res = await genAI.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
-
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const res = await model.generateContent(prompt);
     console.log("Gemini 전송 완료", speechText);
-    return res.text.trim().split("\n").pop();
+    return res.response.text().trim().split("\n").pop();
   } catch (err) {
     errorHandler.handle(err, {
       module: 'gemini-analysis',
@@ -151,13 +148,11 @@ async function generateDetailedReport(accumulatedData, speechText = "") {
   `;
 
   try {
-    const res = await genAI.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const res = await model.generateContent(prompt);
 
     // Gemini 응답 파싱 시도: 텍스트에서 JSON 추출
-    const text = res.text.trim();
+    const text = res.response.text().trim();
     // 빠른 파싱: 텍스트에서 첫 번째 '{'부터 '}' 쌍을 찾아 JSON 파싱
     const jsonStart = text.indexOf('{');
     const jsonEnd = text.lastIndexOf('}');
