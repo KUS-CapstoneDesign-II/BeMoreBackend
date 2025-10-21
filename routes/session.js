@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const SessionManager = require('../services/session/SessionManager');
+const crypto = require('crypto');
 const SessionReportGenerator = require('../services/report/SessionReportGenerator');
 const PdfReportGenerator = require('../services/report/PdfReportGenerator');
 const errorHandler = require('../services/ErrorHandler');
@@ -526,10 +527,15 @@ router.get('/:id/report', (req, res) => {
     // 리포트 생성
     const report = reportGenerator.generateReport(session);
 
-    res.json({
-      success: true,
-      data: report
-    });
+    // ETag/Cache-Control (60s) for lightweight caching
+    const etag = crypto.createHash('sha1').update(JSON.stringify(report)).digest('hex');
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    res.json({ success: true, data: report });
 
     console.log(`📊 세션 리포트 생성: ${sessionId}`);
 
@@ -571,9 +577,7 @@ router.get('/:id/summary', (req, res) => {
     // 리포트 생성(메모리 기반)
     const report = reportGenerator.generateReport(session);
 
-    res.json({
-      success: true,
-      data: {
+    const payload = {
         sessionId: session.sessionId,
         status: session.status,
         startedAt: session.startedAt,
@@ -587,8 +591,16 @@ router.get('/:id/summary', (req, res) => {
           totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0,
           mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion || null
         }
-      }
-    });
+      };
+
+    const etag = crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    res.json({ success: true, data: payload });
 
   } catch (error) {
     errorHandler.handle(error, {
