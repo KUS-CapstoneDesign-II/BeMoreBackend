@@ -1,6 +1,7 @@
 const SessionReportGenerator = require('../report/SessionReportGenerator');
-const { Report, Session } = require('../../models');
 const SessionManager = require('../session/SessionManager');
+const reportRepo = require('../../repositories/reportRepository');
+const sessionRepo = require('../../repositories/sessionRepository');
 
 /**
  * persistReportAndSession
@@ -21,11 +22,8 @@ async function persistReportAndSession(session) {
       metadata: report.metadata || null,
       analysis: report.analysis || null,
     };
-    if (Report && typeof Report.create === 'function') {
-      await Report.create(payload).catch(() => {});
-    }
-    if (Session && typeof Session.findOrCreate === 'function') {
-      const defaults = {
+    await reportRepo.create(payload);
+    const defaults = {
         sessionId: session.sessionId,
         userId: session.userId,
         counselorId: session.counselorId || null,
@@ -35,17 +33,7 @@ async function persistReportAndSession(session) {
         duration: SessionManager.getSessionDuration(session.sessionId),
         counters: { emotionCount: session.emotions.length }
       };
-      await Session.findOrCreate({ where: { sessionId: session.sessionId }, defaults })
-        .then(async ([row, created]) => {
-          if (!created) {
-            row.status = session.status;
-            row.endedAt = session.endedAt;
-            row.duration = defaults.duration;
-            row.counters = defaults.counters;
-            await row.save().catch(() => {});
-          }
-        }).catch(() => {});
-    }
+    await sessionRepo.upsertSummary(defaults);
   } catch {
     // swallow
   }
