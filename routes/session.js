@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const SessionReportGenerator = require('../services/report/SessionReportGenerator');
 const PdfReportGenerator = require('../services/report/PdfReportGenerator');
 const errorHandler = require('../services/ErrorHandler');
+const { Report, Session: SessionModel } = require('../models');
 
 // 리포트 생성기 초기화
 const reportGenerator = new SessionReportGenerator();
@@ -306,6 +307,49 @@ router.post('/:id/end', (req, res) => {
     }
 
     res.json({ success: true, data: responseData });
+
+    // 비동기 리포트 저장 (응답에 영향 주지 않음)
+    setImmediate(() => {
+      try {
+        const report = reportGenerator.generateReport(session);
+        const payload = {
+          reportId: report.reportId,
+          sessionId: session.sessionId,
+          vadVector: report.vadVector || null,
+          vadTimeline: report.vadTimeline || [],
+          cbtSummary: report.analysis?.cbtSummary || null,
+          statistics: report.statistics || null,
+          metadata: report.metadata || null,
+          analysis: report.analysis || null,
+        };
+        Report.create(payload).catch((e) => console.error('리포트 저장 실패:', e.message));
+      } catch (e) {
+        console.error('리포트 생성 실패:', e.message);
+      }
+      try {
+        // 세션 요약 저장(선택)
+        SessionModel.findOrCreate({ where: { sessionId: session.sessionId },
+          defaults: {
+            sessionId: session.sessionId,
+            userId: session.userId,
+            counselorId: session.counselorId || null,
+            status: session.status,
+            startedAt: session.startedAt,
+            endedAt: session.endedAt,
+            duration: SessionManager.getSessionDuration(session.sessionId),
+            counters: { emotionCount: session.emotions.length }
+          }
+        }).then(([row, created]) => {
+          if (!created) {
+            row.status = session.status;
+            row.endedAt = session.endedAt;
+            row.duration = SessionManager.getSessionDuration(session.sessionId);
+            row.counters = { emotionCount: session.emotions.length };
+            row.save().catch(() => {});
+          }
+        }).catch(() => {});
+      } catch {}
+    });
      //======================================================================================================================================
 
     console.log(`✅ 세션 종료 API 호출: ${sessionId}`);
@@ -599,6 +643,10 @@ router.get('/:id/summary', (req, res) => {
     // 리포트 생성(메모리 기반)
     const report = reportGenerator.generateReport(session);
 
+    const recommendations = Array.isArray(report.analysis?.recommendations)
+      ? report.analysis.recommendations.map(r => r?.title || '').filter(Boolean).slice(0, 3)
+      : [];
+
     const payload = {
         sessionId: session.sessionId,
         status: session.status,
@@ -612,7 +660,8 @@ router.get('/:id/summary', (req, res) => {
         cbt: {
           totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0,
           mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion || null
-        }
+        },
+        recommendations
       };
 
     const etag = crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');
