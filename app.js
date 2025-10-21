@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const morgan = require('morgan');
 const sttRouter = require("./routes/stt");
 const sessionRouter = require("./routes/session");
 const monitoringRouter = require("./routes/monitoring");
@@ -16,6 +17,7 @@ const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
 const { sequelize } = require("./models");
 const { optionalJwtAuth } = require("./middlewares/auth");
+const { requestId } = require('./middlewares/requestId');
 
 dotenv.config();
 
@@ -36,6 +38,8 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use(limiter);
+app.use(requestId);
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms reqId=:req[headers][x-request-id]'));
 
 // CORS 설정 (프론트엔드 연동)
 const defaultAllowed = ['http://localhost:5173', 'https://be-more-frontend.vercel.app'];
