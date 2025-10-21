@@ -98,7 +98,72 @@ class PdfReportGenerator {
             .text(`Valence: ${emotionVAD.valence}`)
             .text(`Arousal: ${emotionVAD.arousal}`)
             .text(`Dominance: ${emotionVAD.dominance}`)
-            .moveDown(1);
+            .moveDown(0.75);
+
+          // VAD Sparkline (Valence/Arousal/Dominance)
+          const timeline = Array.isArray(report.vadTimeline) ? report.vadTimeline : [];
+          if (timeline.length > 1) {
+            const boxX = doc.x;
+            const boxY = doc.y;
+            const boxW = 480;
+            const boxH = 60;
+
+            // Compute scales
+            const xs = timeline.map((p, i) => (typeof p.t === 'number' ? p.t : (typeof p.timestamp === 'number' ? p.timestamp : i)));
+            const minX = Math.min.apply(null, xs);
+            const maxX = Math.max.apply(null, xs);
+            const values = [];
+            timeline.forEach(p => {
+              if (typeof p.valence === 'number') values.push(p.valence);
+              if (typeof p.arousal === 'number') values.push(p.arousal);
+              if (typeof p.dominance === 'number') values.push(p.dominance);
+            });
+            const minY = values.length ? Math.min.apply(null, values) : -1;
+            const maxY = values.length ? Math.max.apply(null, values) : 1;
+            const padY = (maxY - minY) * 0.1 || 0.2;
+
+            const scaleX = (x) => {
+              if (maxX === minX) return boxX;
+              return boxX + ((x - minX) / (maxX - minX)) * (boxW - 10) + 5;
+            };
+            const scaleY = (y) => {
+              const ymin = minY - padY;
+              const ymax = maxY + padY;
+              if (ymax === ymin) return boxY + boxH / 2;
+              return boxY + boxH - ((y - ymin) / (ymax - ymin)) * (boxH - 10) - 5;
+            };
+
+            // Frame
+            doc.rect(boxX, boxY, boxW, boxH).stroke('#e5e7eb');
+
+            const drawLine = (key, color) => {
+              const pts = timeline.filter(p => typeof p[key] === 'number');
+              if (!pts.length) return;
+              doc.save().lineWidth(1.5).strokeColor(color);
+              pts.forEach((p, idx) => {
+                const x = scaleX(typeof p.t === 'number' ? p.t : (typeof p.timestamp === 'number' ? p.timestamp : 0));
+                const y = scaleY(p[key]);
+                if (idx === 0) doc.moveTo(x, y); else doc.lineTo(x, y);
+              });
+              doc.stroke().restore();
+            };
+
+            drawLine('valence', '#ef4444');
+            drawLine('arousal', '#3b82f6');
+            drawLine('dominance', '#22c55e');
+
+            // Legend
+            doc
+              .fontSize(9)
+              .fillColor('#ef4444').text('Valence', boxX, boxY + boxH + 2, { continued: true })
+              .fillColor('#3b82f6').text('  Arousal', { continued: true })
+              .fillColor('#22c55e').text('  Dominance')
+              .fillColor('#000');
+
+            doc.moveDown(1.2);
+          } else {
+            doc.moveDown(0.25);
+          }
         }
 
         // CBT Details (top items only)
