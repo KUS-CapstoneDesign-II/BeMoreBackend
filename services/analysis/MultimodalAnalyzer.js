@@ -14,9 +14,12 @@
  * - 치료적 권장 사항
  */
 
+const EmotionVADVector = require('./EmotionVADVector');
+
 class MultimodalAnalyzer {
   constructor() {
     console.log('🔬 MultimodalAnalyzer 초기화 완료');
+    this.vadVector = new EmotionVADVector();
   }
 
   /**
@@ -41,14 +44,25 @@ class MultimodalAnalyzer {
     // 3. CBT 왜곡 분석
     const cbtSummary = this._analyzeCBT(emotions, interventionGenerator);
 
-    // 4. 멀티모달 종합 평가
+    // 4. VAD(Valence–Arousal–Dominance) 벡터 및 타임라인
+    const vadVector = this.vadVector.compute({
+      emotions,
+      vadHistory: vadSummary.totalAnalyses > 0 ? sessionData.vadAnalysisHistory : [],
+      cbtSummary
+    });
+    const vadTimeline = this.vadVector.computeTimeline({
+      emotions,
+      vadHistory: vadSummary.totalAnalyses > 0 ? sessionData.vadAnalysisHistory : []
+    });
+
+    // 5. 멀티모달 종합 평가
     const overallAssessment = this._generateOverallAssessment(
       emotionSummary,
       vadSummary,
       cbtSummary
     );
 
-    // 5. 권장 사항 생성
+    // 6. 권장 사항 생성
     const recommendations = this._generateRecommendations(overallAssessment);
 
     return {
@@ -58,6 +72,8 @@ class MultimodalAnalyzer {
       emotionSummary,
       vadSummary,
       cbtSummary,
+      vadVector,
+      vadTimeline,
       overallAssessment,
       recommendations
     };

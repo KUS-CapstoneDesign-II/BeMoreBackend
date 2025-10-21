@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const SessionManager = require('../services/session/SessionManager');
+const crypto = require('crypto');
 const SessionReportGenerator = require('../services/report/SessionReportGenerator');
+const PdfReportGenerator = require('../services/report/PdfReportGenerator');
 const errorHandler = require('../services/ErrorHandler');
 
 // 리포트 생성기 초기화
@@ -547,10 +549,15 @@ router.get('/:id/report', (req, res) => {
     // 리포트 생성
     const report = reportGenerator.generateReport(session);
 
-    res.json({
-      success: true,
-      data: report
-    });
+    // ETag/Cache-Control (60s) for lightweight caching
+    const etag = crypto.createHash('sha1').update(JSON.stringify(report)).digest('hex');
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    res.json({ success: true, data: report });
 
     console.log(`📊 세션 리포트 생성: ${sessionId}`);
 
@@ -566,6 +573,66 @@ router.get('/:id/report', (req, res) => {
         code: 'REPORT_GENERATION_ERROR',
         message: error.message
       }
+    });
+  }
+});
+
+/**
+ * 세션 요약 API (프론트 요약 카드용)
+ * GET /api/session/:id/summary
+ */
+router.get('/:id/summary', (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const session = SessionManager.getSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: `세션을 찾을 수 없습니다: ${sessionId}`
+        }
+      });
+    }
+
+    // 리포트 생성(메모리 기반)
+    const report = reportGenerator.generateReport(session);
+
+    const payload = {
+        sessionId: session.sessionId,
+        status: session.status,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        duration: report.metadata.duration,
+        vadVector: report.vadVector || report.analysis?.vadVector || null,
+        keyObservations: report.analysis?.overallAssessment?.keyObservations || [],
+        dominantEmotion: report.analysis?.emotionSummary?.dominantEmotion || null,
+        averageVoiceMetrics: report.analysis?.vadSummary?.averageMetrics || null,
+        cbt: {
+          totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0,
+          mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion || null
+        }
+      };
+
+    const etag = crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    res.json({ success: true, data: payload });
+
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'session-summary',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id, endpoint: 'GET /api/session/:id/summary' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'SESSION_SUMMARY_ERROR', message: error.message }
     });
   }
 });
@@ -623,6 +690,42 @@ router.get('/:id/report/summary', (req, res) => {
         code: 'REPORT_SUMMARY_ERROR',
         message: error.message
       }
+    });
+  }
+});
+
+router.get('/:id/report/pdf', async (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const session = SessionManager.getSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: `세션을 찾을 수 없습니다: ${sessionId}`
+        }
+      });
+    }
+
+    const report = reportGenerator.generateReport(session);
+    const pdfBuffer = await PdfReportGenerator.generate(report);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="bemore-report-${sessionId}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    return res.status(200).end(pdfBuffer);
+
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'report',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id, endpoint: 'GET /api/session/:id/report/pdf' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'REPORT_PDF_ERROR', message: error.message }
     });
   }
 });
