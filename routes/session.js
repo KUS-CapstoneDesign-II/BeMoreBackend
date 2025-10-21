@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const SessionManager = require('../services/session/SessionManager');
 const ctrl = require('../controllers/sessionController');
-const { validateStart, validateParamId } = require('../middlewares/validate');
+const { z } = require('zod');
+const { validateBody, validateParams } = require('../middlewares/zod');
+const startSchema = z.object({ userId: z.string().min(1), counselorId: z.string().min(1) });
+const idParamSchema = z.object({ id: z.string().min(1) });
 const crypto = require('crypto');
 const SessionReportGenerator = require('../services/report/SessionReportGenerator');
 const PdfReportGenerator = require('../services/report/PdfReportGenerator');
@@ -37,7 +40,7 @@ const reportGenerator = new SessionReportGenerator();
  *   }
  * }
  */
-router.post('/start', validateStart, (req, res) => {
+router.post('/start', validateBody(startSchema), (req, res) => {
   return ctrl.start(req, res);
 });
 
@@ -119,7 +122,7 @@ router.post('/start', validateStart, (req, res) => {
  *   }
  * }
  */
-router.get('/:id', validateParamId, (req, res) => {
+router.get('/:id', validateParams(idParamSchema), (req, res) => {
   return ctrl.get(req, res);
 });
 
@@ -189,7 +192,7 @@ router.get('/:id', validateParamId, (req, res) => {
  *   }
  * }
  */
-router.post('/:id/pause', validateParamId, (req, res) => {
+router.post('/:id/pause', validateParams(idParamSchema), (req, res) => {
   return ctrl.pause(req, res);
 });
 /*router.post('/:id/pause', (req, res) => {
@@ -238,7 +241,7 @@ router.post('/:id/pause', validateParamId, (req, res) => {
  *   }
  * }
  */
-router.post('/:id/resume', validateParamId, (req, res) => {
+router.post('/:id/resume', validateParams(idParamSchema), (req, res) => {
   return ctrl.resume(req, res);
 });
 /*router.post('/:id/resume', (req, res) => {
@@ -288,7 +291,7 @@ router.post('/:id/resume', validateParamId, (req, res) => {
  *   }
  * }
  */
-router.post('/:id/end', validateParamId, (req, res) => {
+router.post('/:id/end', validateParams(idParamSchema), (req, res) => {
   return ctrl.end(req, res);
 });
 /*router.post('/:id/end', (req, res) => {
@@ -394,7 +397,7 @@ router.post('/:id/end', validateParamId, (req, res) => {
  * 세션 삭제 API (선택)
  * DELETE /api/session/:id
  */
-router.delete('/:id', validateParamId, (req, res) => {
+router.delete('/:id', validateParams(idParamSchema), (req, res) => {
   return ctrl.destroy(req, res);
 });
 /*router.delete('/:id', (req, res) => {
@@ -453,7 +456,7 @@ router.delete('/:id', validateParamId, (req, res) => {
  *   }
  * }
  */
-router.get('/:id/vad-analysis', validateParamId, (req, res) => {
+router.get('/:id/vad-analysis', validateParams(idParamSchema), (req, res) => {
   return ctrl.vadAnalysis(req, res);
 });
 /*router.get('/:id/vad-analysis', (req, res) => {
@@ -607,7 +610,7 @@ router.get('/user/:userId', (req, res) => {
  *   }
  * }
  */
-router.get('/:id/report', validateParamId, (req, res) => {
+router.get('/:id/report', validateParams(idParamSchema), (req, res) => {
   return ctrl.report(req, res);
 });
 /*router.get('/:id/report', (req, res) => {
@@ -660,7 +663,7 @@ router.get('/:id/report', validateParamId, (req, res) => {
  * 세션 요약 API (프론트 요약 카드용)
  * GET /api/session/:id/summary
  */
-router.get('/:id/summary', validateParamId, (req, res) => {
+router.get('/:id/summary', validateParams(idParamSchema), (req, res) => {
   return ctrl.summary(req, res);
 });
 /*router.get('/:id/summary', (req, res) => {
@@ -736,7 +739,7 @@ router.get('/:id/summary', validateParamId, (req, res) => {
  *   }
  * }
  */
-router.get('/:id/report/summary', validateParamId, (req, res) => {
+router.get('/:id/report/summary', validateParams(idParamSchema), (req, res) => {
   return ctrl.reportSummary(req, res);
 });
 /*router.get('/:id/report/summary', (req, res) => {
@@ -784,7 +787,7 @@ router.get('/:id/report/summary', validateParamId, (req, res) => {
   }
 });*/
 
-router.get('/:id/report/pdf', validateParamId, (req, res) => {
+router.get('/:id/report/pdf', validateParams(idParamSchema), (req, res) => {
   return ctrl.reportPdf(req, res);
 });
 /*router.get('/:id/report/pdf', async (req, res) => {
