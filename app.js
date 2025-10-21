@@ -106,6 +106,11 @@ setupWebSockets(wss);
 // ✅ 전역 에러 핸들러 (Express 미들웨어)
 app.use(errorHandler.expressMiddleware());
 
+// 404 Not Found handler (after all routes and error middleware safety)
+app.use((req, res) => {
+  res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Resource not found', path: req.path, requestId: req.requestId } });
+});
+
 // ✅ 전역 에러 핸들러 (Unhandled errors)
 process.on('uncaughtException', (error) => {
   errorHandler.handle(error, {
