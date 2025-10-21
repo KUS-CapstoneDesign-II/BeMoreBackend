@@ -4,6 +4,7 @@ const PdfReportGenerator = require('../services/report/PdfReportGenerator');
 const errorHandler = require('../services/ErrorHandler');
 const sessionService = require('../services/session/sessionService');
 const crypto = require('crypto');
+const { csvFromVadTimeline, csvFromEmotionTimeline } = require('../services/report/csv');
 
 // Helpers
 function buildWsUrls(req, sessionId) {
@@ -151,6 +152,24 @@ async function report(req, res) {
     return res.status(500).json({ success: false, error: { code: 'REPORT_GENERATION_ERROR', message: error.message } });
   }
 }
+async function reportCsv(req, res) {
+  try {
+    const sessionId = req.params.id;
+    const kind = (req.query && req.query.kind) || 'vad'; // 'vad' | 'emotion'
+    const session = SessionManager.getSession(sessionId);
+    if (!session) return res.status(404).json({ success: false, error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` } });
+    const gen = new SessionReportGenerator();
+    const report = gen.generateReport(session);
+    const csv = kind === 'emotion' ? csvFromEmotionTimeline(report.emotionTimeline) : csvFromVadTimeline(report.vadTimeline);
+    const filename = `bemore-${sessionId}-${kind}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.status(200).end(csv);
+  } catch (error) {
+    errorHandler.handle(error, { module: 'report', level: errorHandler.levels.ERROR });
+    return res.status(500).json({ success: false, error: { code: 'REPORT_CSV_ERROR', message: error.message } });
+  }
+}
 
 async function reportSummary(req, res) {
   try {
@@ -245,6 +264,7 @@ module.exports = {
   report,
   summary,
   reportSummary,
+  reportCsv,
   reportPdf,
   vadAnalysis,
 };
