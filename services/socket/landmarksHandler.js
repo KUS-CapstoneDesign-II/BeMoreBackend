@@ -1,6 +1,13 @@
-const { analyzeExpression } = require('../gemini/gemini');
+const { analyzeExpression, generateDetailedReport  } = require('../gemini/gemini');
 const InterventionGenerator = require('../cbt/InterventionGenerator');
 const errorHandler = require('../ErrorHandler');
+
+
+const fs = require('fs');
+const path = require('path');
+const { getAccumulatedSpeechText, clearSpeechBuffer, clearAllSpeechBuffer } = require("../memory");
+
+
 
 // 10초 분석 주기 (기존 60초에서 단축)
 const ANALYSIS_INTERVAL_MS = 10 * 1000;
@@ -52,6 +59,10 @@ function handleLandmarks(ws, session) {
       // Gemini 감정 분석
       const emotion = await analyzeExpression(frames, sttText);
       console.log(`🎯 Gemini 분석 결과: ${emotion}`);
+
+      // 상세 감정 리포트 생성 => 만약 필요 하다면 
+      // const detailedReport = await generateDetailedReport(frames, sttText);
+      // console.log(`📑 상세 리포트 생성 완료`);
 
       // Phase 3: CBT 인지 왜곡 탐지 및 개입
       let cbtAnalysis = null;
