@@ -10,6 +10,8 @@ const sttRouter = require("./routes/stt");
 const sessionRouter = require("./routes/session");
 const monitoringRouter = require("./routes/monitoring");
 const surveyRouter = require("./routes/survey");
+const dashboardRouter = require("./routes/dashboard");
+const userRouter = require("./routes/user");
 const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
 const { sequelize } = require("./models");
@@ -54,6 +56,8 @@ app.use("/api/stt", optionalJwtAuth, sttRouter);
 app.use("/api/session", optionalJwtAuth, sessionRouter);
 app.use("/api/monitoring", monitoringRouter);
 app.use("/api/survey", surveyRouter);
+app.use("/api/dashboard", optionalJwtAuth, dashboardRouter);
+app.use("/api/user", optionalJwtAuth, userRouter);
 app.use(express.static(path.join(__dirname, "public")));
 
 
