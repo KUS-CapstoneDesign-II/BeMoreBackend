@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const SessionManager = require('../services/session/SessionManager');
+const ctrl = require('../controllers/sessionController');
 const crypto = require('crypto');
 const SessionReportGenerator = require('../services/report/SessionReportGenerator');
 const PdfReportGenerator = require('../services/report/PdfReportGenerator');
@@ -36,6 +37,11 @@ const reportGenerator = new SessionReportGenerator();
  * }
  */
 router.post('/start', (req, res) => {
+  return ctrl.start(req, res);
+});
+
+// keep existing implementation for now during gradual refactor
+/*router.post('/start', (req, res) => {
   try {
     const { userId, counselorId } = req.body;
 
@@ -93,7 +99,7 @@ router.post('/start', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 세션 조회 API
@@ -113,6 +119,10 @@ router.post('/start', (req, res) => {
  * }
  */
 router.get('/:id', (req, res) => {
+  return ctrl.get(req, res);
+});
+
+/*router.get('/:id', (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
@@ -162,7 +172,7 @@ router.get('/:id', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 세션 일시정지 API
@@ -179,6 +189,9 @@ router.get('/:id', (req, res) => {
  * }
  */
 router.post('/:id/pause', (req, res) => {
+  return ctrl.pause(req, res);
+});
+/*router.post('/:id/pause', (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.pauseSession(sessionId);
@@ -208,7 +221,7 @@ router.post('/:id/pause', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 세션 재개 API
@@ -225,6 +238,9 @@ router.post('/:id/pause', (req, res) => {
  * }
  */
 router.post('/:id/resume', (req, res) => {
+  return ctrl.resume(req, res);
+});
+/*router.post('/:id/resume', (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.resumeSession(sessionId);
@@ -254,7 +270,7 @@ router.post('/:id/resume', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 세션 종료 API
@@ -272,6 +288,9 @@ router.post('/:id/resume', (req, res) => {
  * }
  */
 router.post('/:id/end', (req, res) => {
+  return ctrl.end(req, res);
+});
+/*router.post('/:id/end', (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.endSession(sessionId);
@@ -368,13 +387,16 @@ router.post('/:id/end', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 세션 삭제 API (선택)
  * DELETE /api/session/:id
  */
 router.delete('/:id', (req, res) => {
+  return ctrl.destroy(req, res);
+});
+/*router.delete('/:id', (req, res) => {
   try {
     const sessionId = req.params.id;
     const success = SessionManager.deleteSession(sessionId);
@@ -413,7 +435,7 @@ router.delete('/:id', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * VAD 분석 결과 조회 API (Phase 2)
@@ -431,6 +453,9 @@ router.delete('/:id', (req, res) => {
  * }
  */
 router.get('/:id/vad-analysis', (req, res) => {
+  return ctrl.vadAnalysis(req, res);
+});
+/*router.get('/:id/vad-analysis', (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
@@ -483,13 +508,16 @@ router.get('/:id/vad-analysis', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 세션 통계 API
  * GET /api/session/stats/summary
  */
 router.get('/stats/summary', (req, res) => {
+  return ctrl.statsSummary(req, res);
+});
+/*router.get('/stats/summary', (req, res) => {
   try {
     const stats = SessionManager.getStats();
 
@@ -512,13 +540,16 @@ router.get('/stats/summary', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 사용자별 세션 목록 조회 API
  * GET /api/session/user/:userId
  */
 router.get('/user/:userId', (req, res) => {
+  return ctrl.userSessions(req, res);
+});
+/*router.get('/user/:userId', (req, res) => {
   try {
     const userId = req.params.userId;
     const sessions = SessionManager.getSessionsByUser(userId);
@@ -555,7 +586,7 @@ router.get('/user/:userId', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 세션 리포트 생성 API (Phase 4)
@@ -576,6 +607,9 @@ router.get('/user/:userId', (req, res) => {
  * }
  */
 router.get('/:id/report', (req, res) => {
+  return ctrl.report(req, res);
+});
+/*router.get('/:id/report', (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
@@ -619,13 +653,16 @@ router.get('/:id/report', (req, res) => {
       }
     });
   }
-});
+});*/
 
 /**
  * 세션 요약 API (프론트 요약 카드용)
  * GET /api/session/:id/summary
  */
 router.get('/:id/summary', (req, res) => {
+  return ctrl.summary(req, res);
+});
+/*router.get('/:id/summary', (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
@@ -684,7 +721,7 @@ router.get('/:id/summary', (req, res) => {
       error: { code: 'SESSION_SUMMARY_ERROR', message: error.message }
     });
   }
-});
+});*/
 
 /**
  * 세션 리포트 텍스트 요약 API (Phase 4)
@@ -699,6 +736,9 @@ router.get('/:id/summary', (req, res) => {
  * }
  */
 router.get('/:id/report/summary', (req, res) => {
+  return ctrl.reportSummary(req, res);
+});
+/*router.get('/:id/report/summary', (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
@@ -741,9 +781,12 @@ router.get('/:id/report/summary', (req, res) => {
       }
     });
   }
-});
+});*/
 
-router.get('/:id/report/pdf', async (req, res) => {
+router.get('/:id/report/pdf', (req, res) => {
+  return ctrl.reportPdf(req, res);
+});
+/*router.get('/:id/report/pdf', async (req, res) => {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
@@ -777,6 +820,6 @@ router.get('/:id/report/pdf', async (req, res) => {
       error: { code: 'REPORT_PDF_ERROR', message: error.message }
     });
   }
-});
+});*/
 
 module.exports = router;
