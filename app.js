@@ -38,12 +38,25 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS 설정 (프론트엔드 연동)
+const defaultAllowed = ['http://localhost:5173', 'https://be-more-frontend.vercel.app'];
+const envAllowed = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowed;
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin(origin, cb) {
+    if (!origin) return cb(null, true); // 서버-서버/헬스체크 등
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(null, false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+// Preflight 응답 처리 강화
+app.options('*', cors());
 
 app.use(express.json());
 // 환경 변수 유효성 체크 (필수 값)
