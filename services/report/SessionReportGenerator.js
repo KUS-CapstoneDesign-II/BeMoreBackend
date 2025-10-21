@@ -66,6 +66,7 @@ class SessionReportGenerator {
       analysis,
       emotionTimeline,
       vadTimeline,
+      vadVector: analysis.vadVector,
       cbtDetails,
       statistics
     };
