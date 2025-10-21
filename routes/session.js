@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const SessionManager = require('../services/session/SessionManager');
 const SessionReportGenerator = require('../services/report/SessionReportGenerator');
+const PdfReportGenerator = require('../services/report/PdfReportGenerator');
 const errorHandler = require('../services/ErrorHandler');
 
 // 리포트 생성기 초기화
@@ -601,6 +602,42 @@ router.get('/:id/report/summary', (req, res) => {
         code: 'REPORT_SUMMARY_ERROR',
         message: error.message
       }
+    });
+  }
+});
+
+router.get('/:id/report/pdf', async (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const session = SessionManager.getSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: `세션을 찾을 수 없습니다: ${sessionId}`
+        }
+      });
+    }
+
+    const report = reportGenerator.generateReport(session);
+    const pdfBuffer = await PdfReportGenerator.generate(report);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="bemore-report-${sessionId}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    return res.status(200).end(pdfBuffer);
+
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'report',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id, endpoint: 'GET /api/session/:id/report/pdf' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'REPORT_PDF_ERROR', message: error.message }
     });
   }
 });
