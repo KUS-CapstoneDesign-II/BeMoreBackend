@@ -284,16 +284,21 @@ class ErrorHandler {
         metadata: {
           method: req.method,
           path: req.path,
-          ip: req.ip
+          ip: req.ip,
+          requestId: req.requestId
         }
       });
 
-      res.status(errorInfo.level === this.levels.CRITICAL ? 500 : 400).json({
+      const httpStatus = (err && typeof err.status === 'number') ? err.status : (errorInfo.level === this.levels.CRITICAL ? 500 : 400);
+      const errCode = (err && err.code) || errorInfo.type;
+      res.status(httpStatus).json({
         success: false,
         error: {
           type: errorInfo.type,
           message: errorInfo.message,
-          timestamp: errorInfo.timestamp
+          timestamp: errorInfo.timestamp,
+          requestId: req.requestId,
+          code: errCode
         }
       });
     };

@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const morgan = require('morgan');
 const sttRouter = require("./routes/stt");
 const sessionRouter = require("./routes/session");
 const monitoringRouter = require("./routes/monitoring");
@@ -16,6 +17,7 @@ const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
 const { sequelize } = require("./models");
 const { optionalJwtAuth } = require("./middlewares/auth");
+const { requestId } = require('./middlewares/requestId');
 
 dotenv.config();
 
@@ -36,14 +38,29 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use(limiter);
+app.use(requestId);
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms reqId=:req[headers][x-request-id]'));
 
 // CORS 설정 (프론트엔드 연동)
+const defaultAllowed = ['http://localhost:5173', 'https://be-more-frontend.vercel.app'];
+const envAllowed = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowed;
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin(origin, cb) {
+    if (!origin) return cb(null, true); // 서버-서버/헬스체크 등
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(null, false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+// Preflight 응답 처리 강화
+app.options('*', cors());
 
 app.use(express.json());
 // 환경 변수 유효성 체크 (필수 값)
@@ -88,6 +105,11 @@ setupWebSockets(wss);
 
 // ✅ 전역 에러 핸들러 (Express 미들웨어)
 app.use(errorHandler.expressMiddleware());
+
+// 404 Not Found handler (after all routes and error middleware safety)
+app.use((req, res) => {
+  res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Resource not found', path: req.path, requestId: req.requestId } });
+});
 
 // ✅ 전역 에러 핸들러 (Unhandled errors)
 process.on('uncaughtException', (error) => {
