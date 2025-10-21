@@ -550,6 +550,60 @@ router.get('/:id/report', (req, res) => {
 });
 
 /**
+ * 세션 요약 API (프론트 요약 카드용)
+ * GET /api/session/:id/summary
+ */
+router.get('/:id/summary', (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const session = SessionManager.getSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: `세션을 찾을 수 없습니다: ${sessionId}`
+        }
+      });
+    }
+
+    // 리포트 생성(메모리 기반)
+    const report = reportGenerator.generateReport(session);
+
+    res.json({
+      success: true,
+      data: {
+        sessionId: session.sessionId,
+        status: session.status,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        duration: report.metadata.duration,
+        vadVector: report.vadVector || report.analysis?.vadVector || null,
+        keyObservations: report.analysis?.overallAssessment?.keyObservations || [],
+        dominantEmotion: report.analysis?.emotionSummary?.dominantEmotion || null,
+        averageVoiceMetrics: report.analysis?.vadSummary?.averageMetrics || null,
+        cbt: {
+          totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0,
+          mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion || null
+        }
+      }
+    });
+
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'session-summary',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id, endpoint: 'GET /api/session/:id/summary' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'SESSION_SUMMARY_ERROR', message: error.message }
+    });
+  }
+});
+
+/**
  * 세션 리포트 텍스트 요약 API (Phase 4)
  * GET /api/session/:id/report/summary
  *
