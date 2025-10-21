@@ -184,6 +184,16 @@ class PdfReportGenerator {
         // Recommendations
         const recs = report.analysis?.recommendations || [];
         if (recs.length > 0) {
+          // Prioritize specific actionable items first
+          const priorityOrder = ['4-6', '호흡', 'breath', '감사', 'journal', '스트레칭', 'stretch'];
+          const score = (title='') => {
+            const t = String(title).toLowerCase();
+            for (let i = 0; i < priorityOrder.length; i++) {
+              if (t.includes(priorityOrder[i].toLowerCase())) return i;
+            }
+            return 99;
+          };
+          recs.sort((a, b) => (score(a.title) - score(b.title)) || ((a.priority || 5) - (b.priority || 5)));
           doc.moveDown(1).fontSize(14).text('7) Recommendations').moveDown(0.5).fontSize(11);
           recs.slice(0, 5).forEach((r, i) => {
             doc.text(`  ${i + 1}. [${r.priority}] ${r.title}`);

@@ -643,6 +643,10 @@ router.get('/:id/summary', (req, res) => {
     // 리포트 생성(메모리 기반)
     const report = reportGenerator.generateReport(session);
 
+    const recommendations = Array.isArray(report.analysis?.recommendations)
+      ? report.analysis.recommendations.map(r => r?.title || '').filter(Boolean).slice(0, 3)
+      : [];
+
     const payload = {
         sessionId: session.sessionId,
         status: session.status,
@@ -656,7 +660,8 @@ router.get('/:id/summary', (req, res) => {
         cbt: {
           totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0,
           mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion || null
-        }
+        },
+        recommendations
       };
 
     const etag = crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');
