@@ -13,6 +13,7 @@ const surveyRouter = require("./routes/survey");
 const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
 const { sequelize } = require("./models");
+const { optionalJwtAuth } = require("./middlewares/auth");
 
 dotenv.config();
 
@@ -49,8 +50,8 @@ const missing = requiredEnv.filter((k) => !process.env[k]);
 if (missing.length) {
   console.warn(`⚠️ Missing required env: ${missing.join(', ')}`);
 }
-app.use("/api/stt", sttRouter);
-app.use("/api/session", sessionRouter);
+app.use("/api/stt", optionalJwtAuth, sttRouter);
+app.use("/api/session", optionalJwtAuth, sessionRouter);
 app.use("/api/monitoring", monitoringRouter);
 app.use("/api/survey", surveyRouter);
 app.use(express.static(path.join(__dirname, "public")));
