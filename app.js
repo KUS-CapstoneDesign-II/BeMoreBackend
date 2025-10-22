@@ -76,7 +76,13 @@ app.use("/api/survey", surveyRouter);
 app.use("/api/dashboard", optionalJwtAuth, dashboardRouter);
 app.use("/api/user", optionalJwtAuth, userRouter);
 app.use("/api/emotion", emotionRouter);
-app.use(express.static(path.join(__dirname, "public")));
+// Remove static site serving to keep API-only backend
+// app.use(express.static(path.join(__dirname, "public")));
+
+// Root status endpoint (API-only landing)
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'BeMore Backend API server is running successfully!' });
+});
 
 
 sequelize.sync({ force: false })
