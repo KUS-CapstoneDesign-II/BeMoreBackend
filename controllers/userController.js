@@ -1,4 +1,5 @@
 const { UserPreferences } = require('../models');
+const errorHandler = require('../services/ErrorHandler');
 
 async function getPreferences(req, res) {
   try {
@@ -9,7 +10,8 @@ async function getPreferences(req, res) {
     const pref = await UserPreferences.findOne({ where: { userId } });
     return res.json({ success: true, data: pref ? pref.preferences : { language: 'ko', theme: 'system', density: 'spacious', notifications: false } });
   } catch (err) {
-    return res.status(500).json({ success: false, error: { code: 'PREF_GET_ERROR', message: err.message } });
+    errorHandler.handle(err, { module: 'user-preferences', level: errorHandler.levels.ERROR, metadata: { method: 'GET', path: '/api/user/preferences', requestId: req.requestId } });
+    return res.status(500).json({ success: false, error: { code: 'PREF_GET_ERROR', message: err.message, requestId: req.requestId } });
   }
 }
 
@@ -27,7 +29,8 @@ async function setPreferences(req, res) {
     }
     return res.json({ success: true, data: { userId, preferences: pref.preferences } });
   } catch (err) {
-    return res.status(500).json({ success: false, error: { code: 'PREF_SET_ERROR', message: err.message } });
+    errorHandler.handle(err, { module: 'user-preferences', level: errorHandler.levels.ERROR, metadata: { method: 'PUT', path: '/api/user/preferences', requestId: req.requestId } });
+    return res.status(500).json({ success: false, error: { code: 'PREF_SET_ERROR', message: err.message, requestId: req.requestId } });
   }
 }
 

@@ -17,7 +17,11 @@ const { handleSession } = require('./sessionHandler');
 function setupWebSockets(wss) {
   wss.on('connection', (ws, req) => {
     const { pathname, query } = url.parse(req.url, true);
-    const sessionId = query.sessionId;
+    // Accept both query parameter and path segment session id
+    // e.g., /ws/landmarks?sessionId=sess_... or /ws/landmarks/sess_...
+    const segments = pathname.split('/').filter(Boolean);
+    const pathSessionId = segments.length >= 3 ? segments[2] : undefined;
+    const sessionId = query.sessionId || pathSessionId;
 
     console.log(`🔌 WebSocket 연결 시도: ${pathname}, sessionId: ${sessionId}`);
 
@@ -37,7 +41,10 @@ function setupWebSockets(wss) {
     }
 
     // 경로별 핸들러 라우팅
-    switch (pathname) {
+    // Normalize base path without trailing session segment
+    const basePath = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : pathname;
+
+    switch (basePath) {
       case '/ws/landmarks':
         console.log(`✅ Landmarks 채널 연결: ${sessionId}`);
         session.wsConnections.landmarks = ws;
