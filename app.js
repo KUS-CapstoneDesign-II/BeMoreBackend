@@ -60,8 +60,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// Preflight 응답 처리 강화
-app.options('*', cors());
+// Preflight handled by CORS middleware (Express v5-safe)
 
 app.use(express.json());
 // 환경 변수 유효성 체크 (필수 값)
