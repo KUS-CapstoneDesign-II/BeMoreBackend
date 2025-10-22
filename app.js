@@ -12,6 +12,7 @@ const sessionRouter = require("./routes/session");
 const monitoringRouter = require("./routes/monitoring");
 const surveyRouter = require("./routes/survey");
 const dashboardRouter = require("./routes/dashboard");
+const emotionRouter = require("./routes/emotion");
 const userRouter = require("./routes/user");
 const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
@@ -75,6 +76,7 @@ app.use("/api/monitoring", monitoringRouter);
 app.use("/api/survey", surveyRouter);
 app.use("/api/dashboard", optionalJwtAuth, dashboardRouter);
 app.use("/api/user", optionalJwtAuth, userRouter);
+app.use("/api/emotion", emotionRouter);
 app.use(express.static(path.join(__dirname, "public")));
 
 

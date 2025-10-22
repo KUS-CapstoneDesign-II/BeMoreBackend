@@ -99,6 +99,22 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   }
 }
 
+// Simple text-based emotion analysis using Gemini
+async function analyzeEmotion(text) {
+  const input = (text || '').toString().slice(0, 2000);
+  const prompt = `Classify the predominant emotion of the following Korean/English text into one of [happy, sad, angry, anxious, neutral]. Return ONLY the label.\n\nText: "${input}"`;
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const res = await model.generateContent(prompt);
+    const label = (res?.response?.text?.() || '').trim().toLowerCase();
+    const allowed = ['happy','sad','angry','anxious','neutral'];
+    return allowed.includes(label) ? label : 'neutral';
+  } catch (err) {
+    errorHandler.handle(err, { module: 'gemini-emotion', level: errorHandler.levels.ERROR });
+    return 'neutral';
+  }
+}
+
 async function generateDetailedReport(accumulatedData, speechText = "") {
   if (!accumulatedData || accumulatedData.length === 0) return { error: '데이터 없음' };
 
@@ -174,4 +190,4 @@ async function generateDetailedReport(accumulatedData, speechText = "") {
   }
 }
 
-module.exports = { analyzeExpression, generateDetailedReport };
+module.exports = { analyzeExpression, generateDetailedReport, analyzeEmotion };
