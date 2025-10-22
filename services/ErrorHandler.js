@@ -210,8 +210,8 @@ class ErrorHandler {
   /**
    * 지수 백오프를 사용한 재시도
    */
-  async retryWithBackoff(errorInfo, context, maxRetries = 3) {
-    const { retryCount = 0 } = context;
+  async retryWithBackoff(errorInfo, context = {}, maxRetries = 3) {
+    const { retryCount = 0 } = context || {};
 
     if (retryCount >= maxRetries) {
       console.error(`❌ [RETRY FAILED] ${errorInfo.module}: 최대 재시도 횟수 초과`);
@@ -230,7 +230,8 @@ class ErrorHandler {
         return { success: true, result };
       }
     } catch (retryError) {
-      return this.retryWithBackoff(errorInfo, { ...context, retryCount: retryCount + 1 }, maxRetries);
+      const nextContext = Object.assign({}, context || {}, { retryCount: retryCount + 1 });
+      return this.retryWithBackoff(errorInfo, nextContext, maxRetries);
     }
 
     return { success: false, error: errorInfo };

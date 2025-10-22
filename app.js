@@ -26,6 +26,11 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+// Proxy trust (required on PaaS like Render for correct IPs and rate-limit)
+if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+  app.set('trust proxy', 1);
+}
+
 // 보안 헤더
 app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
@@ -40,7 +45,9 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 app.use(requestId);
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms reqId=:req[headers][x-request-id]'));
+// Use requestId from middleware for consistent correlation IDs in logs
+morgan.token('id', (req) => req.requestId);
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms reqId=:id'));
 
 // CORS 설정 (프론트엔드 연동)
 const defaultAllowed = ['http://localhost:5173', 'https://be-more-frontend.vercel.app'];

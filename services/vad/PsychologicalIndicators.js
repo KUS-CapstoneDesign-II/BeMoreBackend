@@ -325,7 +325,9 @@ class PsychologicalIndicators {
    */
   updateThresholds(newThresholds) {
     console.log('🔧 PsychologicalIndicators 임계값 업데이트:', newThresholds);
-    Object.assign(this.thresholds, newThresholds);
+    if (newThresholds && typeof newThresholds === 'object') {
+      Object.assign(this.thresholds, newThresholds);
+    }
   }
 
   /**

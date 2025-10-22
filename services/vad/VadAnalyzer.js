@@ -202,7 +202,9 @@ class VadAnalyzer {
    */
   updateConfig(newConfig) {
     console.log('🔧 VAD 설정 업데이트:', newConfig);
-    Object.assign(this.config, newConfig);
+    if (newConfig && typeof newConfig === 'object') {
+      Object.assign(this.config, newConfig);
+    }
 
     // 설정 변경 시 재초기화 필요
     console.log('⚠️ 설정 변경 완료. 재초기화를 위해 stop() → initialize() → start()를 호출하세요.');
