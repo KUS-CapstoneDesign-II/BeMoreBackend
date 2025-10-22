@@ -104,13 +104,16 @@ async function analyzeEmotion(text) {
   const input = (text || '').toString().slice(0, 2000);
   const prompt = `Classify the predominant emotion of the following Korean/English text into one of [happy, sad, angry, anxious, neutral]. Return ONLY the label.\n\nText: "${input}"`;
   try {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not set');
+    }
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const res = await model.generateContent(prompt);
     const label = (res?.response?.text?.() || '').trim().toLowerCase();
     const allowed = ['happy','sad','angry','anxious','neutral'];
     return allowed.includes(label) ? label : 'neutral';
   } catch (err) {
-    errorHandler.handle(err, { module: 'gemini-emotion', level: errorHandler.levels.ERROR });
+    errorHandler.handle(err, { module: 'gemini-emotion', level: errorHandler.levels.ERROR, metadata: { hasKey: !!process.env.GEMINI_API_KEY } });
     return 'neutral';
   }
 }
