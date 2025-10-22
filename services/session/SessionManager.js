@@ -106,6 +106,12 @@ class SessionManager {
       throw new Error(`세션을 찾을 수 없습니다: ${sessionId}`);
     }
 
+    // 이미 일시정지 상태면 무해하게 통과 (idempotent)
+    if (session.status === 'paused') {
+      console.log(`⏸️ 이미 일시정지 상태: ${sessionId}`);
+      return session;
+    }
+
     if (session.status !== 'active') {
       throw new Error(`활성 세션이 아닙니다: ${sessionId} (현재 상태: ${session.status})`);
     }
@@ -130,6 +136,12 @@ class SessionManager {
       throw new Error(`세션을 찾을 수 없습니다: ${sessionId}`);
     }
 
+    // 이미 활성 상태면 무해하게 통과 (idempotent)
+    if (session.status === 'active') {
+      console.log(`▶️ 이미 활성 상태: ${sessionId}`);
+      return session;
+    }
+
     if (session.status !== 'paused') {
       throw new Error(`일시정지 세션이 아닙니다: ${sessionId} (현재 상태: ${session.status})`);
     }
@@ -152,6 +164,12 @@ class SessionManager {
 
     if (!session) {
       throw new Error(`세션을 찾을 수 없습니다: ${sessionId}`);
+    }
+
+    // 이미 종료 상태면 무해하게 통과 (idempotent)
+    if (session.status === 'ended') {
+      console.log(`⏹️ 이미 종료된 세션: ${sessionId}`);
+      return session;
     }
 
     // 세션 상태 업데이트
