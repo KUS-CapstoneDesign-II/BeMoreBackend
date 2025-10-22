@@ -197,9 +197,11 @@ class SessionReportGenerator {
     session.emotions.forEach(e => {
       if (e.cbtAnalysis?.detections) {
         e.cbtAnalysis.detections.forEach(d => {
+          // 일부 요소가 null/undefined일 수 있으므로 안전하게 확장
+          const safeDetection = d && typeof d === 'object' ? d : {};
           allDistortions.push({
             timestamp: e.timestamp,
-            ...d
+            ...safeDetection
           });
         });
       }
