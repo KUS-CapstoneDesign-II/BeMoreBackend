@@ -250,3 +250,36 @@ function gracefulShutdown(signal) {
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// 🔴 Error Handler: Uncaught Exceptions
+process.on('uncaughtException', (error) => {
+  console.error('');
+  console.error('❌ ========== UNCAUGHT EXCEPTION ==========');
+  console.error('Message:', error.message);
+  console.error('Stack:', error.stack);
+  const stackLines = error.stack?.split('\n') || [];
+  if (stackLines.length > 1) {
+    console.error('Location:', stackLines[1].trim());
+  }
+  console.error('=========================================');
+  console.error('');
+  gracefulShutdown('uncaughtException');
+});
+
+// 🔴 Error Handler: Unhandled Promise Rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('');
+  console.error('❌ ========== UNHANDLED REJECTION ==========');
+  console.error('Promise:', promise);
+  console.error('Reason:', reason?.message || reason);
+  if (reason?.stack) {
+    console.error('Stack:', reason.stack);
+    const stackLines = reason.stack.split('\n');
+    if (stackLines.length > 1) {
+      console.error('Location:', stackLines[1].trim());
+    }
+  }
+  console.error('==========================================');
+  console.error('');
+  gracefulShutdown('unhandledRejection');
+});

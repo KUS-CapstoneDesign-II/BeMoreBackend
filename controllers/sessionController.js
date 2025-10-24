@@ -149,7 +149,21 @@ async function report(req, res) {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
     if (!session) return res.status(404).json({ success: false, error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` } });
-    const report = new SessionReportGenerator().generateReport(session);
+
+    let report;
+    try {
+      const gen = new SessionReportGenerator();
+      report = gen.generateReport(session);
+    } catch (reportError) {
+      console.error('❌ 리포트 생성 실패:', reportError.message);
+      return res.status(500).json({ success: false, error: { code: 'REPORT_GENERATION_ERROR', message: '리포트 생성 중 오류가 발생했습니다' } });
+    }
+
+    // report null 체크
+    if (!report) {
+      return res.status(500).json({ success: false, error: { code: 'REPORT_INVALID', message: '유효하지 않은 리포트입니다' } });
+    }
+
     const etag = crypto.createHash('sha1').update(JSON.stringify(report)).digest('hex');
     res.setHeader('Cache-Control', 'private, max-age=60');
     res.setHeader('ETag', etag);

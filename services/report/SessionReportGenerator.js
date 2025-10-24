@@ -48,23 +48,58 @@ class SessionReportGenerator {
 
     console.log(`📊 세션 리포트 생성 시작: ${safeSession.sessionId}`);
 
-    // 1. 세션 메타데이터
-    const metadata = this._generateMetadata(safeSession);
+    let metadata, analysis, emotionTimeline, vadTimeline, cbtDetails, statistics;
 
-    // 2. 멀티모달 분석
-    const analysis = this.analyzer.analyze(safeSession);
+    try {
+      // 1. 세션 메타데이터
+      metadata = this._generateMetadata(safeSession);
+    } catch (e) {
+      console.error('❌ 메타데이터 생성 실패:', e.message);
+      throw new Error(`Metadata generation failed: ${e.message}`);
+    }
 
-    // 3. 감정 타임라인 (시각화용 데이터)
-    const emotionTimeline = this._generateEmotionTimeline(safeSession.emotions);
+    try {
+      // 2. 멀티모달 분석 (가장 복잡한 부분)
+      analysis = this.analyzer.analyze(safeSession);
+      if (!analysis) {
+        throw new Error('분석 결과가 null/undefined입니다');
+      }
+    } catch (e) {
+      console.error('❌ 멀티모달 분석 실패:', e.message);
+      throw new Error(`Multimodal analysis failed: ${e.message}`);
+    }
 
-    // 4. VAD 타임라인
-    const vadTimeline = this._generateVADTimeline(safeSession.vadAnalysisHistory);
+    try {
+      // 3. 감정 타임라인 (시각화용 데이터)
+      emotionTimeline = this._generateEmotionTimeline(safeSession.emotions);
+    } catch (e) {
+      console.error('❌ 감정 타임라인 생성 실패:', e.message);
+      emotionTimeline = [];
+    }
 
-    // 5. CBT 개입 상세
-    const cbtDetails = this._generateCBTDetails(safeSession);
+    try {
+      // 4. VAD 타임라인
+      vadTimeline = this._generateVADTimeline(safeSession.vadAnalysisHistory);
+    } catch (e) {
+      console.error('❌ VAD 타임라인 생성 실패:', e.message);
+      vadTimeline = [];
+    }
 
-    // 6. 요약 통계
-    const statistics = this._generateStatistics(safeSession, analysis);
+    try {
+      // 5. CBT 개입 상세
+      cbtDetails = this._generateCBTDetails(safeSession);
+    } catch (e) {
+      console.error('❌ CBT 상세 생성 실패:', e.message);
+      throw new Error(`CBT details generation failed: ${e.message}`);
+    }
+
+    try {
+      // 6. 요약 통계
+      statistics = this._generateStatistics(safeSession, analysis);
+    } catch (e) {
+      console.error('❌ 통계 생성 실패:', e.message);
+      statistics = { session: {}, emotion: {}, vad: {}, cbt: {}, overall: {} };
+    }
 
     const report = {
       reportId: `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

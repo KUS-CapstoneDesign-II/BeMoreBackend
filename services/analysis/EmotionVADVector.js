@@ -71,6 +71,16 @@ class EmotionVADVector {
   }
 
   compute({ emotions = [], vadHistory = [], cbtSummary = null }) {
+    // 입력값 검증 및 안전 처리
+    if (!Array.isArray(emotions)) {
+      console.warn('⚠️ emotions이 배열이 아님:', typeof emotions);
+      emotions = [];
+    }
+    if (!Array.isArray(vadHistory)) {
+      console.warn('⚠️ vadHistory가 배열이 아님:', typeof vadHistory);
+      vadHistory = [];
+    }
+
     const valence = this._valenceFromEmotions(emotions);
     const arousal = this._arousalFromVoice(vadHistory);
     const dominance = this._dominanceFromVoiceAndCBT(vadHistory, cbtSummary);

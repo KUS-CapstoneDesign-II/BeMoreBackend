@@ -83,7 +83,8 @@ class MultimodalAnalyzer {
    * 감정 분석 요약
    */
   _analyzeEmotions(emotions) {
-    if (emotions.length === 0) {
+    // 안전한 배열 처리
+    if (!Array.isArray(emotions) || emotions.length === 0) {
       return {
         totalCount: 0,
         distribution: {},
@@ -134,7 +135,8 @@ class MultimodalAnalyzer {
    * VAD 메트릭 분석
    */
   _analyzeVAD(vadHistory) {
-    if (vadHistory.length === 0) {
+    // 안전한 배열 처리
+    if (!Array.isArray(vadHistory) || vadHistory.length === 0) {
       return {
         totalAnalyses: 0,
         averageMetrics: null,
@@ -261,7 +263,7 @@ class MultimodalAnalyzer {
 
     // 1. 부정적 감정 비중 (30점)
     const negativeEmotions = ['슬픔', 'sadness', '불안', 'anxiety', '분노', 'anger', '두려움', 'fear'];
-    const negativeCount = Object.entries(emotionSummary.distribution)
+    const negativeCount = Object.entries(emotionSummary?.distribution || {})
       .filter(([emotion]) => negativeEmotions.some(ne => emotion.includes(ne)))
       .reduce((sum, [, count]) => sum + count, 0);
     const negativeRatio = emotionSummary.totalCount > 0
@@ -278,7 +280,7 @@ class MultimodalAnalyzer {
     }
 
     // 3. CBT 왜곡 빈도 (30점)
-    if (cbtSummary.totalDistortions > 0) {
+    if (cbtSummary?.totalDistortions > 0 && emotionSummary?.totalCount > 0) {
       const distortionDensity = Math.min(
         cbtSummary.totalDistortions / emotionSummary.totalCount,
         1.0
