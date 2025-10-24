@@ -199,8 +199,21 @@ async function summary(req, res) {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
     if (!session) return res.status(404).json({ success: false, error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` } });
-    const gen = new SessionReportGenerator();
-    const report = gen.generateReport(session);
+
+    let report;
+    try {
+      const gen = new SessionReportGenerator();
+      report = gen.generateReport(session);
+    } catch (e) {
+      console.error('❌ 세션 리포트 생성 실패:', e?.message);
+      return res.status(500).json({ success: false, error: { code: 'REPORT_GENERATION_ERROR', message: '리포트 생성 중 오류가 발생했습니다' } });
+    }
+
+    // Ensure report and analysis exist
+    if (!report || !report.analysis) {
+      return res.status(500).json({ success: false, error: { code: 'REPORT_INVALID', message: '유효하지 않은 리포트입니다' } });
+    }
+
     const recommendations = Array.isArray(report.analysis?.recommendations)
       ? report.analysis.recommendations.map(r => r?.title || '').filter(Boolean).slice(0, 3)
       : [];

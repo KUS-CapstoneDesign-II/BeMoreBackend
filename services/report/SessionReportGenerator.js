@@ -38,25 +38,33 @@ class SessionReportGenerator {
       throw new Error('세션 데이터가 없습니다');
     }
 
-    console.log(`📊 세션 리포트 생성 시작: ${session.sessionId}`);
+    // 안전하게 기본값 설정
+    const safeSession = {
+      ...session,
+      emotions: Array.isArray(session.emotions) ? session.emotions : [],
+      vadAnalysisHistory: Array.isArray(session.vadAnalysisHistory) ? session.vadAnalysisHistory : [],
+      interventionGenerator: session.interventionGenerator || null
+    };
+
+    console.log(`📊 세션 리포트 생성 시작: ${safeSession.sessionId}`);
 
     // 1. 세션 메타데이터
-    const metadata = this._generateMetadata(session);
+    const metadata = this._generateMetadata(safeSession);
 
     // 2. 멀티모달 분석
-    const analysis = this.analyzer.analyze(session);
+    const analysis = this.analyzer.analyze(safeSession);
 
     // 3. 감정 타임라인 (시각화용 데이터)
-    const emotionTimeline = this._generateEmotionTimeline(session.emotions);
+    const emotionTimeline = this._generateEmotionTimeline(safeSession.emotions);
 
     // 4. VAD 타임라인
-    const vadTimeline = this._generateVADTimeline(session.vadAnalysisHistory);
+    const vadTimeline = this._generateVADTimeline(safeSession.vadAnalysisHistory);
 
     // 5. CBT 개입 상세
-    const cbtDetails = this._generateCBTDetails(session);
+    const cbtDetails = this._generateCBTDetails(safeSession);
 
     // 6. 요약 통계
-    const statistics = this._generateStatistics(session, analysis);
+    const statistics = this._generateStatistics(safeSession, analysis);
 
     const report = {
       reportId: `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -192,20 +200,22 @@ class SessionReportGenerator {
 
     const interventions = session.interventionGenerator.getInterventionHistory();
 
-    // 모든 왜곡 추출
+    // 모든 왜곡 추출 (emotions가 없을 수 있으므로 안전하게 처리)
     const allDistortions = [];
-    session.emotions.forEach(e => {
-      if (e.cbtAnalysis?.detections) {
-        e.cbtAnalysis.detections.forEach(d => {
-          // 일부 요소가 null/undefined일 수 있으므로 안전하게 확장
-          const safeDetection = d && typeof d === 'object' ? d : {};
-          allDistortions.push({
-            timestamp: e.timestamp,
-            ...safeDetection
+    if (Array.isArray(session.emotions)) {
+      session.emotions.forEach(e => {
+        if (e && e.cbtAnalysis?.detections) {
+          e.cbtAnalysis.detections.forEach(d => {
+            // 일부 요소가 null/undefined일 수 있으므로 안전하게 확장
+            const safeDetection = d && typeof d === 'object' ? d : {};
+            allDistortions.push({
+              timestamp: e.timestamp,
+              ...safeDetection
+            });
           });
-        });
-      }
-    });
+        }
+      });
+    }
 
     return {
       interventions: interventions.map(i => ({
@@ -246,10 +256,10 @@ class SessionReportGenerator {
   _generateStatistics(session, analysis) {
     return {
       session: {
-        totalEmotionAnalyses: session.emotions.length,
-        totalVADAnalyses: session.vadAnalysisHistory?.length || 0,
-        totalCBTDistortions: analysis.cbtSummary.totalDistortions,
-        totalInterventions: analysis.cbtSummary.totalInterventions
+        totalEmotionAnalyses: Array.isArray(session.emotions) ? session.emotions.length : 0,
+        totalVADAnalyses: Array.isArray(session.vadAnalysisHistory) ? session.vadAnalysisHistory.length : 0,
+        totalCBTDistortions: analysis?.cbtSummary?.totalDistortions || 0,
+        totalInterventions: analysis?.cbtSummary?.totalInterventions || 0
       },
       emotion: {
         dominantEmotion: analysis.emotionSummary.dominantEmotion,
