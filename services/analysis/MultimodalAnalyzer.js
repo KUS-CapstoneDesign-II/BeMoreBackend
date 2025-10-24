@@ -215,11 +215,14 @@ class MultimodalAnalyzer {
 
     // 감정 데이터에서 CBT 분석 추출
     const allDistortions = [];
-    emotions.forEach(e => {
-      if (e.cbtAnalysis?.detections) {
-        allDistortions.push(...e.cbtAnalysis.detections);
-      }
-    });
+    // 안전한 배열 처리
+    if (Array.isArray(emotions)) {
+      emotions.forEach(e => {
+        if (e && e.cbtAnalysis?.detections) {
+          allDistortions.push(...e.cbtAnalysis.detections);
+        }
+      });
+    }
 
     // 왜곡 분포
     const distortionDistribution = {};
@@ -231,7 +234,7 @@ class MultimodalAnalyzer {
     const interventionHistory = interventionGenerator.getInterventionHistory();
 
     // 가장 빈번한 왜곡
-    const mostCommon = Object.entries(distortionDistribution)
+    const mostCommon = Object.entries(distortionDistribution || {})
       .sort((a, b) => b[1] - a[1])[0];
 
     return {
