@@ -1111,6 +1111,91 @@ landmarksWs.onmessage = (event) => {
 
 ---
 
+#### **POST** `/api/session/:id/feedback`
+상담 세션 완료 후 사용자 피드백 저장
+
+**Request:**
+```http
+POST /api/session/sess_20250117_001/feedback
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "note": "상담사가 매우 친절했습니다."
+}
+```
+
+**Request Body:**
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `rating` | number | ✅ | 평점 (1~5 정수) |
+| `note` | string | ❌ | 사용자 피드백 (선택사항) |
+
+**Response (성공):**
+```json
+{
+  "success": true,
+  "message": "피드백이 저장되었습니다.",
+  "data": {
+    "feedbackId": "feedback_1737122700000_abc123",
+    "sessionId": "sess_20250117_001",
+    "rating": 5,
+    "submittedAt": 1737122700000
+  }
+}
+```
+
+**Response Fields:**
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `feedbackId` | string | 생성된 피드백 고유 ID |
+| `sessionId` | string | 세션 ID |
+| `rating` | number | 저장된 평점 |
+| `submittedAt` | number | 제출 시간 (Unix timestamp) |
+
+**HTTP Status:**
+- `201 Created`: 성공적으로 생성됨
+- `400 Bad Request`: rating 값이 1~5 범위가 아님
+- `404 Not Found`: 세션을 찾을 수 없음
+- `500 Internal Server Error`: 서버 에러
+
+**Error Response Examples:**
+
+```json
+// 400: 잘못된 rating 값
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_RATING",
+    "message": "rating은 1~5 사이의 정수여야 합니다"
+  }
+}
+```
+
+```json
+// 404: 세션 없음
+{
+  "success": false,
+  "error": {
+    "code": "SESSION_NOT_FOUND",
+    "message": "세션을 찾을 수 없습니다: sess_20250117_001"
+  }
+}
+```
+
+```json
+// 500: 서버 에러
+{
+  "success": false,
+  "error": {
+    "code": "FEEDBACK_SAVE_ERROR",
+    "message": "Database connection error"
+  }
+}
+```
+
+---
+
 ## 📝 변경 이력
 
 ### **v1.0.0** (2025-01-17)

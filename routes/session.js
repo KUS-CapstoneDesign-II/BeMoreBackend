@@ -795,6 +795,33 @@ router.get('/:id/report/pdf', validateParams(idParamSchema), (req, res) => {
 router.get('/:id/report/csv', validateParams(idParamSchema), validateQuery(csvQuerySchema), (req, res) => {
   return ctrl.reportCsv(req, res);
 });
+
+/**
+ * 세션 피드백 저장 API
+ * POST /api/session/:id/feedback
+ *
+ * Body:
+ * {
+ *   "rating": 1-5,      // 필수
+ *   "note": "string"    // 선택
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "message": "피드백이 저장되었습니다.",
+ *   "data": {
+ *     "feedbackId": "feedback_...",
+ *     "sessionId": "sess_...",
+ *     "rating": 5,
+ *     "submittedAt": 1234567890
+ *   }
+ * }
+ */
+router.post('/:id/feedback', validateParams(idParamSchema), (req, res) => {
+  return ctrl.feedback(req, res);
+});
+
 /*router.get('/:id/report/pdf', async (req, res) => {
   try {
     const sessionId = req.params.id;
