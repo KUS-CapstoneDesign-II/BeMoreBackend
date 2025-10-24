@@ -215,10 +215,14 @@ async function summary(req, res) {
 
     let report;
     try {
+      console.log('📋 세션 리포트 생성 시작...');
       const gen = new SessionReportGenerator();
+      console.log('✅ SessionReportGenerator 생성됨');
       report = gen.generateReport(session);
+      console.log('✅ 리포트 생성 성공:', report?.reportId);
     } catch (e) {
-      console.error('❌ 세션 리포트 생성 실패:', e?.message, e?.stack);
+      console.error('❌ 세션 리포트 생성 실패:', e?.message);
+      console.error('Stack:', e?.stack);
       return res.status(500).json({ success: false, error: { code: 'REPORT_GENERATION_ERROR', message: '리포트 생성 중 오류가 발생했습니다' } });
     }
 
