@@ -94,8 +94,16 @@ async function end(req, res) {
       emotionCount: session.emotions.length
     };
     res.json({ success: true, data: responseData });
-    // persist asynchronously
-    sessionService.persistReportAndSession(session).catch(() => {});
+
+    // persist asynchronously with isolation (never crash the response)
+    // Fire and forget with full error isolation in async callback
+    setImmediate(async () => {
+      try {
+        await sessionService.persistReportAndSession(session);
+      } catch (err) {
+        console.warn('⚠️ 세션 리포트 저장 중 에러:', err?.message);
+      }
+    });
   } catch (error) {
     errorHandler.handle(error, { module: 'session-end', level: errorHandler.levels.ERROR });
     return res.status(400).json({ success: false, error: { code: 'SESSION_END_ERROR', message: error.message } });
@@ -252,6 +260,110 @@ async function vadAnalysis(req, res) {
   }
 }
 
+/**
+ * 세션 피드백 저장
+ * POST /api/session/:id/feedback
+ *
+ * Body:
+ * {
+ *   "rating": 1-5,
+ *   "note": "optional feedback text"
+ * }
+ */
+async function feedback(req, res) {
+  try {
+    const sessionId = req.params.id;
+    const { rating, note } = req.body || {};
+
+    // 입력 검증
+    if (!rating || typeof rating !== 'number' || rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_RATING',
+          message: 'rating은 1~5 사이의 정수여야 합니다'
+        }
+      });
+    }
+
+    // 세션 존재 여부 확인
+    const session = SessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SESSION_NOT_FOUND',
+          message: `세션을 찾을 수 없습니다: ${sessionId}`
+        }
+      });
+    }
+
+    // 피드백 저장 (메모리에 저장)
+    const feedbackId = `feedback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const submittedAt = Date.now();
+
+    // SessionManager에 feedback 저장
+    if (!session.feedback) {
+      session.feedback = [];
+    }
+    session.feedback.push({
+      feedbackId,
+      sessionId,
+      rating: parseInt(rating, 10),
+      note: note || null,
+      submittedAt
+    });
+
+    // DB 저장 시도 (선택사항, 에러 무시)
+    if (process.env.DB_DISABLED !== 'true') {
+      try {
+        const models = require('../models');
+        if (models.Feedback && models.sequelize && models.sequelize.authenticate) {
+          await models.Feedback.create({
+            feedbackId,
+            sessionId,
+            rating: parseInt(rating, 10),
+            note: note || null,
+            submittedAt
+          }).catch(err => {
+            console.warn('⚠️ 피드백 DB 저장 실패:', err.message);
+          });
+        }
+      } catch (dbError) {
+        // DB 저장 실패해도 무시 (메모리에는 이미 저장됨)
+        console.warn('⚠️ DB 저장 시도 중 에러:', dbError.message);
+      }
+    }
+
+    console.log(`✅ 세션 피드백 저장: ${feedbackId} (세션: ${sessionId}, 평점: ${rating})`);
+
+    return res.status(201).json({
+      success: true,
+      message: '피드백이 저장되었습니다',
+      data: {
+        feedbackId,
+        sessionId,
+        rating: parseInt(rating, 10),
+        submittedAt
+      }
+    });
+
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'session-feedback',
+      level: errorHandler.levels.ERROR,
+      metadata: { sessionId: req.params.id }
+    });
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'FEEDBACK_SAVE_ERROR',
+        message: error.message
+      }
+    });
+  }
+}
+
 module.exports = {
   start,
   get,
@@ -267,6 +379,7 @@ module.exports = {
   reportCsv,
   reportPdf,
   vadAnalysis,
+  feedback,
 };
 
 

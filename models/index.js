@@ -7,6 +7,7 @@ const Counseling = require('./Counseling');
 const Session = require('./Session');
 const Report = require('./Report');
 const UserPreferences = require('./UserPreferences');
+const Feedback = require('./Feedback');
 
 const env = process.env.NODE_ENV || 'development';
 const db = {};
@@ -45,6 +46,7 @@ db.Counseling = Counseling;
 db.Session = Session;
 db.Report = Report;
 db.UserPreferences = UserPreferences;
+db.Feedback = Feedback;
 
 if (dbEnabled && sequelize instanceof Sequelize) {
   User.initiate(sequelize);
@@ -52,6 +54,7 @@ if (dbEnabled && sequelize instanceof Sequelize) {
   Session.initiate(sequelize);
   Report.initiate(sequelize);
   UserPreferences.initiate(sequelize);
+  Feedback.initiate(sequelize);
 
   User.associate(db);
   Counseling.associate(db);
