@@ -97,16 +97,14 @@ async function end(req, res) {
 
     // persist asynchronously with isolation (never crash the response)
     // Fire and forget with full error isolation in async callback
-    console.log('🔔 Background persist 시작 (setImmediate)...');
-    setImmediate(() => {
-      console.log('🔄 Persist 함수 실행 중...');
-      sessionService.persistReportAndSession(session)
-        .catch(err => {
-          console.warn('⚠️ 세션 리포트 저장 중 에러 (catch):', err?.message);
-        })
-        .finally(() => {
-          console.log('✅ Persist 함수 완료');
-        });
+    // Background persist with full error isolation
+    setImmediate(async () => {
+      try {
+        await sessionService.persistReportAndSession(session);
+        console.log('✅ 세션 리포트 비동기 저장 완료');
+      } catch (err) {
+        console.warn('⚠️ 세션 리포트 비동기 저장 실패:', err?.message);
+      }
     });
   } catch (error) {
     errorHandler.handle(error, { module: 'session-end', level: errorHandler.levels.ERROR });
