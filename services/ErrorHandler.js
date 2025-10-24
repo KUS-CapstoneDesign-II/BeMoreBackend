@@ -15,6 +15,7 @@ class ErrorHandler {
     this.stats = {
       total: 0,
       byType: {},
+      byCode: {},
       byModule: {},
       recent: [] // 최근 100개 에러
     };
@@ -148,6 +149,13 @@ class ErrorHandler {
     }
     this.stats.byType[errorInfo.type]++;
 
+    // 코드별 통계
+    const codeKey = errorInfo.code || 'UNKNOWN';
+    if (!this.stats.byCode[codeKey]) {
+      this.stats.byCode[codeKey] = 0;
+    }
+    this.stats.byCode[codeKey]++;
+
     // 모듈별 통계
     if (!this.stats.byModule[errorInfo.module]) {
       this.stats.byModule[errorInfo.module] = 0;
@@ -160,7 +168,9 @@ class ErrorHandler {
       level: errorInfo.level,
       message: errorInfo.message,
       module: errorInfo.module,
-      timestamp: errorInfo.timestamp
+      timestamp: errorInfo.timestamp,
+      code: errorInfo.code || null,
+      requestId: (errorInfo.metadata && errorInfo.metadata.requestId) || null
     });
 
     if (this.stats.recent.length > 100) {
@@ -177,6 +187,12 @@ class ErrorHandler {
       summary: {
         total: this.stats.total,
         byType: Object.entries(this.stats.byType)
+          .sort((a, b) => b[1] - a[1])
+          .reduce((acc, [key, value]) => {
+            acc[key] = value;
+            return acc;
+          }, {}),
+        byCode: Object.entries(this.stats.byCode)
           .sort((a, b) => b[1] - a[1])
           .reduce((acc, [key, value]) => {
             acc[key] = value;

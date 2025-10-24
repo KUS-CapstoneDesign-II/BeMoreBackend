@@ -37,6 +37,13 @@ if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
 // 보안 헤더
 app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      "default-src": ["'self'"],
+    },
+    reportOnly: true
+  }
 }));
 
 // 기본 레이트 리미팅 (IP당 10분 600 요청)
@@ -47,6 +54,19 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use(limiter);
+// Write-endpoint specific stricter limiter
+const writeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use((req, res, next) => {
+  if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
+    return writeLimiter(req, res, next);
+  }
+  return next();
+});
 app.use(requestId);
 // Use requestId from middleware for consistent correlation IDs in logs
 morgan.token('id', (req) => req.requestId);
@@ -72,7 +92,7 @@ app.use(cors({
 }));
 // Preflight handled by CORS middleware (Express v5-safe)
 
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 // 환경 변수 유효성 체크 (필수 값)
 const requiredEnv = ['PORT'];
 const missing = requiredEnv.filter((k) => !process.env[k]);
