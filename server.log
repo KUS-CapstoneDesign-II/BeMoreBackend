@@ -1,0 +1,9 @@
+[dotenv@17.2.3] injecting env (3) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+✅ SessionManager 초기화 완료
+🔬 MultimodalAnalyzer 초기화 완료
+📄 SessionReportGenerator 초기화 완료
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+✅ WebSocket 3채널 라우터 설정 완료
+[31m[ERROR][0m [90m2025-10-23T10:56:09.768Z[0m [34m[process][0m [33m(FILE)[0m listen EPERM: operation not permitted 0.0.0.0:8000
+🚨 Uncaught Exception - 서버 종료 중...

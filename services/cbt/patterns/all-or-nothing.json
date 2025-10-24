@@ -1,0 +1,24 @@
+{
+  "type": "all-or-nothing",
+  "name_ko": "흑백논리",
+  "name_en": "All-or-Nothing Thinking",
+  "description": "완벽하거나 완전 실패, 중간이 없는 극단적 사고",
+  "keywords": ["항상", "절대", "완벽", "전혀", "무조건", "100%", "0%", "전부", "하나도"],
+  "patterns": [
+    {
+      "regex": "(완벽|perfect).*(아니면|안|못).*(의미|소용|가치)",
+      "severity": "high",
+      "example": "완벽하지 않으면 의미가 없어"
+    },
+    {
+      "regex": "(항상|절대|전혀).*(실패|안돼|못해)",
+      "severity": "medium",
+      "example": "나는 항상 실패해"
+    },
+    {
+      "regex": "(전부|모든|모두).*(또는|아니면).*(아무것도|하나도)",
+      "severity": "medium",
+      "example": "전부 아니면 아무것도 아니야"
+    }
+  ]
+}

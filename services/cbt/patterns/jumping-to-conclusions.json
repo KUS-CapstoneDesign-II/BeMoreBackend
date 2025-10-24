@@ -1,0 +1,24 @@
+{
+  "type": "jumping-to-conclusions",
+  "name_ko": "성급한 결론",
+  "name_en": "Jumping to Conclusions",
+  "description": "충분한 근거 없이 부정적 결론으로 비약 (독심술, 점쟁이 오류)",
+  "keywords": ["분명", "틀림없이", "확실히", "아마", "~것같아", "~인것같아", "~할거야"],
+  "patterns": [
+    {
+      "regex": "(분명|틀림없이|확실히).*(싫어|미워|실망|생각)",
+      "severity": "high",
+      "example": "분명히 나를 싫어할 거야"
+    },
+    {
+      "regex": "(표정|태도).*(~것같|아마|분명).*(싫어|화|불만)",
+      "severity": "high",
+      "example": "표정을 보니 분명 화났을 거야"
+    },
+    {
+      "regex": "(안|못|실패).*(할거야|될거야|~것같아)",
+      "severity": "medium",
+      "example": "나는 못할 것 같아"
+    }
+  ]
+}

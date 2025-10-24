@@ -1,3 +1,5 @@
 node_modules/
 .env
 /tmp  
+/.claudetmp/
+config/config.json

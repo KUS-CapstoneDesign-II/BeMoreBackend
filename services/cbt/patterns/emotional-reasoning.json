@@ -1,0 +1,24 @@
+{
+  "type": "emotional-reasoning",
+  "name_ko": "감정적 추론",
+  "name_en": "Emotional Reasoning",
+  "description": "감정을 사실로 간주하는 사고 패턴",
+  "keywords": ["느껴져", "느낌", "기분", "~니까", "불안해서", "무서워서", "화나서"],
+  "patterns": [
+    {
+      "regex": "(불안|무서|두려).*(느껴지|기분|느낌).*(사실|진짜|~거야)",
+      "severity": "high",
+      "example": "불안하니까 진짜 위험한 거야"
+    },
+    {
+      "regex": "(느낌|기분).*(나쁘|안좋|싫).*(그래서|니까).*(안돼|못해|실패)",
+      "severity": "medium",
+      "example": "기분이 나빠서 안 될 거야"
+    },
+    {
+      "regex": "(~해서|니까).*(느껴져|기분).*(사실|그래)",
+      "severity": "medium",
+      "example": "화가 나니까 정말 잘못한 거야"
+    }
+  ]
+}
