@@ -83,7 +83,8 @@ class MultimodalAnalyzer {
    * 감정 분석 요약
    */
   _analyzeEmotions(emotions) {
-    if (emotions.length === 0) {
+    // 안전한 배열 처리
+    if (!Array.isArray(emotions) || emotions.length === 0) {
       return {
         totalCount: 0,
         distribution: {},
@@ -134,7 +135,8 @@ class MultimodalAnalyzer {
    * VAD 메트릭 분석
    */
   _analyzeVAD(vadHistory) {
-    if (vadHistory.length === 0) {
+    // 안전한 배열 처리
+    if (!Array.isArray(vadHistory) || vadHistory.length === 0) {
       return {
         totalAnalyses: 0,
         averageMetrics: null,
@@ -213,11 +215,14 @@ class MultimodalAnalyzer {
 
     // 감정 데이터에서 CBT 분석 추출
     const allDistortions = [];
-    emotions.forEach(e => {
-      if (e.cbtAnalysis?.detections) {
-        allDistortions.push(...e.cbtAnalysis.detections);
-      }
-    });
+    // 안전한 배열 처리
+    if (Array.isArray(emotions)) {
+      emotions.forEach(e => {
+        if (e && e.cbtAnalysis?.detections) {
+          allDistortions.push(...e.cbtAnalysis.detections);
+        }
+      });
+    }
 
     // 왜곡 분포
     const distortionDistribution = {};
@@ -229,7 +234,7 @@ class MultimodalAnalyzer {
     const interventionHistory = interventionGenerator.getInterventionHistory();
 
     // 가장 빈번한 왜곡
-    const mostCommon = Object.entries(distortionDistribution)
+    const mostCommon = Object.entries(distortionDistribution || {})
       .sort((a, b) => b[1] - a[1])[0];
 
     return {
@@ -261,8 +266,8 @@ class MultimodalAnalyzer {
 
     // 1. 부정적 감정 비중 (30점)
     const negativeEmotions = ['슬픔', 'sadness', '불안', 'anxiety', '분노', 'anger', '두려움', 'fear'];
-    const negativeCount = Object.entries(emotionSummary.distribution)
-      .filter(([emotion]) => negativeEmotions.some(ne => emotion.includes(ne)))
+    const negativeCount = Object.entries(emotionSummary?.distribution || {})
+      .filter(([emotion]) => emotion && typeof emotion === 'string' && negativeEmotions.some(ne => emotion.includes(ne)))
       .reduce((sum, [, count]) => sum + count, 0);
     const negativeRatio = emotionSummary.totalCount > 0
       ? negativeCount / emotionSummary.totalCount
@@ -278,7 +283,7 @@ class MultimodalAnalyzer {
     }
 
     // 3. CBT 왜곡 빈도 (30점)
-    if (cbtSummary.totalDistortions > 0) {
+    if (cbtSummary?.totalDistortions > 0 && emotionSummary?.totalCount > 0) {
       const distortionDensity = Math.min(
         cbtSummary.totalDistortions / emotionSummary.totalCount,
         1.0

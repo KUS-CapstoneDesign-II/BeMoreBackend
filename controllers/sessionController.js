@@ -97,11 +97,13 @@ async function end(req, res) {
 
     // persist asynchronously with isolation (never crash the response)
     // Fire and forget with full error isolation in async callback
+    // Background persist with full error isolation
     setImmediate(async () => {
       try {
         await sessionService.persistReportAndSession(session);
+        console.log('✅ 세션 리포트 비동기 저장 완료');
       } catch (err) {
-        console.warn('⚠️ 세션 리포트 저장 중 에러:', err?.message);
+        console.warn('⚠️ 세션 리포트 비동기 저장 실패:', err?.message);
       }
     });
   } catch (error) {
@@ -149,7 +151,21 @@ async function report(req, res) {
     const sessionId = req.params.id;
     const session = SessionManager.getSession(sessionId);
     if (!session) return res.status(404).json({ success: false, error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` } });
-    const report = new SessionReportGenerator().generateReport(session);
+
+    let report;
+    try {
+      const gen = new SessionReportGenerator();
+      report = gen.generateReport(session);
+    } catch (reportError) {
+      console.error('❌ 리포트 생성 실패:', reportError.message);
+      return res.status(500).json({ success: false, error: { code: 'REPORT_GENERATION_ERROR', message: '리포트 생성 중 오류가 발생했습니다' } });
+    }
+
+    // report null 체크
+    if (!report) {
+      return res.status(500).json({ success: false, error: { code: 'REPORT_INVALID', message: '유효하지 않은 리포트입니다' } });
+    }
+
     const etag = crypto.createHash('sha1').update(JSON.stringify(report)).digest('hex');
     res.setHeader('Cache-Control', 'private, max-age=60');
     res.setHeader('ETag', etag);
@@ -202,10 +218,14 @@ async function summary(req, res) {
 
     let report;
     try {
+      console.log('📋 세션 리포트 생성 시작...');
       const gen = new SessionReportGenerator();
+      console.log('✅ SessionReportGenerator 생성됨');
       report = gen.generateReport(session);
+      console.log('✅ 리포트 생성 성공:', report?.reportId);
     } catch (e) {
       console.error('❌ 세션 리포트 생성 실패:', e?.message);
+      console.error('Stack:', e?.stack);
       return res.status(500).json({ success: false, error: { code: 'REPORT_GENERATION_ERROR', message: '리포트 생성 중 오류가 발생했습니다' } });
     }
 
@@ -214,28 +234,40 @@ async function summary(req, res) {
       return res.status(500).json({ success: false, error: { code: 'REPORT_INVALID', message: '유효하지 않은 리포트입니다' } });
     }
 
-    const recommendations = Array.isArray(report.analysis?.recommendations)
-      ? report.analysis.recommendations.map(r => r?.title || '').filter(Boolean).slice(0, 3)
-      : [];
-    const payload = {
-      sessionId: session.sessionId,
-      status: session.status,
-      startedAt: session.startedAt,
-      endedAt: session.endedAt,
-      duration: report.metadata.duration,
-      vadVector: report.vadVector || report.analysis?.vadVector || null,
-      keyObservations: report.analysis?.overallAssessment?.keyObservations || [],
-      dominantEmotion: report.analysis?.emotionSummary?.dominantEmotion || null,
-      averageVoiceMetrics: report.analysis?.vadSummary?.averageMetrics || null,
-      cbt: { totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0, mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion || null },
-      recommendations
-    };
-    const etag = crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');
-    res.setHeader('Cache-Control', 'private, max-age=60');
-    res.setHeader('ETag', etag);
-    if (req.headers['if-none-match'] === etag) return res.status(304).end();
-    return res.json({ success: true, data: payload });
+    let recommendations = [];
+    try {
+      if (Array.isArray(report.analysis?.recommendations)) {
+        recommendations = report.analysis.recommendations.map(r => r?.title || '').filter(Boolean).slice(0, 3);
+      }
+    } catch (recErr) {
+      console.warn('⚠️ 권장사항 처리 중 에러:', recErr?.message);
+    }
+
+    try {
+      const payload = {
+        sessionId: session.sessionId,
+        status: session.status,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        duration: report.metadata?.duration || 0,
+        vadVector: report.vadVector || report.analysis?.vadVector || null,
+        keyObservations: report.analysis?.overallAssessment?.keyObservations || [],
+        dominantEmotion: report.analysis?.emotionSummary?.dominantEmotion || null,
+        averageVoiceMetrics: report.analysis?.vadSummary?.averageMetrics || null,
+        cbt: { totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0, mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion || null },
+        recommendations
+      };
+      const etag = crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+      res.setHeader('Cache-Control', 'private, max-age=60');
+      res.setHeader('ETag', etag);
+      if (req.headers['if-none-match'] === etag) return res.status(304).end();
+      return res.json({ success: true, data: payload });
+    } catch (payloadErr) {
+      console.error('❌ 페이로드 구성 중 에러:', payloadErr?.message, payloadErr?.stack);
+      return res.status(500).json({ success: false, error: { code: 'PAYLOAD_ERROR', message: '응답 구성 중 오류가 발생했습니다' } });
+    }
   } catch (error) {
+    console.error('❌ summary 함수 최상위 예외:', error?.message, error?.stack);
     errorHandler.handle(error, { module: 'session-summary', level: errorHandler.levels.ERROR });
     return res.status(500).json({ success: false, error: { code: 'SESSION_SUMMARY_ERROR', message: error.message } });
   }
