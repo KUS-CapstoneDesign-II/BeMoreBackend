@@ -368,7 +368,7 @@ class MultimodalAnalyzer {
    * 인지 패턴 분류
    */
   _classifyCognitivePattern(cbtSummary) {
-    if (cbtSummary.totalDistortions === 0) return 'healthy';
+    if (!cbtSummary || cbtSummary.totalDistortions === 0) return 'healthy';
 
     const density = cbtSummary.totalDistortions / 10; // 10초 단위 기준
 
@@ -434,7 +434,7 @@ class MultimodalAnalyzer {
     }
 
     // 인지 패턴 기반
-    if (assessment.cognitivePattern.includes('distortion')) {
+    if (assessment.cognitivePattern && assessment.cognitivePattern.includes('distortion')) {
       recommendations.push({
         priority: 'high',
         category: 'cbt',
