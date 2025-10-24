@@ -236,7 +236,7 @@ async function summary(req, res) {
       status: session.status,
       startedAt: session.startedAt,
       endedAt: session.endedAt,
-      duration: report.metadata.duration,
+      duration: report.metadata?.duration || 0,
       vadVector: report.vadVector || report.analysis?.vadVector || null,
       keyObservations: report.analysis?.overallAssessment?.keyObservations || [],
       dominantEmotion: report.analysis?.emotionSummary?.dominantEmotion || null,
