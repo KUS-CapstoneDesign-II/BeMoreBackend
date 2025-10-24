@@ -267,7 +267,7 @@ class MultimodalAnalyzer {
     // 1. 부정적 감정 비중 (30점)
     const negativeEmotions = ['슬픔', 'sadness', '불안', 'anxiety', '분노', 'anger', '두려움', 'fear'];
     const negativeCount = Object.entries(emotionSummary?.distribution || {})
-      .filter(([emotion]) => negativeEmotions.some(ne => emotion.includes(ne)))
+      .filter(([emotion]) => emotion && typeof emotion === 'string' && negativeEmotions.some(ne => emotion.includes(ne)))
       .reduce((sum, [, count]) => sum + count, 0);
     const negativeRatio = emotionSummary.totalCount > 0
       ? negativeCount / emotionSummary.totalCount
