@@ -4,6 +4,10 @@ const { handleLandmarks } = require('./landmarksHandler');
 const { handleVoice } = require('./voiceHandler');
 const { handleSession } = require('./sessionHandler');
 
+// Heartbeat and cleanup settings
+const HEARTBEAT_INTERVAL_MS = 30 * 1000; // 30s
+const SESSION_CLEANUP_GRACE_MS = 60 * 1000; // 60s after all channels closed and session ended
+
 /**
  * WebSocket 3채널 라우터 설정
  *
@@ -43,6 +47,49 @@ function setupWebSockets(wss) {
     // 경로별 핸들러 라우팅
     // Normalize base path without trailing session segment
     const basePath = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : pathname;
+
+    // Attach heartbeat (ping/pong)
+    ws.isAlive = true;
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
+
+    const heartbeat = setInterval(() => {
+      if (ws.readyState !== 1) return; // OPEN
+      if (ws.isAlive === false) {
+        console.warn(`⚠️ WebSocket heartbeat timeout: ${pathname} (${sessionId})`);
+        clearInterval(heartbeat);
+        return ws.terminate();
+      }
+      ws.isAlive = false;
+      try { ws.ping(); } catch (_) {}
+    }, HEARTBEAT_INTERVAL_MS);
+
+    // Session cleanup helper
+    const scheduleCleanupIfEligible = () => {
+      const s = SessionManager.getSession(sessionId);
+      if (!s) return;
+      const allClosed = !s.wsConnections.landmarks && !s.wsConnections.voice && !s.wsConnections.session;
+      if (s.status === 'ended' && allClosed) {
+        setTimeout(() => {
+          const s2 = SessionManager.getSession(sessionId);
+          if (!s2) return;
+          const allClosed2 = !s2.wsConnections.landmarks && !s2.wsConnections.voice && !s2.wsConnections.session;
+          if (s2.status === 'ended' && allClosed2) {
+            SessionManager.deleteSession(sessionId);
+          }
+        }, SESSION_CLEANUP_GRACE_MS);
+      }
+    };
+
+    ws.on('close', () => {
+      clearInterval(heartbeat);
+      scheduleCleanupIfEligible();
+    });
+    ws.on('error', () => {
+      clearInterval(heartbeat);
+      scheduleCleanupIfEligible();
+    });
 
     switch (basePath) {
       case '/ws/landmarks':

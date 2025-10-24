@@ -7,6 +7,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const morgan = require('morgan');
+const pkg = require('./package.json');
 const sttRouter = require("./routes/stt");
 const sessionRouter = require("./routes/session");
 const monitoringRouter = require("./routes/monitoring");
@@ -19,8 +20,10 @@ const errorHandler = require("./services/ErrorHandler");
 const { sequelize } = require("./models");
 const { optionalJwtAuth } = require("./middlewares/auth");
 const { requestId } = require('./middlewares/requestId');
+const { validateEnv } = require('./services/config/validateEnv');
 
 dotenv.config();
+validateEnv(process.env);
 
 const app = express();
 const server = http.createServer(app);
@@ -105,7 +108,9 @@ app.get("/health", (req, res) => {
   res.json({
     status: "ok",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    version: pkg.version,
+    commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || process.env.COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || null
   });
 });
 
@@ -152,3 +157,45 @@ server.listen(PORT, () => {
     console.log(`🚀 서버 실행 중 (port): ${PORT}`);
   }
 });
+
+// Graceful shutdown handlers
+function gracefulShutdown(signal) {
+  console.log(`🛑 Received ${signal}. Shutting down gracefully...`);
+  const shutdownTimer = setTimeout(() => {
+    console.error('⏱️ Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+  shutdownTimer.unref();
+
+  try {
+    if (sequelize && typeof sequelize.close === 'function') {
+      sequelize.close().catch(() => {});
+    }
+  } catch (_) {}
+
+  try {
+    server.close(() => {
+      try {
+        if (wss && typeof wss.close === 'function') {
+          wss.close(() => {
+            clearTimeout(shutdownTimer);
+            console.log('✅ Shutdown complete');
+            process.exit(0);
+          });
+        } else {
+          clearTimeout(shutdownTimer);
+          process.exit(0);
+        }
+      } catch (e) {
+        clearTimeout(shutdownTimer);
+        process.exit(0);
+      }
+    });
+  } catch (e) {
+    clearTimeout(shutdownTimer);
+    process.exit(1);
+  }
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

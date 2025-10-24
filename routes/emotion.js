@@ -1,15 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { analyzeEmotion } = require('../services/gemini/gemini');
+const { z } = require('zod');
+const { validateBody } = require('../middlewares/zod');
+
+const EmotionBodySchema = z.object({
+  text: z.string().min(1, 'text is required').max(2000)
+});
 
 // POST /api/emotion
-router.post('/', async (req, res) => {
+router.post('/', validateBody(EmotionBodySchema), async (req, res) => {
   try {
-    const { text } = req.body || {};
-    if (!text || !String(text).trim()) {
-      return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: '분석할 텍스트가 필요합니다.' } });
-    }
-    const emotion = await analyzeEmotion(String(text));
+    const { text } = req.body;
+    const emotion = await analyzeEmotion(text);
     return res.status(200).json({ success: true, data: { emotion } });
   } catch (error) {
     console.error('Emotion analysis API error:', error);

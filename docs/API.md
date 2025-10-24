@@ -372,6 +372,30 @@ ws.onclose = (event) => {
 ---
 
 ## 🌐 REST API
+### **감정 분석**
+
+#### **POST** `/api/emotion`
+텍스트 기반 감정 분석
+
+**Request:**
+```http
+POST /api/emotion
+Content-Type: application/json
+
+{ "text": "오늘 조금 불안하지만 괜찮아질 것 같아" }
+```
+
+**Response:**
+```json
+{ "success": true, "data": { "emotion": "anxious" } }
+```
+
+**Errors:**
+- `400 VALIDATION_ERROR` (Zod): `text`가 비어있거나 2000자 초과
+- `500 EMOTION_ANALYSIS_ERROR`: Gemini 호출 실패 등 내부 오류
+
+---
+
 
 ### **세션 관리**
 
