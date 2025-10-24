@@ -79,7 +79,11 @@
       "Bash(npm install -D tailwindcss postcss autoprefixer)",
       "Bash(npx tailwindcss init -p)",
       "Bash(npm install -D tailwindcss@3 postcss@8 autoprefixer@10)",
-      "Bash(npm install react-router-dom @hookform/resolvers zod react-hook-form react-hot-toast)"
+      "Bash(npm install react-router-dom @hookform/resolvers zod react-hook-form react-hot-toast)",
+      "Bash(npm test:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm view:*)"
     ],
     "deny": [],
     "ask": []

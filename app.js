@@ -21,6 +21,7 @@ const { sequelize } = require("./models");
 const { optionalJwtAuth } = require("./middlewares/auth");
 const { requestId } = require('./middlewares/requestId');
 const { validateEnv } = require('./services/config/validateEnv');
+const TempFileCleanup = require('./services/system/TempFileCleanup');
 
 dotenv.config();
 validateEnv(process.env);
@@ -93,6 +94,16 @@ app.use(cors({
 // Preflight handled by CORS middleware (Express v5-safe)
 
 app.use(express.json({ limit: '1mb' }));
+
+// Temporary file cleanup initialization
+const tempCleanup = new TempFileCleanup({
+  tmpDir: path.join(process.cwd(), 'tmp'),
+  maxAgeDays: process.env.TEMP_FILE_MAX_AGE_DAYS || 7,
+  maxSizeMB: process.env.TEMP_FILE_MAX_SIZE_MB || 500,
+  checkIntervalMinutes: process.env.TEMP_CLEANUP_INTERVAL_MIN || 60,
+});
+tempCleanup.start();
+
 // 환경 변수 유효성 체크 (필수 값)
 const requiredEnv = ['PORT'];
 const missing = requiredEnv.filter((k) => !process.env[k]);
@@ -139,6 +150,14 @@ app.get("/api/errors/stats", (req, res) => {
   res.json(errorHandler.getStats());
 });
 
+// Temp file cleanup stats endpoint
+app.get("/api/system/temp-cleanup-stats", (req, res) => {
+  res.json({
+    success: true,
+    data: tempCleanup.getStats()
+  });
+});
+
 // WebSocket 3채널 라우터 설정
 setupWebSockets(wss);
 
@@ -182,7 +201,7 @@ if (require.main === module && process.env.NODE_ENV !== 'test') {
   });
 }
 
-module.exports = { app, server, wss };
+module.exports = { app, server, wss, tempCleanup };
 
 // Graceful shutdown handlers
 function gracefulShutdown(signal) {
@@ -192,6 +211,12 @@ function gracefulShutdown(signal) {
     process.exit(1);
   }, 10000);
   shutdownTimer.unref();
+
+  try {
+    if (tempCleanup && typeof tempCleanup.stop === 'function') {
+      tempCleanup.stop();
+    }
+  } catch (_) {}
 
   try {
     if (sequelize && typeof sequelize.close === 'function') {
