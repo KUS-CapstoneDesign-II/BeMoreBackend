@@ -97,12 +97,11 @@ async function end(req, res) {
 
     // persist asynchronously with isolation (never crash the response)
     // Fire and forget with full error isolation in async callback
-    setImmediate(async () => {
-      try {
-        await sessionService.persistReportAndSession(session);
-      } catch (err) {
-        console.warn('⚠️ 세션 리포트 저장 중 에러:', err?.message);
-      }
+    setImmediate(() => {
+      sessionService.persistReportAndSession(session)
+        .catch(err => {
+          console.warn('⚠️ 세션 리포트 저장 중 에러 (catch):', err?.message);
+        });
     });
   } catch (error) {
     errorHandler.handle(error, { module: 'session-end', level: errorHandler.levels.ERROR });

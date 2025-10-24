@@ -43,8 +43,14 @@ async function persistReportAndSession(session) {
           analysis: report.analysis || null,
         };
 
-        if (reportRepo && typeof reportRepo.create === 'function') {
-          await reportRepo.create(payload);
+        try {
+          if (reportRepo && typeof reportRepo.create === 'function') {
+            const result = await reportRepo.create(payload);
+            console.log('✅ 리포트 저장 성공');
+          }
+        } catch (dbErr) {
+          console.warn('⚠️ 리포트 DB 저장 중 에러 (무시됨):', dbErr?.message);
+          // DB 에러는 무시하고 계속
         }
       } catch (saveErr) {
         console.warn('⚠️ 리포트 저장 중 에러 (무시됨):', saveErr?.message);
@@ -64,8 +70,14 @@ async function persistReportAndSession(session) {
         counters: { emotionCount: session.emotions ? session.emotions.length : 0 }
       };
 
-      if (sessionRepo && typeof sessionRepo.upsertSummary === 'function') {
-        await sessionRepo.upsertSummary(defaults);
+      try {
+        if (sessionRepo && typeof sessionRepo.upsertSummary === 'function') {
+          const result = await sessionRepo.upsertSummary(defaults);
+          console.log('✅ 세션 메타데이터 저장 성공');
+        }
+      } catch (dbErr) {
+        console.warn('⚠️ 세션 메타데이터 DB 저장 중 에러 (무시됨):', dbErr?.message);
+        // DB 에러는 무시하고 계속
       }
     } catch (metaErr) {
       console.warn('⚠️ 세션 메타데이터 저장 중 에러 (무시됨):', metaErr?.message);
