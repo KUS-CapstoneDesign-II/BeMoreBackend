@@ -149,14 +149,20 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 const PORT = process.env.PORT || 8000;
-server.listen(PORT, () => {
-  const hostEnv = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_URL || '';
-  if (hostEnv) {
-    console.log(`🚀 서버 실행 중: ${hostEnv}`);
-  } else {
-    console.log(`🚀 서버 실행 중 (port): ${PORT}`);
-  }
-});
+
+// Only start listening when run directly (not during tests)
+if (require.main === module && process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    const hostEnv = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_URL || '';
+    if (hostEnv) {
+      console.log(`🚀 서버 실행 중: ${hostEnv}`);
+    } else {
+      console.log(`🚀 서버 실행 중 (port): ${PORT}`);
+    }
+  });
+}
+
+module.exports = { app, server, wss };
 
 // Graceful shutdown handlers
 function gracefulShutdown(signal) {
