@@ -169,23 +169,6 @@ app.use((req, res) => {
   res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Resource not found', path: req.path, requestId: req.requestId } });
 });
 
-// ✅ 전역 에러 핸들러 (Unhandled errors)
-process.on('uncaughtException', (error) => {
-  errorHandler.handle(error, {
-    module: 'process',
-    level: errorHandler.levels.CRITICAL
-  });
-  console.error('🚨 Uncaught Exception - 서버 종료 중...');
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  errorHandler.handle(new Error(`Unhandled Rejection: ${reason}`), {
-    module: 'process',
-    level: errorHandler.levels.CRITICAL,
-    metadata: { promise }
-  });
-});
 
 const PORT = process.env.PORT || 8000;
 
@@ -252,24 +235,26 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // 🔴 Error Handler: Uncaught Exceptions
+// Only log, don't exit - allows background errors to not crash the server
 process.on('uncaughtException', (error) => {
   console.error('');
-  console.error('❌ ========== UNCAUGHT EXCEPTION ==========');
+  console.error('⚠️ ========== UNCAUGHT EXCEPTION (LOGGED) ==========');
   console.error('Message:', error.message);
   console.error('Stack:', error.stack);
   const stackLines = error.stack?.split('\n') || [];
   if (stackLines.length > 1) {
     console.error('Location:', stackLines[1].trim());
   }
-  console.error('=========================================');
+  console.error('===================================================');
   console.error('');
-  gracefulShutdown('uncaughtException');
+  // DO NOT exit - let the process continue for background errors
 });
 
 // 🔴 Error Handler: Unhandled Promise Rejections
+// Only log, don't exit - allows background promise rejections to not crash the server
 process.on('unhandledRejection', (reason, promise) => {
   console.error('');
-  console.error('❌ ========== UNHANDLED REJECTION ==========');
+  console.error('⚠️ ========== UNHANDLED REJECTION (LOGGED) ==========');
   console.error('Promise:', promise);
   console.error('Reason:', reason?.message || reason);
   if (reason?.stack) {
@@ -279,7 +264,7 @@ process.on('unhandledRejection', (reason, promise) => {
       console.error('Location:', stackLines[1].trim());
     }
   }
-  console.error('==========================================');
+  console.error('====================================================');
   console.error('');
-  gracefulShutdown('unhandledRejection');
+  // DO NOT exit - let the process continue for background errors
 });
