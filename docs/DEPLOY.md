@@ -1,3 +1,30 @@
+# Deployment Runbook
+
+## Branch Strategy
+- Develop on `woo`; merge into `main` to deploy.
+
+## CI/CD
+- GitHub Actions runs build/tests on push/PR.
+- On `main`, CI triggers Render via `RENDER_DEPLOY_HOOK_URL`.
+
+## Smoke Checks
+```bash
+curl -s https://bemorebackend.onrender.com/health | jq .
+curl -s -X POST https://bemorebackend.onrender.com/api/emotion \
+  -H 'Content-Type: application/json' -d '{}' | jq .
+curl -s https://bemorebackend.onrender.com/api/errors/stats | jq .
+```
+Expect `/health` includes `version` and `commit`.
+
+## Troubleshooting
+- If deploy not triggered: verify Actions logs (deploy job), and secret `RENDER_DEPLOY_HOOK_URL`.
+- Force trigger:
+```bash
+git checkout main
+git commit --allow-empty -m "chore: trigger deploy"
+git push origin main
+```
+
 # Backend Deployment Guide
 
 이 문서는 DB 연결 없이 기능 검증용 배포를 목표로 합니다. (WS/PDF/분석 포함)
