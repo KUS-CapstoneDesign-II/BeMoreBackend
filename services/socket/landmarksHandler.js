@@ -1,7 +1,7 @@
 const { analyzeExpression, generateDetailedReport  } = require('../gemini/gemini');
 const InterventionGenerator = require('../cbt/InterventionGenerator');
 const errorHandler = require('../ErrorHandler');
-
+const EmotionAnalyzer = require('../emotion/EmotionAnalyzer');
 
 const fs = require('fs');
 const path = require('path');
