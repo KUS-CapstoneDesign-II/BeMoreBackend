@@ -180,10 +180,12 @@ function handleLandmarks(ws, session) {
           });
         }
 
-        // 랜드마크 데이터를 세션 버퍼에 추가
+        // ✅ 랜드마크 데이터를 세션 버퍼에 추가
+        // message.data = [{x,y,z}, {x,y,z}, ...468개]
+        // 분석 함수는 frame.landmarks[0]이 {x,y,z}를 기대함
         session.landmarkBuffer.push({
           timestamp: Date.now(),
-          landmarks: message.data
+          landmarks: message.data  // 배열 유지
         });
 
         frameCount++;
