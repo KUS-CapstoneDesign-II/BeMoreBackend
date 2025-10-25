@@ -38,6 +38,12 @@ class Session extends Sequelize.Model {
         allowNull: true,
         defaultValue: {},
       },
+      emotionsData: {
+        type: Sequelize.JSON,
+        allowNull: true,
+        defaultValue: [],
+        comment: '분석된 감정 데이터 배열 [{timestamp, emotion, frameCount, ...}]',
+      },
     }, {
       sequelize,
       timestamps: true,

@@ -1,7 +1,7 @@
 const { analyzeExpression, generateDetailedReport  } = require('../gemini/gemini');
 const InterventionGenerator = require('../cbt/InterventionGenerator');
 const errorHandler = require('../ErrorHandler');
-
+const EmotionAnalyzer = require('../emotion/EmotionAnalyzer');
 
 const fs = require('fs');
 const path = require('path');
@@ -120,6 +120,7 @@ function handleLandmarks(ws, session) {
       // 클라이언트에게 결과 전송
       console.log(`🔴 [CRITICAL] WebSocket readyState: ${ws.readyState} (1=OPEN)`);
 
+      // 🔥 WebSocket으로 emotion_update 전송 시도
       if (ws.readyState === 1) {  // 1 = OPEN
         const responseData = {
           type: 'emotion_update',
@@ -155,6 +156,23 @@ function handleLandmarks(ws, session) {
       } else {
         console.error(`❌ [CRITICAL] WebSocket NOT OPEN (readyState=${ws.readyState}) - cannot send emotion_update!`);
       }
+
+      // ✅ 데이터베이스에 emotion 저장 (fire-and-forget)
+      // WebSocket이 닫혀있어도 emotion 데이터는 보존됨
+      setImmediate(async () => {
+        try {
+          const { Session } = require('../models');
+          const sessionRecord = await Session.findOne({ where: { sessionId: session.sessionId } });
+          if (sessionRecord) {
+            const emotions = sessionRecord.emotionsData || [];
+            emotions.push(emotionData);
+            await sessionRecord.update({ emotionsData: emotions });
+            console.log(`💾 [CRITICAL] Emotion saved to database: ${emotion}`);
+          }
+        } catch (dbError) {
+          console.error(`⚠️ Failed to save emotion to database:`, dbError.message);
+        }
+      });
 
     } catch (error) {
       console.error(`❌ [CRITICAL] Analysis error caught:`, {

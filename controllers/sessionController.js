@@ -3,6 +3,7 @@ const SessionReportGenerator = require('../services/report/SessionReportGenerato
 const PdfReportGenerator = require('../services/report/PdfReportGenerator');
 const errorHandler = require('../services/ErrorHandler');
 const sessionService = require('../services/session/sessionService');
+const EmotionAnalyzer = require('../services/emotion/EmotionAnalyzer');
 const crypto = require('crypto');
 const { csvFromVadTimeline, csvFromEmotionTimeline } = require('../services/report/csv');
 
@@ -86,12 +87,37 @@ async function end(req, res) {
   try {
     const sessionId = req.params.id;
     const session = SessionManager.endSession(sessionId);
+
+    // ✅ 감정 데이터 통합 분석
+    let emotionSummary = null;
+    if (session.emotions && session.emotions.length > 0) {
+      try {
+        const emotionAnalyzer = EmotionAnalyzer.fromData(session.emotions);
+        emotionSummary = emotionAnalyzer.getSummary();
+        console.log(`📊 [감정 통합 분석] 총 ${emotionSummary.totalCount}개 감정 분석 완료`);
+        console.log(`   - 주요 감정: ${emotionSummary.primaryEmotion.emotionKo} (${emotionSummary.primaryEmotion.percentage}%)`);
+        console.log(`   - 감정 상태: ${emotionSummary.emotionalState}`);
+
+        // 세션에 분석 결과 추가
+        session.emotionAnalysis = emotionSummary;
+      } catch (analyzeErr) {
+        console.warn('⚠️ 감정 분석 중 오류:', analyzeErr.message);
+      }
+    }
+
     const responseData = {
       sessionId: session.sessionId,
       status: session.status,
       endedAt: session.endedAt,
       duration: SessionManager.getSessionDuration(sessionId),
-      emotionCount: session.emotions.length
+      emotionCount: session.emotions.length,
+      emotionSummary: emotionSummary ? {
+        primaryEmotion: emotionSummary.primaryEmotion,
+        emotionalState: emotionSummary.emotionalState,
+        trend: emotionSummary.trend.trend,
+        positiveRatio: emotionSummary.positiveRatio,
+        negativeRatio: emotionSummary.negativeRatio
+      } : null
     };
     res.json({ success: true, data: responseData });
 
