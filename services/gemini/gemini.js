@@ -23,11 +23,16 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   // 얼굴 데이터가 있는 첫 번째 프레임을 초기값으로 사용
   const firstValidFrame = accumulatedData.find(f => f.landmarks && f.landmarks[0]);
   if (!firstValidFrame) return "데이터 없음";
-  const initialLandmarks = firstValidFrame.landmarks[0];
+  // ✅ initialLandmarks는 배열 전체여야 함 (landmarksHandler에서 배열로 저장됨)
+  const initialLandmarks = firstValidFrame.landmarks;
 
   // 초기값 검증
-  if (!initialLandmarks || typeof initialLandmarks !== 'object') {
-    console.error('❌ 초기 랜드마크 형식 오류:', typeof initialLandmarks);
+  if (!initialLandmarks || !Array.isArray(initialLandmarks) || initialLandmarks.length === 0) {
+    console.error('❌ 초기 랜드마크 형식 오류:', {
+      exists: !!initialLandmarks,
+      isArray: Array.isArray(initialLandmarks),
+      length: initialLandmarks?.length
+    });
     return "데이터 형식 오류";
   }
 
