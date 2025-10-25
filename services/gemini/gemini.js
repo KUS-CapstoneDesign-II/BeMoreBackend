@@ -52,23 +52,29 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   });
 
   accumulatedData.forEach((frame, frameIdx) => {
-    const face = frame.landmarks?.[0];
+    // ✅ FIX: Use full landmarks array directly, not landmarks[0]
+    // frame.landmarks is [{x,y,z}, {x,y,z}, ...468] - flat array from frontend
+    const face = frame.landmarks;
 
     // 🔍 [CRITICAL] 첫 번째 프레임 상세 검증
     if (frameIdx === 0) {
       console.log(`🔍 [CRITICAL] First frame validation:`, {
         faceExists: !!face,
         faceType: typeof face,
-        faceIsObject: face && typeof face === 'object',
-        faceLength: face && Array.isArray(face) ? face.length : 'N/A',
-        firstPointExample: face && face[0] ? { x: face[0].x, y: face[0].y, z: face[0].z } : 'N/A'
+        faceIsArray: Array.isArray(face),
+        faceLength: Array.isArray(face) ? face.length : 'N/A',
+        firstPointExample: Array.isArray(face) && face[0] ? { x: face[0].x, y: face[0].y, z: face[0].z } : 'N/A'
       });
     }
 
-    if (!face || typeof face !== 'object') {
+    if (!face || !Array.isArray(face) || face.length === 0) {
       frameStats.invalidFrames++;
       if (frameIdx < 3) {
-        console.log(`🔍 [CRITICAL] Frame ${frameIdx} invalid - face not found`, { face });
+        console.log(`🔍 [CRITICAL] Frame ${frameIdx} invalid - face not found or not array`, {
+          faceExists: !!face,
+          isArray: Array.isArray(face),
+          length: face?.length
+        });
       }
       return; // 얼굴 없으면 건너뜀
     }
