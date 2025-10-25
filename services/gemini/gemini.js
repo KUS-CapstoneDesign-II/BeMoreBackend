@@ -25,43 +25,95 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   if (!firstValidFrame) return "데이터 없음";
   const initialLandmarks = firstValidFrame.landmarks[0];
 
-  const framesCount = accumulatedData.length;
-  const coordinateChanges = {};
-
-  for (const key in KEY_INDICES) {
-    coordinateChanges[key] = { min_y: Infinity, max_y: -Infinity, avg_y: 0 };
+  // 초기값 검증
+  if (!initialLandmarks || typeof initialLandmarks !== 'object') {
+    console.error('❌ 초기 랜드마크 형식 오류:', typeof initialLandmarks);
+    return "데이터 형식 오류";
   }
 
-  accumulatedData.forEach((frame) => {
+  const framesCount = accumulatedData.length;
+  const coordinateChanges = {};
+  const frameStats = { validFrames: 0, invalidFrames: 0 };
+
+  for (const key in KEY_INDICES) {
+    coordinateChanges[key] = { min_y: Infinity, max_y: -Infinity, avg_y: 0, count: 0 };
+  }
+
+  // ✅ 데이터 수신 확인 로그 (첫 번째 프레임만)
+  console.log(`📊 랜드마크 분석 시작:`, {
+    totalFrames: framesCount,
+    initialLandmarkType: typeof initialLandmarks,
+    initialLandmarkLength: Array.isArray(initialLandmarks) ? initialLandmarks.length : 'not-array'
+  });
+
+  accumulatedData.forEach((frame, frameIdx) => {
     const face = frame.landmarks?.[0];
-    if (!face) return; // 얼굴 없으면 건너뜀
+    if (!face || typeof face !== 'object') {
+      frameStats.invalidFrames++;
+      return; // 얼굴 없으면 건너뜀
+    }
+
+    let frameHasValidData = false;
     for (const key in KEY_INDICES) {
       const idx = KEY_INDICES[key];
-      if (!face[idx] || !initialLandmarks[idx]) continue; // 안전 체크
-      const relY = face[idx].y - initialLandmarks[idx].y;
+
+      // ✅ 좌표값 유효성 검사 강화
+      const facePoint = face[idx];
+      const initPoint = initialLandmarks[idx];
+
+      if (!facePoint || !initPoint) continue;
+      if (typeof facePoint.y !== 'number' || typeof initPoint.y !== 'number') continue;
+      if (isNaN(facePoint.y) || isNaN(initPoint.y)) continue;
+
+      const relY = facePoint.y - initPoint.y;
+
+      // ✅ 계산 결과 검증
+      if (isNaN(relY)) continue;
+
       coordinateChanges[key].min_y = Math.min(coordinateChanges[key].min_y, relY);
       coordinateChanges[key].max_y = Math.max(coordinateChanges[key].max_y, relY);
       coordinateChanges[key].avg_y += relY;
+      coordinateChanges[key].count += 1;
+      frameHasValidData = true;
     }
+
+    if (frameHasValidData) frameStats.validFrames++;
+    else frameStats.invalidFrames++;
   });
 
+  // ✅ 평균값 계산 (유효한 데이터만 사용)
   for (const key in coordinateChanges) {
-    coordinateChanges[key].avg_y /= framesCount;
+    const count = coordinateChanges[key].count;
+    if (count > 0) {
+      coordinateChanges[key].avg_y /= count;
+    } else {
+      // ✅ 데이터가 없으면 초기화
+      coordinateChanges[key].min_y = 0;
+      coordinateChanges[key].max_y = 0;
+      coordinateChanges[key].avg_y = 0;
+    }
   }
 
-  let summaryText = `총 ${framesCount}프레임 동안의 얼굴 변화 요약:\n`;
+  // ✅ 분석 결과 로그
+  console.log(`📊 랜드마크 분석 결과:`, {
+    validFrames: frameStats.validFrames,
+    invalidFrames: frameStats.invalidFrames,
+    dataValidityPercent: Math.round((frameStats.validFrames / framesCount) * 100)
+  });
+
+  let summaryText = `총 ${framesCount}프레임 동안의 얼굴 변화 요약 (유효: ${frameStats.validFrames}):\n`;
   for (const key in coordinateChanges) {
     const d = coordinateChanges[key];
-    summaryText += `- ${key}: min=${d.min_y.toFixed(3)}, max=${d.max_y.toFixed(3)}, avg=${d.avg_y.toFixed(3)}\n`;
+    summaryText += `- ${key}: min=${d.min_y.toFixed(3)}, max=${d.max_y.toFixed(3)}, avg=${d.avg_y.toFixed(3)} (count=${d.count})\n`;
   }
 
   const mouthMove =
-    coordinateChanges.MOUTH_LEFT_CORNER.max_y - coordinateChanges.MOUTH_LEFT_CORNER.min_y;
+    (coordinateChanges.MOUTH_LEFT_CORNER?.max_y || 0) - (coordinateChanges.MOUTH_LEFT_CORNER?.min_y || 0);
   const browMove =
-    coordinateChanges.BROW_CENTER.max_y - coordinateChanges.BROW_CENTER.min_y;
+    (coordinateChanges.BROW_CENTER?.max_y || 0) - (coordinateChanges.BROW_CENTER?.min_y || 0);
 
   summaryText += `입 움직임 폭=${mouthMove.toFixed(3)}, 눈썹 움직임 폭=${browMove.toFixed(3)}\n`;
-  console.log("summaryText", summaryText);
+  console.log("✅ summaryText 생성 완료", { mouthMove: mouthMove.toFixed(3), browMove: browMove.toFixed(3) });
 
   const prompt = `
     당신은 감정 분석 전문가입니다.
