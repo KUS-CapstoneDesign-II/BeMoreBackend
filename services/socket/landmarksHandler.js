@@ -32,18 +32,27 @@ function handleLandmarks(ws, session) {
   console.log(`🎭 Landmarks 핸들러 시작: ${session.sessionId}`);
 
   // 10초마다 감정 분석 실행
+  let analysisCycleCount = 0;
   const analysisInterval = setInterval(async () => {
+    analysisCycleCount++;
+
     // 세션이 활성 상태가 아니면 분석 건너뛰기
     if (session.status !== 'active') {
-      console.log(`⏸️ 세션 비활성 상태, 분석 건너뛰기: ${session.status}`);
+      if (analysisCycleCount % 6 === 0) {  // 60초마다 한 번씩만 로그
+        console.log(`⏸️ [분석 사이클 #${analysisCycleCount}] 세션 비활성 상태, 분석 건너뛰기: ${session.status}`);
+      }
       return;
     }
 
     // 버퍼에 데이터가 없으면 건너뛰기
     if (session.landmarkBuffer.length === 0) {
-      console.log(`📭 Landmarks 버퍼 비어있음, 분석 건너뛰기`);
+      if (analysisCycleCount % 3 === 0) {  // 30초마다 한 번씩만 로그
+        console.log(`📭 [분석 사이클 #${analysisCycleCount}] Landmarks 버퍼 비어있음, 분석 건너뛰기`);
+      }
       return;
     }
+
+    console.log(`🔵 [분석 사이클 #${analysisCycleCount}] 분석 시작 - 버퍼: ${session.landmarkBuffer.length}개 프레임`);
 
     try {
       // 분석용 데이터 복사
