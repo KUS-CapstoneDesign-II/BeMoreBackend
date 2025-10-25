@@ -168,6 +168,18 @@ function handleLandmarks(ws, session) {
       const message = JSON.parse(data);
 
       if (message.type === 'landmarks') {
+        // ✅ 첫 프레임 데이터 검증 로그
+        if (frameCount === 0) {
+          const landmark = Array.isArray(message.data) ? message.data[0] : null;
+          console.log(`📊 첫 번째 랜드마크 수신 데이터 검증:`, {
+            isArray: Array.isArray(message.data),
+            length: Array.isArray(message.data) ? message.data.length : 'not-array',
+            firstPointType: landmark ? typeof landmark : 'no-data',
+            firstPointHasY: landmark ? ('y' in landmark) : false,
+            firstPointYType: landmark?.y ? typeof landmark.y : 'no-y'
+          });
+        }
+
         // 랜드마크 데이터를 세션 버퍼에 추가
         session.landmarkBuffer.push({
           timestamp: Date.now(),
@@ -176,17 +188,23 @@ function handleLandmarks(ws, session) {
 
         frameCount++;
 
-        // 디버깅: 100프레임마다 로그
+        // ✅ 디버깅: 10프레임마다 로그 (더 자주 확인)
+        if (frameCount % 10 === 0) {
+          console.log(`📨 Landmarks 수신 중... (누적: ${frameCount}개, 버퍼: ${session.landmarkBuffer.length})`);
+        }
+
+        // 100프레임마다도 상세 로그
         if (frameCount % 100 === 0) {
           console.log(`📦 Landmarks 프레임 수신: ${frameCount}개 (버퍼: ${session.landmarkBuffer.length})`);
         }
       }
 
     } catch (error) {
+      console.error('❌ Landmarks 메시지 파싱 실패:', error.message);
       errorHandler.handle(error, {
         module: 'landmarks-handler',
         level: errorHandler.levels.ERROR,
-        metadata: { sessionId: session.sessionId, messageType: 'parse_error' }
+        metadata: { sessionId: session.sessionId, messageType: 'parse_error', dataLength: data?.length }
       });
     }
   });
