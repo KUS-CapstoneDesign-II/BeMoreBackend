@@ -65,9 +65,13 @@ function handleLandmarks(ws, session) {
 
       console.log(`📊 10초 주기 분석 시작 (frames: ${frames.length}, stt_len: ${sttText.length})`);
 
+      // 🔴 CRITICAL: Gemini 감정 분석 실행 확인
+      console.log(`🔍 [CRITICAL] emotion_analysis starting with ${frames.length} frames`);
+
       // Gemini 감정 분석
       const emotion = await analyzeExpression(frames, sttText);
       console.log(`🎯 Gemini 분석 결과: ${emotion}`);
+      console.log(`✅ [CRITICAL] Emotion parsed: ${emotion}`);
 
       // 상세 감정 리포트 생성 => 만약 필요 하다면 
       // const detailedReport = await generateDetailedReport(frames, sttText);
@@ -114,6 +118,8 @@ function handleLandmarks(ws, session) {
       }
 
       // 클라이언트에게 결과 전송
+      console.log(`🔴 [CRITICAL] WebSocket readyState: ${ws.readyState} (1=OPEN)`);
+
       if (ws.readyState === 1) {  // 1 = OPEN
         const responseData = {
           type: 'emotion_update',
@@ -142,11 +148,21 @@ function handleLandmarks(ws, session) {
           };
         }
 
+        console.log(`📤 [CRITICAL] About to send emotion_update:`, JSON.stringify(responseData).substring(0, 200));
+
         ws.send(JSON.stringify(responseData));
-        console.log(`📤 감정 업데이트 전송: ${emotion}`);
+        console.log(`✅ [CRITICAL] emotion_update sent successfully: ${emotion}`);
+      } else {
+        console.error(`❌ [CRITICAL] WebSocket NOT OPEN (readyState=${ws.readyState}) - cannot send emotion_update!`);
       }
 
     } catch (error) {
+      console.error(`❌ [CRITICAL] Analysis error caught:`, {
+        message: error.message,
+        name: error.name,
+        stack: error.stack?.substring(0, 500)
+      });
+
       errorHandler.handle(error, {
         module: 'landmarks-analysis',
         level: errorHandler.levels.ERROR,
