@@ -53,12 +53,29 @@ async function analyzeExpression(accumulatedData, speechText = "") {
 
   accumulatedData.forEach((frame, frameIdx) => {
     const face = frame.landmarks?.[0];
+
+    // 🔍 [CRITICAL] 첫 번째 프레임 상세 검증
+    if (frameIdx === 0) {
+      console.log(`🔍 [CRITICAL] First frame validation:`, {
+        faceExists: !!face,
+        faceType: typeof face,
+        faceIsObject: face && typeof face === 'object',
+        faceLength: face && Array.isArray(face) ? face.length : 'N/A',
+        firstPointExample: face && face[0] ? { x: face[0].x, y: face[0].y, z: face[0].z } : 'N/A'
+      });
+    }
+
     if (!face || typeof face !== 'object') {
       frameStats.invalidFrames++;
+      if (frameIdx < 3) {
+        console.log(`🔍 [CRITICAL] Frame ${frameIdx} invalid - face not found`, { face });
+      }
       return; // 얼굴 없으면 건너뜀
     }
 
     let frameHasValidData = false;
+    let invalidReasonCount = 0;
+
     for (const key in KEY_INDICES) {
       const idx = KEY_INDICES[key];
 
@@ -66,14 +83,32 @@ async function analyzeExpression(accumulatedData, speechText = "") {
       const facePoint = face[idx];
       const initPoint = initialLandmarks[idx];
 
-      if (!facePoint || !initPoint) continue;
-      if (typeof facePoint.y !== 'number' || typeof initPoint.y !== 'number') continue;
-      if (isNaN(facePoint.y) || isNaN(initPoint.y)) continue;
+      if (!facePoint || !initPoint) {
+        invalidReasonCount++;
+        continue;
+      }
+      if (typeof facePoint.y !== 'number' || typeof initPoint.y !== 'number') {
+        invalidReasonCount++;
+        if (frameIdx === 0 && key === 'MOUTH_LEFT_CORNER') {
+          console.log(`🔍 [CRITICAL] Type check failed:`, {
+            facePointYType: typeof facePoint.y,
+            initPointYType: typeof initPoint.y
+          });
+        }
+        continue;
+      }
+      if (isNaN(facePoint.y) || isNaN(initPoint.y)) {
+        invalidReasonCount++;
+        continue;
+      }
 
       const relY = facePoint.y - initPoint.y;
 
       // ✅ 계산 결과 검증
-      if (isNaN(relY)) continue;
+      if (isNaN(relY)) {
+        invalidReasonCount++;
+        continue;
+      }
 
       coordinateChanges[key].min_y = Math.min(coordinateChanges[key].min_y, relY);
       coordinateChanges[key].max_y = Math.max(coordinateChanges[key].max_y, relY);
@@ -82,8 +117,14 @@ async function analyzeExpression(accumulatedData, speechText = "") {
       frameHasValidData = true;
     }
 
-    if (frameHasValidData) frameStats.validFrames++;
-    else frameStats.invalidFrames++;
+    if (frameHasValidData) {
+      frameStats.validFrames++;
+    } else {
+      frameStats.invalidFrames++;
+      if (frameIdx < 3) {
+        console.log(`🔍 [CRITICAL] Frame ${frameIdx} invalid - no valid coordinates (checked ${Object.keys(KEY_INDICES).length} keys)`);
+      }
+    }
   });
 
   // ✅ 평균값 계산 (유효한 데이터만 사용)
@@ -139,8 +180,39 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const res = await model.generateContent(prompt);
+    const rawResponse = res.response.text().trim().split("\n").pop();
     console.log("Gemini 전송 완료", speechText);
-    return res.response.text().trim().split("\n").pop();
+    console.log("📤 [CRITICAL] Raw Gemini response:", rawResponse);
+
+    // ✅ 감정 타입 추출 (한글 → 영문)
+    const emotionMapping = {
+      '행복': 'happy',
+      '기쁨': 'happy',
+      '즐거움': 'happy',
+      '슬픔': 'sad',
+      '우울': 'sad',
+      '중립': 'neutral',
+      '무감정': 'neutral',
+      '분노': 'angry',
+      '화남': 'angry',
+      '짜증': 'angry',
+      '불안': 'anxious',
+      '걱정': 'anxious',
+      '흥분': 'excited',
+      '신남': 'excited'
+    };
+
+    let detectedEmotion = 'neutral';  // 기본값
+    for (const [korean, english] of Object.entries(emotionMapping)) {
+      if (rawResponse.includes(korean)) {
+        detectedEmotion = english;
+        console.log(`✅ [CRITICAL] Emotion detected: ${korean} → ${detectedEmotion}`);
+        break;
+      }
+    }
+
+    console.log(`✅ [CRITICAL] Final emotion type: ${detectedEmotion}`);
+    return detectedEmotion;
   } catch (err) {
     errorHandler.handle(err, {
       module: 'gemini-analysis',
@@ -152,7 +224,7 @@ async function analyzeExpression(accumulatedData, speechText = "") {
         browMove
       }
     });
-    return "분석 실패";
+    return "neutral";  // 에러 시 기본값을 "분석 실패" 대신 "neutral"로
   }
 }
 
