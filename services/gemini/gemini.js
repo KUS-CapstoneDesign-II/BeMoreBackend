@@ -163,7 +163,7 @@ async function analyzeExpression(accumulatedData, speechText = "") {
 
   const prompt = `
     당신은 감정 분석 전문가입니다.
-    아래 정보를 기반으로 사용자의 감정을 한 단어로 요약하세요.
+    아래 정보를 기반으로 사용자의 감정을 분석하세요.
 
     [표정 데이터]
     ${summaryText}
@@ -171,10 +171,17 @@ async function analyzeExpression(accumulatedData, speechText = "") {
     [발화 내용(STT)]
     ${speechText?.trim() ? speechText : "발화 없음"}
 
-    단계:
-    1. 표정 변화를 해석합니다.
-    2. 발화 내용을 참고하여 감정 단서를 보완합니다.
-    3. 표정과 발화를 종합하여 감정을 단어 하나로 출력합니다.
+    [중요한 지시사항]
+    다음 중 정확히 하나만 선택하여 출력하세요:
+    - 행복
+    - 슬픔
+    - 중립
+    - 분노
+    - 불안
+    - 흥분
+
+    마크다운이나 추가 설명 없이, 위의 감정 단어 중 정확히 하나만 출력하세요.
+    예시: "행복" (마크다운 없음)
   `;
 
   try {
@@ -202,11 +209,23 @@ async function analyzeExpression(accumulatedData, speechText = "") {
       '신남': 'excited'
     };
 
+    // rawResponse에서 특수문자 제거 (마크다운 등)
+    const cleanedResponse = rawResponse.replace(/[*`#\-\[\]]/g, '').trim();
+    console.log(`🔍 [CRITICAL] Raw response (cleaned): "${cleanedResponse}"`);
+
     let detectedEmotion = 'neutral';  // 기본값
     for (const [korean, english] of Object.entries(emotionMapping)) {
-      if (rawResponse.includes(korean)) {
+      // 정확히 단어가 포함되었는지 확인 (공백 기준)
+      const words = cleanedResponse.split(/[\s,]/);
+      if (words.includes(korean)) {
         detectedEmotion = english;
         console.log(`✅ [CRITICAL] Emotion detected: ${korean} → ${detectedEmotion}`);
+        break;
+      }
+      // 또는 포함되어 있는지 확인
+      if (cleanedResponse.includes(korean) && detectedEmotion === 'neutral') {
+        detectedEmotion = english;
+        console.log(`✅ [CRITICAL] Emotion found in text: ${korean} → ${detectedEmotion}`);
         break;
       }
     }
