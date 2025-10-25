@@ -161,27 +161,55 @@ async function analyzeExpression(accumulatedData, speechText = "") {
   summaryText += `입 움직임 폭=${mouthMove.toFixed(3)}, 눈썹 움직임 폭=${browMove.toFixed(3)}\n`;
   console.log("✅ summaryText 생성 완료", { mouthMove: mouthMove.toFixed(3), browMove: browMove.toFixed(3) });
 
+  // ✅ 향상된 프롬프트: 더 상세한 분석 기준
   const prompt = `
-    당신은 감정 분석 전문가입니다.
-    아래 정보를 기반으로 사용자의 감정을 분석하세요.
+당신은 얼굴 표정 변화 전문가입니다.
 
-    [표정 데이터]
-    ${summaryText}
+【얼굴 움직임 데이터 분석】
+${summaryText}
 
-    [발화 내용(STT)]
-    ${speechText?.trim() ? speechText : "발화 없음"}
+【발화 내용(STT) 및 맥락】
+"${speechText?.trim() || "발화 없음"}"
 
-    [중요한 지시사항]
-    다음 중 정확히 하나만 선택하여 출력하세요:
-    - 행복
-    - 슬픔
-    - 중립
-    - 분노
-    - 불안
-    - 흥분
+【감정 분류 기준 (매우 정확하게)】
 
-    마크다운이나 추가 설명 없이, 위의 감정 단어 중 정확히 하나만 출력하세요.
-    예시: "행복" (마크다운 없음)
+1️⃣ 행복 (Happy):
+   - 입가 끝이 올라감 (max_y > 0.005)
+   - 눈가 주름이 있음
+   - 전반적으로 밝은 표정
+   예: mouthMove > 0.007, browMove < 0.002
+
+2️⃣ 슬픔 (Sad):
+   - 입가 끝이 내려감 (max_y < -0.005)
+   - 눈썹이 안쪽으로 모임
+   - 음성에서 슬픈 표현 ("슬프다", "우울하다", "싫다")
+
+3️⃣ 분노 (Angry):
+   - 눈썹이 깊게 모여있음 (browMove가 음수)
+   - 입이 다물려있거나 심하게 벌려있음
+   - 음성에서 화난 표현 ("화난다", "짜증", "분노")
+
+4️⃣ 불안 (Anxious):
+   - 눈이 크게 벌려져 있음
+   - 입이 떨림 (변화가 불규칙함)
+   - 음성에서 불안 표현 ("불안하다", "걱정", "떨린다")
+
+5️⃣ 흥분 (Excited):
+   - 입과 눈이 크게 벌려짐
+   - 모든 표정이 크게 변함
+   - 음성에서 신나는 표현 ("신난다", "좋다", "와")
+
+6️⃣ 중립 (Neutral):
+   - 입과 눈 움직임이 거의 없음 (모두 < 0.003)
+   - 음성도 무표정 또는 중립적
+   - 위의 어떤 특징도 명확하지 않음
+
+【응답 형식】
+다음 감정 중 정확히 하나만 선택:
+행복, 슬픔, 분노, 불안, 흥분, 중립
+
+마크다운 없이 한 단어만 출력하세요.
+예: "행복"
   `;
 
   try {
@@ -191,46 +219,110 @@ async function analyzeExpression(accumulatedData, speechText = "") {
     console.log("Gemini 전송 완료", speechText);
     console.log("📤 [CRITICAL] Raw Gemini response:", rawResponse);
 
-    // ✅ 감정 타입 추출 (한글 → 영문)
+    // ✅ 감정 타입 추출 (한글 → 영문) - 확장된 매핑
     const emotionMapping = {
+      // Happy
       '행복': 'happy',
       '기쁨': 'happy',
       '즐거움': 'happy',
+      '웃음': 'happy',
+      '좋음': 'happy',
+      '신남': 'happy',
+      '즐거워': 'happy',
+      '행복해': 'happy',
+
+      // Sad
       '슬픔': 'sad',
       '우울': 'sad',
-      '중립': 'neutral',
-      '무감정': 'neutral',
+      '슬퍼': 'sad',
+      '우울해': 'sad',
+      '서럽': 'sad',
+      '눈물': 'sad',
+      '힘듦': 'sad',
+      '외로움': 'sad',
+
+      // Angry
       '분노': 'angry',
       '화남': 'angry',
       '짜증': 'angry',
+      '화나': 'angry',
+      '분노해': 'angry',
+      '화내': 'angry',
+      '성남': 'angry',
+      '격노': 'angry',
+
+      // Anxious
       '불안': 'anxious',
       '걱정': 'anxious',
+      '불안해': 'anxious',
+      '걱정되': 'anxious',
+      '떨림': 'anxious',
+      '긴장': 'anxious',
+      '불편': 'anxious',
+      '신경쓰': 'anxious',
+
+      // Excited
       '흥분': 'excited',
-      '신남': 'excited'
+      '신남': 'excited',
+      '흥분했': 'excited',
+      '신났': 'excited',
+      '설렘': 'excited',
+      '들뜸': 'excited',
+      '신나': 'excited',
+      '흥분해': 'excited',
+
+      // Neutral
+      '중립': 'neutral',
+      '무감정': 'neutral',
+      '무표정': 'neutral',
+      '보통': 'neutral',
+      '평상': 'neutral',
+      '보통이': 'neutral',
+      '괜찮': 'neutral'
     };
 
     // rawResponse에서 특수문자 제거 (마크다운 등)
-    const cleanedResponse = rawResponse.replace(/[*`#\-\[\]]/g, '').trim();
+    const cleanedResponse = rawResponse.replace(/[*`#\-\[\]"]/g, '').trim();
     console.log(`🔍 [CRITICAL] Raw response (cleaned): "${cleanedResponse}"`);
+    console.log(`📊 [CRITICAL] Analyzing for emotions from: "${cleanedResponse}"`);
 
     let detectedEmotion = 'neutral';  // 기본값
-    for (const [korean, english] of Object.entries(emotionMapping)) {
-      // 정확히 단어가 포함되었는지 확인 (공백 기준)
-      const words = cleanedResponse.split(/[\s,]/);
-      if (words.includes(korean)) {
-        detectedEmotion = english;
-        console.log(`✅ [CRITICAL] Emotion detected: ${korean} → ${detectedEmotion}`);
-        break;
-      }
-      // 또는 포함되어 있는지 확인
-      if (cleanedResponse.includes(korean) && detectedEmotion === 'neutral') {
-        detectedEmotion = english;
-        console.log(`✅ [CRITICAL] Emotion found in text: ${korean} → ${detectedEmotion}`);
+    let foundMatch = false;
+
+    // 정확한 단어 매칭 (공백으로 분리된 단어)
+    const words = cleanedResponse.split(/[\s,，、]/);
+    console.log(`🔍 [CRITICAL] Split words: ${JSON.stringify(words)}`);
+
+    for (const word of words) {
+      if (emotionMapping[word]) {
+        detectedEmotion = emotionMapping[word];
+        foundMatch = true;
+        console.log(`✅ [CRITICAL] Exact word match: "${word}" → "${detectedEmotion}"`);
         break;
       }
     }
 
-    console.log(`✅ [CRITICAL] Final emotion type: ${detectedEmotion}`);
+    // 포함 매칭 (부분 문자열 포함)
+    if (!foundMatch) {
+      for (const [korean, english] of Object.entries(emotionMapping)) {
+        if (cleanedResponse.includes(korean)) {
+          detectedEmotion = english;
+          foundMatch = true;
+          console.log(`✅ [CRITICAL] Substring match: "${korean}" found in response → "${english}"`);
+          break;
+        }
+      }
+    }
+
+    if (!foundMatch) {
+      console.log(`⚠️ [CRITICAL] No emotion match found in: "${cleanedResponse}", using default: "neutral"`);
+    }
+
+    console.log(`✅ [CRITICAL] Final emotion type: ${detectedEmotion}`, {
+      rawResponse: rawResponse.substring(0, 50),
+      cleanedResponse: cleanedResponse.substring(0, 50),
+      foundMatch
+    });
     return detectedEmotion;
   } catch (err) {
     errorHandler.handle(err, {
