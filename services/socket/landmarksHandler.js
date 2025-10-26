@@ -182,7 +182,15 @@ function handleLandmarks(ws, session) {
         try {
           console.log(`💾 [CRITICAL] Attempting to save emotion to database...`);
 
-          const { Session } = require('../../db');
+          const db = require('../../models');
+
+          // DB가 비활성화되었으면 저장 생략
+          if (!db || !db.Session || !db.dbEnabled) {
+            console.warn(`⚠️  [CRITICAL] Database disabled or unavailable, skipping emotion save`);
+            return;
+          }
+
+          const { Session } = db;
 
           // 1️⃣ 기존 세션 데이터 가져오기
           const existingSession = await Session.findOne({
