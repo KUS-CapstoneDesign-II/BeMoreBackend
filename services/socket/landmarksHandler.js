@@ -176,25 +176,18 @@ function handleLandmarks(ws, session) {
         console.error(`❌ [CRITICAL] WebSocket NOT OPEN (readyState=${ws.readyState}) - cannot send emotion_update!`);
       }
 
-      // ✅ Supabase 클라이언트로 감정 데이터 저장 (fire-and-forget)
-      // WebSocket이 닫혀있어도 emotion 데이터는 Supabase에 보존됨
+      // ✅ Sequelize 데이터베이스로 감정 데이터 저장 (fire-and-forget)
+      // WebSocket이 닫혀있어도 emotion 데이터는 로컬 DB에 보존됨
       setImmediate(async () => {
         try {
           console.log(`💾 [CRITICAL] Attempting to save emotion to database...`);
 
-          const { supabase } = require(path.join(__dirname, '../../utils/supabase'));
+          const { Session } = require('../../db');
 
           // 1️⃣ 기존 세션 데이터 가져오기
-          const { data: existingSession, error: fetchError } = await supabase
-            .from('sessions')
-            .select('emotions_data')
-            .eq('session_id', session.sessionId)
-            .single();
-
-          if (fetchError) {
-            console.error(`❌ [CRITICAL] Failed to fetch session:`, fetchError.message);
-            return;
-          }
+          const existingSession = await Session.findOne({
+            where: { sessionId: session.sessionId }
+          });
 
           if (!existingSession) {
             console.error(`❌ [CRITICAL] Session not found in database: ${session.sessionId}`);
@@ -202,20 +195,13 @@ function handleLandmarks(ws, session) {
           }
 
           // 2️⃣ 기존 감정 데이터 + 새 감정 데이터
-          const emotions = existingSession.emotions_data || [];
+          const emotions = existingSession.emotionsData || [];
           emotions.push(emotionData);
 
           // 3️⃣ 데이터베이스에 업데이트
-          const { error: updateError } = await supabase
-            .from('sessions')
-            .update({ emotions_data: emotions })
-            .eq('session_id', session.sessionId);
-
-          if (updateError) {
-            console.error(`❌ [CRITICAL] Failed to update session:`, updateError.message);
-            console.error(`   Code: ${updateError.code}`);
-            return;
-          }
+          await existingSession.update({
+            emotionsData: emotions
+          });
 
           console.log(`✅ [CRITICAL] Emotion saved to database: ${emotion}`);
           console.log(`✅ [CRITICAL] Total emotions for session: ${emotions.length}`);
