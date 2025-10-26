@@ -176,40 +176,42 @@ function handleLandmarks(ws, session) {
         console.error(`❌ [CRITICAL] WebSocket NOT OPEN (readyState=${ws.readyState}) - cannot send emotion_update!`);
       }
 
-      // ✅ Sequelize 데이터베이스로 감정 데이터 저장 (fire-and-forget)
-      // WebSocket이 닫혀있어도 emotion 데이터는 로컬 DB에 보존됨
+      // ✅ Supabase 데이터베이스로 감정 데이터 저장 (fire-and-forget)
+      // WebSocket이 닫혀있어도 emotion 데이터는 Supabase에 보존됨
       setImmediate(async () => {
         try {
           console.log(`💾 [CRITICAL] Attempting to save emotion to database...`);
 
-          const db = require('../../models');
-
-          // DB가 비활성화되었으면 저장 생략
-          if (!db || !db.Session || !db.dbEnabled) {
-            console.warn(`⚠️  [CRITICAL] Database disabled or unavailable, skipping emotion save`);
-            return;
-          }
-
-          const { Session } = db;
+          const { supabase } = require('../../utils/supabase');
 
           // 1️⃣ 기존 세션 데이터 가져오기
-          const existingSession = await Session.findOne({
-            where: { sessionId: session.sessionId }
-          });
+          const { data: existingSession, error: fetchError } = await supabase
+            .from('sessions')
+            .select('*')
+            .eq('session_id', session.sessionId)
+            .single();
 
-          if (!existingSession) {
-            console.error(`❌ [CRITICAL] Session not found in database: ${session.sessionId}`);
+          if (fetchError || !existingSession) {
+            console.error(`❌ [CRITICAL] Failed to fetch session from Supabase:`);
+            console.error(`   Error: ${fetchError?.message || 'Session not found'}`);
             return;
           }
 
           // 2️⃣ 기존 감정 데이터 + 새 감정 데이터
-          const emotions = existingSession.emotionsData || [];
+          const emotions = (existingSession.emotions_data || []);
           emotions.push(emotionData);
 
-          // 3️⃣ 데이터베이스에 업데이트
-          await existingSession.update({
-            emotionsData: emotions
-          });
+          // 3️⃣ Supabase에 업데이트
+          const { error: updateError } = await supabase
+            .from('sessions')
+            .update({ emotions_data: emotions })
+            .eq('session_id', session.sessionId);
+
+          if (updateError) {
+            console.error(`❌ [CRITICAL] Failed to update session in Supabase:`);
+            console.error(`   Error: ${updateError.message}`);
+            return;
+          }
 
           console.log(`✅ [CRITICAL] Emotion saved to database: ${emotion}`);
           console.log(`✅ [CRITICAL] Total emotions for session: ${emotions.length}`);
