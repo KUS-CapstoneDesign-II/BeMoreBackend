@@ -182,7 +182,8 @@ function handleLandmarks(ws, session) {
         try {
           console.log(`💾 [CRITICAL] Attempting to save emotion to database...`);
 
-          const { Session } = require('../../db');
+          const db = require('../../models');
+          const { Session } = db;
 
           // 1️⃣ 기존 세션 데이터 가져오기
           const existingSession = await Session.findOne({
