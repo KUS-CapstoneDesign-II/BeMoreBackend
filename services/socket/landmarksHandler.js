@@ -176,49 +176,54 @@ function handleLandmarks(ws, session) {
         console.error(`❌ [CRITICAL] WebSocket NOT OPEN (readyState=${ws.readyState}) - cannot send emotion_update!`);
       }
 
-      // ✅ 데이터베이스에 emotion 저장 (fire-and-forget with proper error handling)
-      // WebSocket이 닫혀있어도 emotion 데이터는 보존됨
+      // ✅ Supabase 클라이언트로 감정 데이터 저장 (fire-and-forget)
+      // WebSocket이 닫혀있어도 emotion 데이터는 Supabase에 보존됨
       setImmediate(async () => {
         try {
           console.log(`💾 [CRITICAL] Attempting to save emotion to database...`);
 
-          // Use absolute path (works in all environments including Render)
-          const models = require(path.join(__dirname, '../../models'));
+          const { supabase } = require(path.join(__dirname, '../../utils/supabase'));
 
-          // Check if database is enabled
-          if (!models.dbEnabled) {
-            console.log(`⚠️ [INFO] Database is disabled, skipping emotion save (in-memory only)`);
+          // 1️⃣ 기존 세션 데이터 가져오기
+          const { data: existingSession, error: fetchError } = await supabase
+            .from('sessions')
+            .select('emotions_data')
+            .eq('session_id', session.sessionId)
+            .single();
+
+          if (fetchError) {
+            console.error(`❌ [CRITICAL] Failed to fetch session:`, fetchError.message);
             return;
           }
 
-          if (!models || !models.Session) {
-            console.error(`❌ [CRITICAL] Models not found at absolute path`);
-            console.error(`Available exports:`, Object.keys(models || {}));
-            return;
-          }
-
-          const { Session } = models;
-          const sessionRecord = await Session.findOne({
-            where: { sessionId: session.sessionId }
-          });
-
-          if (!sessionRecord) {
+          if (!existingSession) {
             console.error(`❌ [CRITICAL] Session not found in database: ${session.sessionId}`);
             return;
           }
 
-          const emotions = sessionRecord.emotionsData || [];
+          // 2️⃣ 기존 감정 데이터 + 새 감정 데이터
+          const emotions = existingSession.emotions_data || [];
           emotions.push(emotionData);
 
-          await sessionRecord.update({ emotionsData: emotions });
+          // 3️⃣ 데이터베이스에 업데이트
+          const { error: updateError } = await supabase
+            .from('sessions')
+            .update({ emotions_data: emotions })
+            .eq('session_id', session.sessionId);
+
+          if (updateError) {
+            console.error(`❌ [CRITICAL] Failed to update session:`, updateError.message);
+            console.error(`   Code: ${updateError.code}`);
+            return;
+          }
+
           console.log(`✅ [CRITICAL] Emotion saved to database: ${emotion}`);
           console.log(`✅ [CRITICAL] Total emotions for session: ${emotions.length}`);
 
         } catch (dbError) {
           console.error(`❌ [CRITICAL] Failed to save emotion to database:`);
           console.error(`   Error: ${dbError.message}`);
-          console.error(`   Code: ${dbError.code}`);
-          console.error(`   Path attempted: ../../models`);
+          console.error(`   Stack: ${dbError.stack}`);
         }
       });
 

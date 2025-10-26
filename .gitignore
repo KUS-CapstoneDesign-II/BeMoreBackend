@@ -1,6 +1,10 @@
 node_modules/
 .env
-/tmp  
+/tmp
 /.claudetmp/
 config/config.json
 .claude/
+
+# 민감한 정보를 포함하는 문서 (로컬 개발용만)
+BACKEND_SUPABASE_ACTION_PROMPT.md
+TEAM_PROMPT_FOR_BACKEND.md
