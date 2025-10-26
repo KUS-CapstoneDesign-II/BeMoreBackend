@@ -4,6 +4,27 @@ require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// ⏱️ Timeout configuration (increased from 5s to 30s)
+const GEMINI_TIMEOUT_MS = 30000; // 30 seconds - allows Gemini to respond after WebSocket closure
+
+/**
+ * Wraps a promise with a timeout mechanism
+ * @param {Promise} promise - The promise to wrap
+ * @param {number} timeoutMs - Timeout in milliseconds
+ * @param {string} operationName - Name of the operation (for error messages)
+ * @returns {Promise} Promise that rejects with timeout error if exceeded
+ */
+function withTimeout(promise, timeoutMs, operationName = 'Operation') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => {
+        reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs)
+    )
+  ]);
+}
+
 // Mediapipe 주요 랜드마크 인덱스
 const KEY_INDICES = {
   LEFT_EYE_INNER: 33,
@@ -220,7 +241,20 @@ ${summaryText}
 
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const res = await model.generateContent(prompt);
+
+    // ⏱️ Wrap with timeout: 30s allows Gemini to respond even after WebSocket closes
+    console.log(`🕐 [CRITICAL] Starting Gemini request with ${GEMINI_TIMEOUT_MS}ms timeout`);
+    const startTime = Date.now();
+
+    const res = await withTimeout(
+      model.generateContent(prompt),
+      GEMINI_TIMEOUT_MS,
+      'Gemini emotion analysis'
+    );
+
+    const elapsedTime = Date.now() - startTime;
+    console.log(`⏱️ [CRITICAL] Gemini response received after ${elapsedTime}ms`);
+
     const rawResponse = res.response.text().trim().split("\n").pop();
     console.log("Gemini 전송 완료", speechText);
     console.log("📤 [CRITICAL] Raw Gemini response:", rawResponse);
@@ -354,7 +388,14 @@ async function analyzeEmotion(text) {
       throw new Error('GEMINI_API_KEY is not set');
     }
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const res = await model.generateContent(prompt);
+
+    // ⏱️ Apply timeout to simple emotion analysis as well
+    const res = await withTimeout(
+      model.generateContent(prompt),
+      GEMINI_TIMEOUT_MS,
+      'Gemini text-based emotion analysis'
+    );
+
     const label = (res?.response?.text?.() || '').trim().toLowerCase();
     const allowed = ['happy','sad','angry','anxious','neutral'];
     return allowed.includes(label) ? label : 'neutral';
@@ -414,7 +455,13 @@ async function generateDetailedReport(accumulatedData, speechText = "") {
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const res = await model.generateContent(prompt);
+
+    // ⏱️ Apply timeout to detailed report generation as well
+    const res = await withTimeout(
+      model.generateContent(prompt),
+      GEMINI_TIMEOUT_MS,
+      'Gemini detailed report generation'
+    );
 
     // Gemini 응답 파싱 시도: 텍스트에서 JSON 추출
     const text = res.response.text().trim();

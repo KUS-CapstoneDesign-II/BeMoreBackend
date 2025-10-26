@@ -36,8 +36,16 @@ function handleLandmarks(ws, session) {
   const analysisInterval = setInterval(async () => {
     analysisCycleCount++;
 
-    // 세션이 활성 상태가 아니면 분석 건너뛰기
-    if (session.status !== 'active') {
+    // ⏱️ Post-session grace period: continue analysis for 15 seconds after session ends
+    // This allows final Gemini responses (8-13s latency) to be saved to database
+    const hasPendingFrames = session.landmarkBuffer.length > 0;
+    const isPostSessionWindow =
+      session.status === 'ended' &&
+      session.endedAt &&
+      Date.now() - session.endedAt < 15000; // 15 seconds grace period
+
+    // 세션이 활성 상태가 아니면 분석 건너뛰기 (단, post-session 기간은 제외)
+    if (session.status !== 'active' && !isPostSessionWindow) {
       if (analysisCycleCount % 6 === 0) {  // 60초마다 한 번씩만 로그
         console.log(`⏸️ [분석 사이클 #${analysisCycleCount}] 세션 비활성 상태, 분석 건너뛰기: ${session.status}`);
       }
@@ -45,11 +53,17 @@ function handleLandmarks(ws, session) {
     }
 
     // 버퍼에 데이터가 없으면 건너뛰기
-    if (session.landmarkBuffer.length === 0) {
+    if (!hasPendingFrames && !isPostSessionWindow) {
       if (analysisCycleCount % 3 === 0) {  // 30초마다 한 번씩만 로그
         console.log(`📭 [분석 사이클 #${analysisCycleCount}] Landmarks 버퍼 비어있음, 분석 건너뛰기`);
       }
       return;
+    }
+
+    // Post-session logging
+    if (isPostSessionWindow && hasPendingFrames) {
+      const timeSinceEnd = Math.round((Date.now() - session.endedAt) / 1000);
+      console.log(`⏳ [분석 사이클 #${analysisCycleCount}] POST-SESSION GRACE PERIOD (${timeSinceEnd}s after end) - 버퍼: ${session.landmarkBuffer.length}개`);
     }
 
     console.log(`🔵 [분석 사이클 #${analysisCycleCount}] 분석 시작 - 버퍼: ${session.landmarkBuffer.length}개 프레임`);
@@ -157,20 +171,42 @@ function handleLandmarks(ws, session) {
         console.error(`❌ [CRITICAL] WebSocket NOT OPEN (readyState=${ws.readyState}) - cannot send emotion_update!`);
       }
 
-      // ✅ 데이터베이스에 emotion 저장 (fire-and-forget)
+      // ✅ 데이터베이스에 emotion 저장 (fire-and-forget with proper error handling)
       // WebSocket이 닫혀있어도 emotion 데이터는 보존됨
       setImmediate(async () => {
         try {
-          const { Session } = require('../models');
-          const sessionRecord = await Session.findOne({ where: { sessionId: session.sessionId } });
-          if (sessionRecord) {
-            const emotions = sessionRecord.emotionsData || [];
-            emotions.push(emotionData);
-            await sessionRecord.update({ emotionsData: emotions });
-            console.log(`💾 [CRITICAL] Emotion saved to database: ${emotion}`);
+          console.log(`💾 [CRITICAL] Attempting to save emotion to database...`);
+
+          // Use proper require path from /services/socket/
+          const models = require('../../models');
+          if (!models || !models.Session) {
+            console.error(`❌ [CRITICAL] Models not found at ../../models`);
+            console.error(`Available exports:`, Object.keys(models || {}));
+            return;
           }
+
+          const { Session } = models;
+          const sessionRecord = await Session.findOne({
+            where: { sessionId: session.sessionId }
+          });
+
+          if (!sessionRecord) {
+            console.error(`❌ [CRITICAL] Session not found in database: ${session.sessionId}`);
+            return;
+          }
+
+          const emotions = sessionRecord.emotionsData || [];
+          emotions.push(emotionData);
+
+          await sessionRecord.update({ emotionsData: emotions });
+          console.log(`💾 [CRITICAL] Emotion saved to database: ${emotion}`);
+          console.log(`💾 [CRITICAL] Total emotions for session: ${emotions.length}`);
+
         } catch (dbError) {
-          console.error(`⚠️ Failed to save emotion to database:`, dbError.message);
+          console.error(`❌ [CRITICAL] Failed to save emotion to database:`);
+          console.error(`   Error: ${dbError.message}`);
+          console.error(`   Code: ${dbError.code}`);
+          console.error(`   Path attempted: ../../models`);
         }
       });
 
