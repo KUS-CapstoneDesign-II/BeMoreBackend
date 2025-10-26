@@ -1,0 +1,41 @@
+{
+  "development": {
+    "database": "bemore_dev",
+    "username": "root",
+    "password": null,
+    "host": "localhost",
+    "port": 3306,
+    "dialect": "mysql",
+    "logging": false,
+    "define": {
+      "charset": "utf8",
+      "collate": "utf8_general_ci"
+    }
+  },
+  "production": {
+    "database": "bemore_prod",
+    "username": "root",
+    "password": null,
+    "host": "localhost",
+    "port": 3306,
+    "dialect": "mysql",
+    "logging": false,
+    "define": {
+      "charset": "utf8",
+      "collate": "utf8_general_ci"
+    }
+  },
+  "test": {
+    "database": "bemore_test",
+    "username": "root",
+    "password": null,
+    "host": "localhost",
+    "port": 3306,
+    "dialect": "mysql",
+    "logging": false,
+    "define": {
+      "charset": "utf8",
+      "collate": "utf8_general_ci"
+    }
+  }
+}
