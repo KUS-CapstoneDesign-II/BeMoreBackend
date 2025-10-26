@@ -550,11 +550,17 @@ ALTER TABLE public.bemore_user_preferences ENABLE ROW LEVEL SECURITY;
 
 ---
 
-### Step 10: RLS 정책 설정
+### Step 10: RLS 정책 설정 (타입 캐스팅 수정)
+
+⚠️ **중요**: UUID 타입 불일치 오류 해결! 아래 수정된 코드를 사용하세요.
 
 ```sql
 -- ============================================
--- bemore_users RLS 정책
+-- RLS 정책 설정 (타입 캐스팅 수정)
+-- ============================================
+
+-- ============================================
+-- 1. bemore_users RLS 정책
 -- ============================================
 CREATE POLICY "사용자는 자신의 정보만 조회 가능"
   ON public.bemore_users
