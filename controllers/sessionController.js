@@ -88,20 +88,71 @@ async function end(req, res) {
     const sessionId = req.params.id;
     const session = SessionManager.endSession(sessionId);
 
-    // ✅ 감정 데이터 통합 분석
-    let emotionSummary = null;
-    if (session.emotions && session.emotions.length > 0) {
-      try {
-        const emotionAnalyzer = EmotionAnalyzer.fromData(session.emotions);
-        emotionSummary = emotionAnalyzer.getSummary();
-        console.log(`📊 [감정 통합 분석] 총 ${emotionSummary.totalCount}개 감정 분석 완료`);
-        console.log(`   - 주요 감정: ${emotionSummary.primaryEmotion.emotionKo} (${emotionSummary.primaryEmotion.percentage}%)`);
-        console.log(`   - 감정 상태: ${emotionSummary.emotionalState}`);
+    console.log(`⏹️ [CRITICAL] Session end requested: ${sessionId}`);
+    console.log(`⏳ [CRITICAL] Waiting 15 seconds for final Gemini responses to arrive...`);
 
-        // 세션에 분석 결과 추가
-        session.emotionAnalysis = emotionSummary;
-      } catch (analyzeErr) {
-        console.warn('⚠️ 감정 분석 중 오류:', analyzeErr.message);
+    // ⏱️ Wait for final Gemini responses (8-13s latency) to be saved to database
+    // This grace period allows emotions analyzed after session ends to still be persisted
+    await new Promise(resolve => setTimeout(resolve, 15000));
+
+    console.log(`✅ [CRITICAL] Grace period complete, fetching emotions from database...`);
+
+    // ✅ 감정 데이터 통합 분석 (데이터베이스에서 로드)
+    let emotionSummary = null;
+    let finalEmotionCount = 0;
+
+    try {
+      // Try to fetch emotions from database
+      const { Session } = require('../models');
+      const sessionRecord = await Session.findOne({ where: { sessionId } });
+
+      let allEmotions = [];
+
+      if (sessionRecord && sessionRecord.emotionsData && sessionRecord.emotionsData.length > 0) {
+        // Use emotions from database (including post-session analyzed emotions)
+        allEmotions = sessionRecord.emotionsData.map(ed => ed.emotion);
+        finalEmotionCount = allEmotions.length;
+        console.log(`💾 [CRITICAL] Loaded ${finalEmotionCount} emotions from database`);
+      } else if (session.emotions && session.emotions.length > 0) {
+        // Fallback to in-memory emotions if database is empty
+        allEmotions = session.emotions.map(ed => ed.emotion);
+        finalEmotionCount = allEmotions.length;
+        console.log(`📊 [CRITICAL] Using ${finalEmotionCount} in-memory emotions (database empty)`);
+      }
+
+      // Analyze emotions if available
+      if (allEmotions.length > 0) {
+        try {
+          const emotionAnalyzer = new EmotionAnalyzer();
+          allEmotions.forEach(emotion => {
+            emotionAnalyzer.addEmotion(emotion, 80); // Default intensity
+          });
+          emotionSummary = emotionAnalyzer.getSummary();
+
+          console.log(`📊 [CRITICAL] 감정 통합 분석 완료 (총 ${emotionSummary.emotionCount}개)`);
+          console.log(`   - 주요 감정: ${emotionSummary.emotionSummary?.primaryEmotion?.emotionKo} (${emotionSummary.emotionSummary?.primaryEmotion?.percentage}%)`);
+          console.log(`   - 감정 상태: ${emotionSummary.emotionSummary?.emotionalState}`);
+
+          // 세션에 분석 결과 추가
+          session.emotionAnalysis = emotionSummary;
+        } catch (analyzeErr) {
+          console.error('❌ [CRITICAL] 감정 분석 중 오류:', analyzeErr.message);
+        }
+      } else {
+        console.warn(`⚠️ [CRITICAL] No emotions found for session: ${sessionId}`);
+      }
+
+    } catch (dbErr) {
+      console.error(`❌ [CRITICAL] Database fetch error:`, dbErr.message);
+      // Continue with fallback to in-memory emotions
+      if (session.emotions && session.emotions.length > 0) {
+        try {
+          const emotionAnalyzer = EmotionAnalyzer.fromData(session.emotions);
+          emotionSummary = emotionAnalyzer.getSummary();
+          console.log(`📊 [CRITICAL] Emotion analysis complete (fallback)`);
+        } catch (analyzeErr) {
+          console.warn('⚠️ 감정 분석 중 오류:', analyzeErr.message);
+        }
       }
     }
 
@@ -110,13 +161,13 @@ async function end(req, res) {
       status: session.status,
       endedAt: session.endedAt,
       duration: SessionManager.getSessionDuration(sessionId),
-      emotionCount: session.emotions.length,
+      emotionCount: finalEmotionCount,
       emotionSummary: emotionSummary ? {
-        primaryEmotion: emotionSummary.primaryEmotion,
-        emotionalState: emotionSummary.emotionalState,
-        trend: emotionSummary.trend.trend,
-        positiveRatio: emotionSummary.positiveRatio,
-        negativeRatio: emotionSummary.negativeRatio
+        primaryEmotion: emotionSummary.emotionSummary?.primaryEmotion,
+        emotionalState: emotionSummary.emotionSummary?.emotionalState,
+        trend: emotionSummary.emotionSummary?.trend,
+        positiveRatio: emotionSummary.emotionSummary?.positiveRatio,
+        negativeRatio: emotionSummary.emotionSummary?.negativeRatio
       } : null
     };
     res.json({ success: true, data: responseData });
