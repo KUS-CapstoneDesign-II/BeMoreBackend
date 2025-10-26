@@ -49,6 +49,11 @@ function handleLandmarks(ws, session) {
       if (analysisCycleCount % 6 === 0) {  // 60초마다 한 번씩만 로그
         console.log(`⏸️ [분석 사이클 #${analysisCycleCount}] 세션 비활성 상태, 분석 건너뛰기: ${session.status}`);
       }
+      // ✅ 15초 grace period가 끝났으면 분석 종료
+      if (session.status === 'ended' && !isPostSessionWindow) {
+        console.log(`✅ [분석 사이클 #${analysisCycleCount}] 세션 post-session grace period 완료, 분석 종료`);
+        clearInterval(analysisInterval);
+      }
       return;
     }
 
@@ -179,6 +184,13 @@ function handleLandmarks(ws, session) {
 
           // Use absolute path (works in all environments including Render)
           const models = require(path.join(__dirname, '../../models'));
+
+          // Check if database is enabled
+          if (!models.dbEnabled) {
+            console.log(`⚠️ [INFO] Database is disabled, skipping emotion save (in-memory only)`);
+            return;
+          }
+
           if (!models || !models.Session) {
             console.error(`❌ [CRITICAL] Models not found at absolute path`);
             console.error(`Available exports:`, Object.keys(models || {}));
@@ -199,8 +211,8 @@ function handleLandmarks(ws, session) {
           emotions.push(emotionData);
 
           await sessionRecord.update({ emotionsData: emotions });
-          console.log(`💾 [CRITICAL] Emotion saved to database: ${emotion}`);
-          console.log(`💾 [CRITICAL] Total emotions for session: ${emotions.length}`);
+          console.log(`✅ [CRITICAL] Emotion saved to database: ${emotion}`);
+          console.log(`✅ [CRITICAL] Total emotions for session: ${emotions.length}`);
 
         } catch (dbError) {
           console.error(`❌ [CRITICAL] Failed to save emotion to database:`);
@@ -293,7 +305,8 @@ function handleLandmarks(ws, session) {
   // 연결 종료
   ws.on('close', () => {
     console.log(`🔌 Landmarks 채널 종료: ${session.sessionId}`);
-    clearInterval(analysisInterval);
+    // ✅ Do NOT clear analysisInterval here - let it continue for the 15-second grace period
+    // so that pending Gemini analysis can complete and be saved to the database
     session.wsConnections.landmarks = null;
   });
 
@@ -304,7 +317,7 @@ function handleLandmarks(ws, session) {
       level: errorHandler.levels.ERROR,
       metadata: { sessionId: session.sessionId, event: 'websocket_error' }
     });
-    clearInterval(analysisInterval);
+    // ✅ Do NOT clear analysisInterval here either - let the grace period complete
     session.wsConnections.landmarks = null;
   });
 

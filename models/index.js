@@ -40,15 +40,17 @@ try {
 }
 
 db.sequelize = sequelize;
-
-db.User = User;
-db.Counseling = Counseling;
-db.Session = Session;
-db.Report = Report;
-db.UserPreferences = UserPreferences;
-db.Feedback = Feedback;
+db.dbEnabled = dbEnabled;
 
 if (dbEnabled && sequelize instanceof Sequelize) {
+  // Only assign and initialize models when database is properly enabled
+  db.User = User;
+  db.Counseling = Counseling;
+  db.Session = Session;
+  db.Report = Report;
+  db.UserPreferences = UserPreferences;
+  db.Feedback = Feedback;
+
   User.initiate(sequelize);
   Counseling.initiate(sequelize);
   Session.initiate(sequelize);
@@ -58,6 +60,14 @@ if (dbEnabled && sequelize instanceof Sequelize) {
 
   User.associate(db);
   Counseling.associate(db);
+} else {
+  // Create stub properties when database is disabled
+  db.User = null;
+  db.Counseling = null;
+  db.Session = null;
+  db.Report = null;
+  db.UserPreferences = null;
+  db.Feedback = null;
 }
 
 module.exports = db;
