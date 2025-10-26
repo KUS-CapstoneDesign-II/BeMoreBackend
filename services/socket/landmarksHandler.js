@@ -177,10 +177,10 @@ function handleLandmarks(ws, session) {
         try {
           console.log(`💾 [CRITICAL] Attempting to save emotion to database...`);
 
-          // Use proper require path from /services/socket/
-          const models = require('../../models');
+          // Use absolute path (works in all environments including Render)
+          const models = require(path.join(__dirname, '../../models'));
           if (!models || !models.Session) {
-            console.error(`❌ [CRITICAL] Models not found at ../../models`);
+            console.error(`❌ [CRITICAL] Models not found at absolute path`);
             console.error(`Available exports:`, Object.keys(models || {}));
             return;
           }
