@@ -89,11 +89,12 @@ async function end(req, res) {
     const session = SessionManager.endSession(sessionId);
 
     console.log(`⏹️ [CRITICAL] Session end requested: ${sessionId}`);
-    console.log(`⏳ [CRITICAL] Waiting 15 seconds for final Gemini responses to arrive...`);
+    console.log(`⏳ [CRITICAL] Waiting 30 seconds for final Gemini responses to arrive...`);
 
-    // ⏱️ Wait for final Gemini responses (8-13s latency) to be saved to database
+    // ⏱️ Wait for final Gemini responses (17-21s latency) to be saved to database
     // This grace period allows emotions analyzed after session ends to still be persisted
-    await new Promise(resolve => setTimeout(resolve, 15000));
+    // Increased from 15s to 30s to accommodate Gemini's typical latency
+    await new Promise(resolve => setTimeout(resolve, 30000));
 
     console.log(`✅ [CRITICAL] Grace period complete, fetching emotions from database...`);
 
