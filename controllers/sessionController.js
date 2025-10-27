@@ -127,19 +127,41 @@ async function end(req, res) {
     let finalEmotionCount = 0;
 
     try {
-      // Try to fetch emotions from database
-      const { Session } = require('../models');
-      const sessionRecord = await Session.findOne({ where: { sessionId } });
-
+      // Try to fetch emotions from database (Sequelize or Supabase fallback)
+      const models = require('../models');
       let allEmotions = [];
 
-      if (sessionRecord && sessionRecord.emotionsData && sessionRecord.emotionsData.length > 0) {
-        // Use emotions from database (including post-session analyzed emotions)
-        allEmotions = sessionRecord.emotionsData.map(ed => ed.emotion);
-        finalEmotionCount = allEmotions.length;
-        console.log(`💾 [CRITICAL] Loaded ${finalEmotionCount} emotions from database`);
-      } else if (session.emotions && session.emotions.length > 0) {
-        // Fallback to in-memory emotions if database is empty
+      if (models && models.Session && models.dbEnabled) {
+        const sessionRecord = await models.Session.findOne({ where: { sessionId } });
+        if (sessionRecord && sessionRecord.emotionsData && sessionRecord.emotionsData.length > 0) {
+          allEmotions = sessionRecord.emotionsData.map(ed => ed.emotion);
+          finalEmotionCount = allEmotions.length;
+          console.log(`💾 [CRITICAL] Loaded ${finalEmotionCount} emotions from Sequelize`);
+        }
+      }
+
+      // Supabase fallback when Sequelize unavailable or no data found
+      if (allEmotions.length === 0 && process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+        try {
+          const { supabase } = require('../utils/supabase');
+          const { data: sbSession, error: sbErr } = await supabase
+            .from('sessions')
+            .select('emotions_data')
+            .eq('session_id', sessionId)
+            .single();
+
+          if (!sbErr && sbSession && Array.isArray(sbSession.emotions_data)) {
+            allEmotions = sbSession.emotions_data.map(ed => ed.emotion);
+            finalEmotionCount = allEmotions.length;
+            console.log(`💾 [CRITICAL] Loaded ${finalEmotionCount} emotions from Supabase`);
+          }
+        } catch (sbCatch) {
+          console.warn('⚠️ [CRITICAL] Supabase fallback failed:', sbCatch.message);
+        }
+      }
+
+      // Fallback to in-memory emotions if database is empty
+      if (allEmotions.length === 0 && session.emotions && session.emotions.length > 0) {
         allEmotions = session.emotions.map(ed => ed.emotion);
         finalEmotionCount = allEmotions.length;
         console.log(`📊 [CRITICAL] Using ${finalEmotionCount} in-memory emotions (database empty)`);
