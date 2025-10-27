@@ -28,6 +28,30 @@ async function start(req, res) {
     }
     const session = SessionManager.createSession({ userId, counselorId });
     const wsUrls = buildWsUrls(req, session.sessionId);
+
+    // 📝 Supabase에 세션 정보 저장 (비동기)
+    setImmediate(async () => {
+      try {
+        const { supabase } = require('../utils/supabase');
+        const { error } = await supabase
+          .from('sessions')
+          .insert({
+            session_id: session.sessionId,
+            emotions_data: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          console.error(`❌ Failed to create session in Supabase: ${error.message}`);
+        } else {
+          console.log(`✅ Session created in Supabase: ${session.sessionId}`);
+        }
+      } catch (dbError) {
+        console.error(`❌ Error creating session in Supabase: ${dbError.message}`);
+      }
+    });
+
     return res.status(201).json({ success: true, data: { sessionId: session.sessionId, wsUrls, startedAt: session.startedAt, status: session.status, userId: session.userId, counselorId: session.counselorId } });
   } catch (error) {
     errorHandler.handle(error, { module: 'session-start', level: errorHandler.levels.ERROR });
