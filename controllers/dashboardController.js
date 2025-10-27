@@ -1,6 +1,25 @@
 const { Op } = require('sequelize');
 const { Report } = require('../models');
 
+// Wrap a promise with a cancellable timeout to avoid stray unhandled rejections
+function withTimeout(promise, ms, errorMessage) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(errorMessage || `Operation timed out after ${ms}ms`));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 function avg(nums) { return (!nums || nums.length === 0) ? null : nums.reduce((a,b)=>a+b,0)/nums.length; }
 
 async function summary(req, res) {
@@ -8,26 +27,23 @@ async function summary(req, res) {
     console.log(`📊 [Dashboard] Summary request received`);
 
     // ⏱️ Add timeout protection (5 seconds max for database query)
-    const queryTimeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Dashboard query timeout after 5s')), 5000)
-    );
+    const queryPromise = Report && typeof Report.findAll === 'function'
+      ? Report.findAll({
+          where: { createdAt: { [Op.gte]: start7d } },
+          order: [['createdAt', 'DESC']],
+          limit: 100
+        })
+      : Promise.reject(new Error('Report model unavailable'));
 
     const now = new Date();
     const start7d = new Date(now.getTime() - 7*24*60*60*1000);
 
     console.log(`📊 [Dashboard] Querying reports from ${start7d.toISOString()} to ${now.toISOString()}`);
 
-    // Race against timeout
+    // Execute with timeout while preventing stray unhandled rejections
     let reports = [];
     try {
-      reports = await Promise.race([
-        Report.findAll({
-          where: { createdAt: { [Op.gte]: start7d } },
-          order: [['createdAt', 'DESC']],
-          limit: 100
-        }),
-        queryTimeout
-      ]);
+      reports = await withTimeout(queryPromise, 5000, 'Dashboard query timeout after 5s');
       console.log(`✅ [Dashboard] Found ${reports.length} reports`);
     } catch (dbErr) {
       console.error(`⚠️ [Dashboard] Query failed, using empty dataset:`, dbErr.message);
