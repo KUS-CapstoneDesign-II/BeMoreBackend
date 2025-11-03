@@ -1,0 +1,289 @@
+================================================================================
+BEMORE BACKEND SESSION MANAGEMENT - QUICK REFERENCE GUIDE
+================================================================================
+
+ARCHITECTURE OVERVIEW
+================================================================================
+In-Memory Session State (SessionManager)
+    ↓
+WebSocket Data Collection (10-second intervals)
+    ↓
+Emotion/VAD/CBT Analysis
+    ↓
+Multimodal Report Generation
+    ↓
+Partial Supabase Persistence
+
+KEY FILES & THEIR ROLES
+================================================================================
+
+SESSION MANAGEMENT
+├─ services/session/SessionManager.js       ✅ In-memory session store (Map)
+├─ services/session/sessionService.js       ⚠️ Report → DB persistence (async)
+└─ models/Session.js                        ✅ Sequelize model for sessions
+
+DATA COLLECTION (WebSocket)
+├─ services/socket/landmarksHandler.js      ✅ Face landmarks → emotions (10s)
+├─ services/socket/voiceHandler.js          ✅ Audio metrics → VAD (10s)
+└─ services/socket/setupWebSockets.js       ✅ WebSocket server setup
+
+ANALYSIS ENGINES
+├─ services/emotion/EmotionAnalyzer.js      ✅ Emotion tracking + stats
+├─ services/analysis/MultimodalAnalyzer.js  ✅ Integrates all 3 modalities
+├─ services/analysis/EmotionVADVector.js    ✅ Valence/Arousal/Dominance vector
+├─ services/cbt/InterventionGenerator.js    ✅ CBT distortion detection
+└─ services/gemini/gemini.js                ✅ Emotion classification via API
+
+REPORTING
+├─ services/report/SessionReportGenerator.js ✅ JSON report generation
+├─ services/report/PdfReportGenerator.js     ✅ PDF export
+└─ services/report/csv.js                    ✅ CSV export
+
+API ROUTES
+├─ routes/session.js                         ✅ All CRUD endpoints
+└─ controllers/sessionController.js          ✅ Controller implementations
+
+DATA STRUCTURES - SESSION OBJECT
+================================================================================
+
+session = {
+  // Identity
+  sessionId: "sess_1737250800_abc123",
+  userId: "user_001",
+  counselorId: "counselor_001",
+  status: "active|paused|ended",
+  
+  // Timing
+  startedAt: 1737250800000,
+  pausedAt: null,
+  resumedAt: null,
+  endedAt: null,
+  
+  // Data Buffers (10-second cycles)
+  landmarkBuffer: [{ x: 0.5, y: 0.5, ... }, ...],
+  sttBuffer: ["hello", "world"],
+  vadBuffer: [{ speechRate: 45, energy: 0.7, ... }],
+  emotions: [{
+    emotion: "happy",
+    timestamp: 1737250800000,
+    frameCount: 45,
+    intensity: 0.75,
+    ...
+  }],
+  
+  // Analysis Objects
+  interventionGenerator: InterventionGenerator,     // CBT tracking
+  vadMetrics: VadMetrics,                          // Voice metrics
+  psychIndicators: PsychologicalIndicators,        // Risk scores
+  
+  // WebSocket Connections
+  wsConnections: {
+    landmarks: WebSocket,
+    voice: WebSocket,
+    session: WebSocket
+  }
+}
+
+CURRENT ENDPOINTS
+================================================================================
+
+SESSION CONTROL
+✅ POST   /api/session/start                Create session
+✅ GET    /api/session/:id                  Get session details
+✅ POST   /api/session/:id/pause            Pause session
+✅ POST   /api/session/:id/resume           Resume session
+✅ POST   /api/session/:id/end              End session
+✅ DELETE /api/session/:id                  Delete session
+
+ANALYSIS
+✅ GET    /api/session/:id/vad-analysis     Current VAD metrics
+✅ GET    /api/session/:id/report           Full JSON report
+✅ GET    /api/session/:id/report/summary   Text summary
+✅ GET    /api/session/:id/report/pdf       PDF export
+✅ GET    /api/session/:id/report/csv       CSV export
+✅ GET    /api/session/:id/summary          Quick summary card
+
+BATCH/TICK ENDPOINTS
+❌ POST   /api/session/:id/tick             (NOT IMPLEMENTED)
+   Should return:
+   {
+     sessionId, timestamp,
+     emotionSnapshot: { emotion, intensity, timestamp },
+     vadVector: { valence, arousal, dominance },
+     cbtMetrics: { distortionCount, severity },
+     combinedScore: 0.0-1.0,
+     riskLevel: "low|medium|high|critical"
+   }
+
+CRITICAL GAPS
+================================================================================
+
+1. ❌ TICK ENDPOINT (HIGH PRIORITY)
+   Missing: POST /api/session/:id/tick endpoint
+   Purpose: Return current emotion snapshot without state change
+   Why: Frontend needs periodic polling, not just WebSocket push
+   Effort: ~2 hours
+
+2. ❌ COMBINED EMOTION SCORING (HIGH PRIORITY)
+   Missing: Weighted score combining emotion + VAD + CBT
+   Formula: 0.40*valence + 0.30*intensity + 0.15*arousal + 0.10*time - 0.05*cbt
+   Why: Risk assessment needs single composite score, not fragmented data
+   Effort: ~3 hours
+
+3. ⚠️ STORAGE INTERFACE ABSTRACTION (MEDIUM PRIORITY)
+   Missing: ISessionStorage interface for pluggable persistence
+   Current: SessionManager purely in-memory, ad-hoc DB writes
+   Why: Server restart loses sessions, testing difficult, scaling hard
+   Effort: ~4 hours
+
+TIMING ARCHITECTURE
+================================================================================
+
+10-SECOND ANALYSIS CYCLE (landmarksHandler.js)
+─────────────────────────────────────────────
+T=0s:     Client sends 30-60 frames/sec → landmarkBuffer
+T=0-10s:  Accumulation
+T=10s:    Trigger Gemini emotion analysis
+          + VAD analysis on metrics
+          + CBT detection on STT text
+          Clear buffers
+          Store emotion in session.emotions[]
+T=20s:    (Repeat)
+
+SPECIAL CASE: Grace Period (15 seconds after session end)
+─────────────────────────────────────────────────────────
+If session.status === 'ended' && Date.now() - endedAt < 15000:
+  → Continue analysis if pendingFrames exist
+  → Allows final Gemini responses to complete (8-13s latency)
+
+EMOTION ANALYSIS (PER CYCLE)
+─────────────────────────────
+Input:  [frames...] + "STT text"
+        ↓
+     Gemini API
+        ↓
+Output: emotion_label ("happy", "sad", "neutral", etc.)
+        ↓
+     Store with metadata:
+     { emotion, timestamp, frameCount, intensity, cycleNumber }
+
+VAD ANALYSIS (PER CYCLE)
+────────────────────────
+Metrics tracked:
+  - speechRate (%)
+  - energyVariance (0..∞)
+  - silenceRate (%)
+  - interruptionRate (%)
+  - pauseFrequency
+  - volumeVariation
+  - pitchVariation
+
+Converted to VAD vector:
+  valence = emotion_label → 0.0-1.0 (happy=0.8, sad=0.2)
+  arousal = 0.5*speechRate + 0.3*energyVar + 0.2*interrupt
+  dominance = 0.6*speechRate + 0.2*(1-silenceRate) + 0.2
+
+DATA PERSISTENCE STATUS
+================================================================================
+
+IN-MEMORY (SessionManager.sessions Map)
+├─ sessionId, userId, counselorId ✅
+├─ status, timestamps (start/pause/resume/end) ✅
+├─ emotions[] timeline ✅
+├─ vadAnalysisHistory[] ✅
+├─ sttBuffer[] ✅
+├─ landmarkBuffer[] ✅
+└─ interventionGenerator state ✅
+
+SUPABASE (Partial - async, error-suppressed)
+├─ Session creation (at start) ✅
+├─ Emotion snapshots (NOT synced in real-time) ❌
+├─ Report at session end ⚠️ (async, errors ignored)
+└─ Session metadata (at end) ⚠️ (async, errors ignored)
+
+DATABASE (Sequelize Models)
+├─ Session table ✅ (lightweightmetadata only)
+├─ Report table ✅ (full report JSON)
+└─ Emotion timelines ❌ (not normalized)
+
+KEY IMPLEMENTATION NOTES
+================================================================================
+
+THREAD SAFETY
+• JavaScript is single-threaded → No locking needed
+• Map operations atomic
+• WebSocket handlers use proper async/await
+
+MEMORY FOOTPRINT
+• Per session: ~50KB (metadata + buffers)
+• Per emotion: ~500 bytes
+• 60-minute session (~360 emotions): ~180KB
+• Recommend cleanup after 24 hours
+
+ERROR HANDLING
+• SessionManager: Throws on invalid transitions
+• WebSocket: Errors logged, don't break cycle
+• Report: Try-catch with defaults
+• Supabase: Errors silently suppressed (don't block end)
+
+IDEMPOTENCY
+• pauseSession(sessionId): Safe to call multiple times
+• resumeSession(sessionId): Safe to call multiple times
+• endSession(sessionId): Safe to call multiple times
+• deleteSession(sessionId): Returns false if not found
+
+GRACE PERIODS
+• Post-session analysis: 15 seconds (for Gemini latency)
+• WebSocket cleanup: 60 seconds after connection close
+• Session retention: No automatic cleanup (must delete manually)
+
+RECOMMENDED NEXT STEPS
+================================================================================
+
+PHASE 1 (2h): Tick Endpoint
+├─ Add POST /api/session/:id/tick in routes/session.js
+├─ Add tick() controller method in sessionController.js
+├─ Return emotion snapshot + VAD vector + CBT metrics
+└─ Enable frontend periodic polling instead of WebSocket-only
+
+PHASE 2 (3h): Combined Scoring
+├─ Create EmotionScoringEngine.js class
+├─ Implement weighted formula (emotion+VAD+CBT)
+├─ Integrate into MultimodalAnalyzer
+└─ Add combinedScore to tick response
+
+PHASE 3 (4h): Storage Abstraction
+├─ Create ISessionStorage interface
+├─ Implement SupabaseSessionStorage adapter
+├─ Implement InMemorySessionStorage adapter
+├─ Refactor SessionManager to use interface
+└─ Benefits: testability, scalability, backend swapping
+
+PHASE 4 (3h): Real-time Supabase Sync
+├─ Publish emotion to Supabase after each 10-second analysis
+├─ Debounce to 30-second intervals for efficiency
+├─ Add Supabase subscription in dashboard
+└─ Enable counselor to see live emotion updates
+
+ABSOLUTE FILE PATHS (for reference)
+================================================================================
+
+/Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend/
+├─ services/session/SessionManager.js
+├─ services/session/sessionService.js
+├─ services/socket/landmarksHandler.js
+├─ services/socket/voiceHandler.js
+├─ services/emotion/EmotionAnalyzer.js
+├─ services/analysis/MultimodalAnalyzer.js
+├─ services/analysis/EmotionVADVector.js
+├─ services/cbt/InterventionGenerator.js
+├─ services/report/SessionReportGenerator.js
+├─ services/report/PdfReportGenerator.js
+├─ routes/session.js
+├─ controllers/sessionController.js
+├─ models/Session.js
+└─ SESSION_MANAGEMENT_ANALYSIS.md (THIS DOCUMENT)
+
+================================================================================
+END OF QUICK REFERENCE
+================================================================================
