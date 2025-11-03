@@ -858,4 +858,381 @@ router.post('/:id/feedback', validateParams(idParamSchema), (req, res) => {
   }
 });*/
 
+// ============================================================
+// 🔄 멀티모달 데이터 수집 API (Phase 4 확장)
+// ============================================================
+
+const { getInstance: getDataStore } = require('../services/inference/DataStore');
+const { getInstance: getInferenceService } = require('../services/inference/InferenceService');
+
+// 검증 스키마
+const framesSchema = z.object({
+  items: z.array(z.object({
+    ts: z.number().min(0),
+    faceLandmarksCompressed: z.string().optional(),
+    qualityScore: z.number().min(0).max(1).default(0.5)
+  })).min(1)
+});
+
+const audioChunksSchema = z.object({
+  items: z.array(z.object({
+    tsStart: z.number().min(0),
+    tsEnd: z.number().min(0),
+    vad: z.boolean().or(z.number().min(0).max(1)),
+    rms: z.number().min(0).max(1).default(0.5),
+    pitch: z.number().optional()
+  })).min(1)
+});
+
+const sttSnippetsSchema = z.object({
+  items: z.array(z.object({
+    tsStart: z.number().min(0),
+    tsEnd: z.number().min(0),
+    text: z.string().min(1),
+    lang: z.string().default('ko')
+  })).min(1)
+});
+
+/**
+ * 표정 프레임 배치 업로드 API
+ * POST /api/session/:id/frames
+ *
+ * Body:
+ * {
+ *   "items": [
+ *     {
+ *       "ts": 1234567890000,
+ *       "faceLandmarksCompressed": "base64_string",
+ *       "qualityScore": 0.9
+ *     },
+ *     ...
+ *   ]
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "requestId": "req_xxx",
+ *   "serverTs": 1234567890000,
+ *   "modelVersion": "rules-v1.0",
+ *   "data": {
+ *     "frameCount": 10,
+ *     "totalFramesInSession": 50
+ *   }
+ * }
+ */
+router.post('/:id/frames', validateParams(idParamSchema), validateBody(framesSchema), (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const { items } = req.body;
+    const requestId = req.id || crypto.randomUUID();
+    const serverTs = Date.now();
+
+    // 세션 존재 확인
+    const session = SessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        requestId,
+        serverTs,
+        error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` }
+      });
+    }
+
+    // DataStore에 프레임 저장
+    const dataStore = getDataStore();
+    const savedFrames = dataStore.addFrames(sessionId, items);
+
+    res.status(201).json({
+      success: true,
+      requestId,
+      serverTs,
+      modelVersion: 'rules-v1.0',
+      data: {
+        frameCount: savedFrames.length,
+        totalFramesInSession: dataStore.getFramesBySession(sessionId).length
+      }
+    });
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'frames-upload',
+      level: errorHandler.levels.WARN,
+      metadata: { sessionId: req.params.id, endpoint: 'POST /api/session/:id/frames' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'FRAMES_UPLOAD_ERROR', message: error.message }
+    });
+  }
+});
+
+/**
+ * 음성 청크 배치 업로드 API
+ * POST /api/session/:id/audio
+ *
+ * Body:
+ * {
+ *   "items": [
+ *     {
+ *       "tsStart": 1234567890000,
+ *       "tsEnd": 1234567895000,
+ *       "vad": true,
+ *       "rms": 0.6,
+ *       "pitch": 100.5
+ *     },
+ *     ...
+ *   ]
+ * }
+ */
+router.post('/:id/audio', validateParams(idParamSchema), validateBody(audioChunksSchema), (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const { items } = req.body;
+    const requestId = req.id || crypto.randomUUID();
+    const serverTs = Date.now();
+
+    // 세션 존재 확인
+    const session = SessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        requestId,
+        serverTs,
+        error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` }
+      });
+    }
+
+    // DataStore에 음성 청크 저장
+    const dataStore = getDataStore();
+    const savedChunks = dataStore.addAudioChunks(sessionId, items);
+
+    res.status(201).json({
+      success: true,
+      requestId,
+      serverTs,
+      modelVersion: 'rules-v1.0',
+      data: {
+        audioChunkCount: savedChunks.length,
+        totalAudioChunksInSession: dataStore.getAudioChunksBySession(sessionId).length
+      }
+    });
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'audio-upload',
+      level: errorHandler.levels.WARN,
+      metadata: { sessionId: req.params.id, endpoint: 'POST /api/session/:id/audio' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'AUDIO_UPLOAD_ERROR', message: error.message }
+    });
+  }
+});
+
+/**
+ * STT 스니펫 배치 업로드 API
+ * POST /api/session/:id/stt
+ *
+ * Body:
+ * {
+ *   "items": [
+ *     {
+ *       "tsStart": 1234567890000,
+ *       "tsEnd": 1234567895000,
+ *       "text": "안녕하세요",
+ *       "lang": "ko"
+ *     },
+ *     ...
+ *   ]
+ * }
+ */
+router.post('/:id/stt', validateParams(idParamSchema), validateBody(sttSnippetsSchema), (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const { items } = req.body;
+    const requestId = req.id || crypto.randomUUID();
+    const serverTs = Date.now();
+
+    // 세션 존재 확인
+    const session = SessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        requestId,
+        serverTs,
+        error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` }
+      });
+    }
+
+    // DataStore에 STT 스니펫 저장
+    const dataStore = getDataStore();
+    const savedSnippets = dataStore.addSttSnippets(sessionId, items);
+
+    res.status(201).json({
+      success: true,
+      requestId,
+      serverTs,
+      modelVersion: 'rules-v1.0',
+      data: {
+        sttSnippetCount: savedSnippets.length,
+        totalSttSnippetsInSession: dataStore.getSttSnippetsBySession(sessionId).length
+      }
+    });
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'stt-upload',
+      level: errorHandler.levels.WARN,
+      metadata: { sessionId: req.params.id, endpoint: 'POST /api/session/:id/stt' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'STT_UPLOAD_ERROR', message: error.message }
+    });
+  }
+});
+
+/**
+ * 1분 주기 멀티모달 결합 트리거 API
+ * POST /api/session/:id/tick
+ *
+ * Body:
+ * {
+ *   "minuteIndex": 0
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "requestId": "req_xxx",
+ *   "serverTs": 1234567890000,
+ *   "modelVersion": "rules-v1.0",
+ *   "data": {
+ *     "minuteIndex": 0,
+ *     "facialScore": 0.85,
+ *     "vadScore": 0.72,
+ *     "textSentiment": 0.60,
+ *     "combinedScore": 0.747
+ *   }
+ * }
+ */
+router.post('/:id/tick', validateParams(idParamSchema), (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const { minuteIndex } = req.body || {};
+    const requestId = req.id || crypto.randomUUID();
+    const serverTs = Date.now();
+
+    // 세션 존재 확인
+    const session = SessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        requestId,
+        serverTs,
+        error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` }
+      });
+    }
+
+    // 유효한 minuteIndex 확인
+    if (typeof minuteIndex !== 'number' || minuteIndex < 0) {
+      return res.status(400).json({
+        success: false,
+        requestId,
+        serverTs,
+        error: { code: 'INVALID_MINUTE_INDEX', message: 'minuteIndex는 음이 아닌 정수여야 합니다' }
+      });
+    }
+
+    // InferenceService로 1분 주기 결합 분석 수행
+    const inferenceService = getInferenceService();
+    const inference = inferenceService.inferForMinute(sessionId, minuteIndex, session.startedAt);
+
+    res.status(201).json({
+      success: true,
+      requestId,
+      serverTs,
+      modelVersion: inference.modelVersion,
+      data: {
+        minuteIndex: inference.minuteIndex,
+        facialScore: inference.facialScore,
+        vadScore: inference.vadScore,
+        textSentiment: inference.textSentiment,
+        combinedScore: inference.combinedScore,
+        dataPoints: inference.dataPoints
+      }
+    });
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'inference-tick',
+      level: errorHandler.levels.WARN,
+      metadata: { sessionId: req.params.id, endpoint: 'POST /api/session/:id/tick' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'INFERENCE_TICK_ERROR', message: error.message }
+    });
+  }
+});
+
+/**
+ * 세션 추론 결과 조회 API
+ * GET /api/session/:id/inferences
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "requestId": "req_xxx",
+ *   "serverTs": 1234567890000,
+ *   "modelVersion": "rules-v1.0",
+ *   "data": {
+ *     "inferences": [...],
+ *     "stats": { ... }
+ *   }
+ * }
+ */
+router.get('/:id/inferences', validateParams(idParamSchema), (req, res) => {
+  try {
+    const sessionId = req.params.id;
+    const requestId = req.id || crypto.randomUUID();
+    const serverTs = Date.now();
+
+    // 세션 존재 확인
+    const session = SessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        requestId,
+        serverTs,
+        error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` }
+      });
+    }
+
+    // InferenceService로 추론 결과 및 통계 조회
+    const inferenceService = getInferenceService();
+    const inferences = inferenceService.getAllInferences(sessionId);
+    const stats = inferenceService.getSessionStats(sessionId);
+
+    res.json({
+      success: true,
+      requestId,
+      serverTs,
+      modelVersion: 'rules-v1.0',
+      data: {
+        inferences,
+        stats
+      }
+    });
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'inferences-query',
+      level: errorHandler.levels.WARN,
+      metadata: { sessionId: req.params.id, endpoint: 'GET /api/session/:id/inferences' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'INFERENCES_QUERY_ERROR', message: error.message }
+    });
+  }
+});
+
 module.exports = router;

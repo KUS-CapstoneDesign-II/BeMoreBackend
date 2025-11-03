@@ -203,6 +203,17 @@ async function end(req, res) {
       }
     }
 
+    // 🔄 InferenceService 통계 추가
+    let inferenceStats = null;
+    try {
+      const { getInstance: getInferenceService } = require('../services/inference/InferenceService');
+      const inferenceService = getInferenceService();
+      inferenceStats = inferenceService.getSessionStats(sessionId);
+      console.log(`📊 [CRITICAL] Inference stats: ${inferenceStats.totalMinutes} minutes analyzed`);
+    } catch (inferenceErr) {
+      console.warn('⚠️ [CRITICAL] Inference stats collection failed:', inferenceErr.message);
+    }
+
     const responseData = {
       sessionId: session.sessionId,
       status: session.status,
@@ -215,7 +226,17 @@ async function end(req, res) {
         trend: emotionSummary.emotionSummary?.trend,
         positiveRatio: emotionSummary.emotionSummary?.positiveRatio,
         negativeRatio: emotionSummary.emotionSummary?.negativeRatio
-      } : null
+      } : null,
+      // 🔄 멀티모달 추론 통계 (Phase 4 확장)
+      inferenceStats: inferenceStats || {
+        totalMinutes: 0,
+        avgCombinedScore: 0,
+        avgFacialScore: 0,
+        avgVadScore: 0,
+        avgTextSentiment: 0,
+        maxCombinedScore: 0,
+        minCombinedScore: 0
+      }
     };
     res.json({ success: true, data: responseData });
 
