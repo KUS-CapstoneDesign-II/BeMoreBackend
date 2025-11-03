@@ -1,0 +1,287 @@
+###############################################################################
+# 🎯 BeMore Backend - 멀티모달 세션 라이프사이클 데모 테스트
+#
+# 이 테스트는 다음을 시연합니다:
+# 1. 세션 생성 (POST /api/session/start)
+# 2. 멀티모달 데이터 배치 업로드 (frames, audio, stt)
+# 3. 1분 주기 멀티모달 결합 분석 (tick)
+# 4. 결과 조회 (GET /api/session/:id/inferences)
+# 5. 세션 종료 (POST /api/session/:id/end)
+#
+# 사용 방법:
+# 1. VSCode에서 REST Client 확장 설치 (REST Client by Huachao Mao)
+# 2. 이 파일을 열고 "Send Request" 클릭
+# 3. 또는 설정한 변수들로 순서대로 실행
+#
+# @host = http://localhost:8000
+###############################################################################
+
+@baseUrl = http://localhost:8000
+@contentType = application/json
+@userId = user_demo_001
+@counselorId = counselor_demo_001
+
+###############################################################################
+# 1️⃣ 세션 생성
+###############################################################################
+
+### 1-1. 세션 시작 - 새로운 세션 생성
+POST {{baseUrl}}/api/session/start HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "userId": "{{userId}}",
+  "counselorId": "{{counselorId}}"
+}
+
+> {%
+  // sessionId를 변수에 저장 (후속 요청에서 사용)
+  client.global.set('sessionId', response.body.data.sessionId);
+  client.global.set('sessionStartedAt', response.body.data.startedAt);
+  console.log('✅ Session Created:', response.body.data.sessionId);
+%}
+
+###############################################################################
+# 2️⃣ 멀티모달 데이터 배치 업로드
+###############################################################################
+
+### 2-1. 표정 프레임 업로드 (10개)
+POST {{baseUrl}}/api/session/{{sessionId}}/frames HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "items": [
+    {"ts": 1000, "faceLandmarksCompressed": "landmarks_001", "qualityScore": 0.92},
+    {"ts": 2000, "faceLandmarksCompressed": "landmarks_002", "qualityScore": 0.88},
+    {"ts": 3000, "faceLandmarksCompressed": "landmarks_003", "qualityScore": 0.95},
+    {"ts": 4000, "faceLandmarksCompressed": "landmarks_004", "qualityScore": 0.87},
+    {"ts": 5000, "faceLandmarksCompressed": "landmarks_005", "qualityScore": 0.90},
+    {"ts": 6000, "faceLandmarksCompressed": "landmarks_006", "qualityScore": 0.91},
+    {"ts": 7000, "faceLandmarksCompressed": "landmarks_007", "qualityScore": 0.89},
+    {"ts": 8000, "faceLandmarksCompressed": "landmarks_008", "qualityScore": 0.93},
+    {"ts": 9000, "faceLandmarksCompressed": "landmarks_009", "qualityScore": 0.85},
+    {"ts": 10000, "faceLandmarksCompressed": "landmarks_010", "qualityScore": 0.88}
+  ]
+}
+
+> {%
+  console.log('✅ Frames uploaded:', response.body.data.frameCount);
+%}
+
+### 2-2. 음성 청크 업로드 (10개)
+POST {{baseUrl}}/api/session/{{sessionId}}/audio HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "items": [
+    {"tsStart": 1000, "tsEnd": 2000, "vad": true, "rms": 0.65, "pitch": 120.5},
+    {"tsStart": 2000, "tsEnd": 3000, "vad": true, "rms": 0.70, "pitch": 125.0},
+    {"tsStart": 3000, "tsEnd": 4000, "vad": false, "rms": 0.15, "pitch": null},
+    {"tsStart": 4000, "tsEnd": 5000, "vad": true, "rms": 0.68, "pitch": 118.5},
+    {"tsStart": 5000, "tsEnd": 6000, "vad": true, "rms": 0.72, "pitch": 128.0},
+    {"tsStart": 6000, "tsEnd": 7000, "vad": false, "rms": 0.10, "pitch": null},
+    {"tsStart": 7000, "tsEnd": 8000, "vad": true, "rms": 0.66, "pitch": 122.5},
+    {"tsStart": 8000, "tsEnd": 9000, "vad": true, "rms": 0.71, "pitch": 126.0},
+    {"tsStart": 9000, "tsEnd": 10000, "vad": true, "rms": 0.69, "pitch": 124.0},
+    {"tsStart": 10000, "tsEnd": 11000, "vad": false, "rms": 0.12, "pitch": null}
+  ]
+}
+
+> {%
+  console.log('✅ Audio chunks uploaded:', response.body.data.audioChunkCount);
+%}
+
+### 2-3. STT 스니펫 업로드 (5개)
+POST {{baseUrl}}/api/session/{{sessionId}}/stt HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "items": [
+    {"tsStart": 1000, "tsEnd": 2500, "text": "안녕하세요, 오늘 어떻게 지내세요?", "lang": "ko"},
+    {"tsStart": 4000, "tsEnd": 5500, "text": "좋은 하루였어요", "lang": "ko"},
+    {"tsStart": 7000, "tsEnd": 8500, "text": "감사합니다, 정말 도움이 되었어요", "lang": "ko"},
+    {"tsStart": 9000, "tsEnd": 10000, "text": "네, 알겠습니다", "lang": "ko"},
+    {"tsStart": 11000, "tsEnd": 12000, "text": "또 뵐게요", "lang": "ko"}
+  ]
+}
+
+> {%
+  console.log('✅ STT snippets uploaded:', response.body.data.sttSnippetCount);
+%}
+
+###############################################################################
+# 3️⃣ 1분 주기 멀티모달 결합 분석 (tick)
+###############################################################################
+
+### 3-1. 첫 번째 분 분석 (minute 0: 0-60초)
+POST {{baseUrl}}/api/session/{{sessionId}}/tick HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "minuteIndex": 0
+}
+
+> {%
+  const inference0 = response.body.data;
+  client.global.set('inference0', inference0);
+  console.log('✅ Minute 0 inference:', {
+    facialScore: inference0.facialScore,
+    vadScore: inference0.vadScore,
+    textSentiment: inference0.textSentiment,
+    combinedScore: inference0.combinedScore
+  });
+%}
+
+### 3-2. 다중 분 분석 실행 (더 많은 데이터로 추가 tick 호출)
+
+# 두 번째 분 분석을 위해 추가 데이터 업로드
+POST {{baseUrl}}/api/session/{{sessionId}}/frames HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "items": [
+    {"ts": 61000, "faceLandmarksCompressed": "landmarks_011", "qualityScore": 0.89},
+    {"ts": 62000, "faceLandmarksCompressed": "landmarks_012", "qualityScore": 0.91},
+    {"ts": 63000, "faceLandmarksCompressed": "landmarks_013", "qualityScore": 0.87},
+    {"ts": 64000, "faceLandmarksCompressed": "landmarks_014", "qualityScore": 0.90},
+    {"ts": 65000, "faceLandmarksCompressed": "landmarks_015", "qualityScore": 0.92}
+  ]
+}
+
+### 음성 청크 추가
+POST {{baseUrl}}/api/session/{{sessionId}}/audio HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "items": [
+    {"tsStart": 61000, "tsEnd": 62000, "vad": true, "rms": 0.67, "pitch": 121.0},
+    {"tsStart": 62000, "tsEnd": 63000, "vad": true, "rms": 0.73, "pitch": 127.5},
+    {"tsStart": 63000, "tsEnd": 64000, "vad": false, "rms": 0.12, "pitch": null},
+    {"tsStart": 64000, "tsEnd": 65000, "vad": true, "rms": 0.68, "pitch": 123.0},
+    {"tsStart": 65000, "tsEnd": 66000, "vad": true, "rms": 0.70, "pitch": 125.5}
+  ]
+}
+
+### STT 스니펫 추가
+POST {{baseUrl}}/api/session/{{sessionId}}/stt HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "items": [
+    {"tsStart": 61000, "tsEnd": 62500, "text": "상담사님 덕분에 많이 도움됐어요", "lang": "ko"},
+    {"tsStart": 64000, "tsEnd": 65000, "text": "정말 감사해요", "lang": "ko"}
+  ]
+}
+
+### 두 번째 분 분석
+POST {{baseUrl}}/api/session/{{sessionId}}/tick HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "minuteIndex": 1
+}
+
+> {%
+  const inference1 = response.body.data;
+  console.log('✅ Minute 1 inference:', {
+    facialScore: inference1.facialScore,
+    vadScore: inference1.vadScore,
+    textSentiment: inference1.textSentiment,
+    combinedScore: inference1.combinedScore
+  });
+%}
+
+###############################################################################
+# 4️⃣ 추론 결과 조회
+###############################################################################
+
+### 4-1. 전체 추론 결과 및 통계 조회
+GET {{baseUrl}}/api/session/{{sessionId}}/inferences HTTP/1.1
+
+> {%
+  const stats = response.body.data.stats;
+  console.log('✅ Inference Statistics:', {
+    totalMinutes: stats.totalMinutes,
+    avgCombinedScore: stats.avgCombinedScore,
+    avgFacialScore: stats.avgFacialScore,
+    avgVadScore: stats.avgVadScore,
+    avgTextSentiment: stats.avgTextSentiment
+  });
+%}
+
+###############################################################################
+# 5️⃣ 세션 조회
+###############################################################################
+
+### 5-1. 세션 상태 조회
+GET {{baseUrl}}/api/session/{{sessionId}} HTTP/1.1
+
+> {%
+  console.log('✅ Session status:', response.body.data.status);
+%}
+
+###############################################################################
+# 6️⃣ 세션 종료 및 최종 리포트
+###############################################################################
+
+### 6-1. 세션 종료 (30초 대기 후 감정 데이터 취합)
+# NOTE: 이 요청은 30초 대기하므로 시간이 걸립니다
+POST {{baseUrl}}/api/session/{{sessionId}}/end HTTP/1.1
+
+> {%
+  const data = response.body.data;
+  console.log('✅ Session ended with report:', {
+    sessionId: data.sessionId,
+    status: data.status,
+    duration: data.duration,
+    emotionCount: data.emotionCount,
+    inferenceStats: {
+      totalMinutes: data.inferenceStats.totalMinutes,
+      avgCombinedScore: data.inferenceStats.avgCombinedScore
+    }
+  });
+
+  client.global.set('finalReport', data);
+%}
+
+### 6-2. 최종 리포트 조회
+GET {{baseUrl}}/api/session/{{sessionId}}/report HTTP/1.1
+
+###############################################################################
+# 📊 추가 테스트 시나리오
+###############################################################################
+
+### 📈 시나리오: 더 긴 세션 (5분)
+#
+# 이 시나리오는 다음을 테스트합니다:
+# 1. 5분(300초) 동안 데이터 수집
+# 2. 1분마다 (minute 0-4) tick 호출
+# 3. 각 분마다 평균 점수 계산
+# 4. 전체 통계 생성
+#
+# 수동으로 실행하려면:
+# 1. 새 세션 시작
+# 2. 각 분(60초)마다 frames, audio, stt 데이터 300개 업로드
+# 3. tick 호출 (4번)
+# 4. inferences 조회하여 타임라인 확인
+# 5. 세션 종료하여 최종 리포트 확인
+
+###############################################################################
+# ⏱️ 타이밍 가이드
+###############################################################################
+#
+# tick 호출 타이밍:
+# - minute 0: 0-60초 데이터로 tick(0) 호출
+# - minute 1: 60-120초 데이터로 tick(1) 호출
+# - minute 2: 120-180초 데이터로 tick(2) 호출
+# - ...
+#
+# 데이터 업로드:
+# - ts/tsStart: 세션 시작 후 경과 시간 (밀리초)
+# - 예: 30초 = 30000ms
+#
+# 결합 점수 계산:
+# - combined = 0.5 * facial + 0.3 * vad + 0.2 * text
+# - facial: 프레임 품질 스코어의 평균
+# - vad: VAD 활성 비율(70%) + RMS 평균(30%)
+# - text: 감정 분석 결과 (긍정: 0.7, 중립: 0.5, 부정: 0.3)
