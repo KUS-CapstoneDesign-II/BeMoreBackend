@@ -88,7 +88,9 @@ function handleLandmarks(ws, session) {
       console.log(`🔍 [CRITICAL] emotion_analysis starting with ${frames.length} frames`);
 
       // Gemini 감정 분석
-      const emotion = await analyzeExpression(frames, sttText);
+      let emotion = await analyzeExpression(frames, sttText);
+      // Normalize special labels to supported set
+      if (emotion === '데이터 없음') emotion = 'neutral';
       console.log(`🎯 Gemini 분석 결과: ${emotion}`);
       console.log(`✅ [CRITICAL] Emotion parsed: ${emotion}`);
 
