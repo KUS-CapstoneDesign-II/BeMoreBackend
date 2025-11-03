@@ -6,33 +6,6 @@ BeMore Backend implements defense-in-depth security measures to protect user dat
 
 ---
 
-## Vulnerability Management
-
-### Current Known Issues
-
-#### 1. Validator.js URL Validation Bypass (GHSA-9965-vmph-33xx)
-
-**Severity**: Moderate
-**Status**: ⚠️ Accepted Risk (Indirect Dependency)
-**Source**: Sequelize → validator@13.15.15
-
-**Assessment**:
-- ✅ **NOT exploitable in BeMore**: Our application does not use `validator.isURL()`
-- ✅ **Risk: Minimal**: This function is not called in application code
-- ⚠️ **Action Required**: Monitor for Sequelize updates with patched validator versions
-
-**Timeline**:
-- Discovered: 2024
-- Sequelize Status: No patch released yet (still using validator 13.15.15)
-- BeMore Action: Will update automatically when Sequelize releases patched version
-
-**Mitigation**:
-- Implement custom URL validation if needed
-- Monitor Sequelize releases: https://github.com/sequelize/sequelize/releases
-- Quarterly security audits with `npm audit`
-
----
-
 ## Security Best Practices Implemented
 
 ### 🔐 Authentication & Authorization
@@ -238,32 +211,6 @@ const SessionStartSchema = z.object({
 
 ---
 
-## Incident Response
-
-### Security Issue Reporting
-
-**Responsible Disclosure**:
-1. Do NOT create public GitHub issues for security vulnerabilities
-2. Email: [security@bemore.dev] (when operational)
-3. Include: Description, severity, reproduction steps
-
-### Response Timeline
-
-- **Critical**: Response within 24 hours
-- **High**: Response within 72 hours
-- **Medium**: Response within 1 week
-- **Low**: Response within 2 weeks
-
-### Post-Incident Actions
-
-1. Immediate patch development
-2. Deployment to production
-3. User notification (if required)
-4. Root cause analysis
-5. Process improvement
-
----
-
 ## Deployment Security Checklist
 
 Before each production deployment:
@@ -346,5 +293,7 @@ Monitor for:
 
 ---
 
-**Last Updated**: 2025-10-24
-**Next Review**: 2025-11-24 (Monthly)
+**Last Updated**: 2025-11-03
+**Next Review**: 2025-12-03 (Monthly)
+
+> 📌 **Internal Security Issues?** See `SECURITY_INTERNAL.md` (not in public repo)

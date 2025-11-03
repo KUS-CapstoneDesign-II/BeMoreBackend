@@ -8,3 +8,4 @@ config/config.json
 # 민감한 정보를 포함하는 문서 (로컬 개발용만)
 BACKEND_SUPABASE_ACTION_PROMPT.md
 TEAM_PROMPT_FOR_BACKEND.md
+docs/SECURITY_INTERNAL.md
