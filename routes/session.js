@@ -1175,6 +1175,125 @@ router.post('/:id/tick', validateParams(idParamSchema), (req, res) => {
 });
 
 /**
+ * 배치 분석 결과 저장 API (Frontend 전송 분석 결과)
+ * POST /api/session/batch-tick
+ *
+ * Body:
+ * {
+ *   "sessionId": "sess_...",
+ *   "items": [
+ *     {
+ *       "minuteIndex": 0,
+ *       "facialScore": 0.85,
+ *       "vadScore": 0.72,
+ *       "textScore": 0.60,
+ *       "combinedScore": 0.747,
+ *       "keywords": ["positive"],
+ *       "sentiment": "positive",
+ *       "confidence": 0.92,
+ *       "timestamp": "2025-11-03T14:30:00Z",
+ *       "durationMs": 150
+ *     }
+ *   ]
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "count": 1,
+ *   "message": "1개 항목이 처리되었습니다"
+ * }
+ */
+const batchTickSchema = z.object({
+  sessionId: z.string().min(1),
+  items: z.array(z.object({
+    minuteIndex: z.number().min(0).int(),
+    facialScore: z.number().min(0).max(1),
+    vadScore: z.number().min(0).max(1),
+    textScore: z.number().min(0).max(1),
+    combinedScore: z.number().min(0).max(1),
+    keywords: z.array(z.string()).optional(),
+    sentiment: z.enum(['positive', 'neutral', 'negative']).optional(),
+    confidence: z.number().min(0).max(1).optional(),
+    timestamp: z.string().datetime().optional(),
+    durationMs: z.number().min(0).optional()
+  })).min(1).max(100)
+});
+
+router.post('/batch-tick', validateBody(batchTickSchema), (req, res) => {
+  try {
+    const { sessionId, items } = req.body;
+    const requestId = req.id || crypto.randomUUID();
+    const serverTs = Date.now();
+
+    // 세션 존재 확인
+    const session = SessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        requestId,
+        serverTs,
+        error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` }
+      });
+    }
+
+    // DataStore에 배치 항목 저장
+    const dataStore = getDataStore();
+    let processedCount = 0;
+    const errors = [];
+
+    for (let i = 0; i < items.length; i++) {
+      try {
+        const item = items[i];
+        // 기존 inference를 덮어쓰거나 새로 생성
+        const inference = dataStore.addInference(sessionId, item.minuteIndex, {
+          facialScore: Number(item.facialScore.toFixed(3)),
+          vadScore: Number(item.vadScore.toFixed(3)),
+          textSentiment: Number(item.textScore.toFixed(3)),
+          combinedScore: Number(item.combinedScore.toFixed(3)),
+          modelVersion: 'rules-v1.0',
+          dataPoints: {
+            frameCount: 0,  // Frontend에서는 미포함
+            audioChunkCount: 0,
+            sttSnippetCount: 0
+          },
+          // 추가 메타데이터
+          keywords: item.keywords || [],
+          sentiment: item.sentiment || 'neutral',
+          confidence: item.confidence || 0,
+          timestamp: item.timestamp || new Date().toISOString(),
+          durationMs: item.durationMs || 0
+        });
+        processedCount++;
+      } catch (itemError) {
+        errors.push({
+          index: i,
+          minuteIndex: item.minuteIndex,
+          error: itemError.message
+        });
+      }
+    }
+
+    res.status(201).json({
+      success: errors.length === 0,
+      count: processedCount,
+      message: `${processedCount}개 항목이 처리되었습니다${errors.length > 0 ? ` (${errors.length}개 오류)` : ''}`,
+      ...(errors.length > 0 && { errors })
+    });
+  } catch (error) {
+    errorHandler.handle(error, {
+      module: 'batch-tick',
+      level: errorHandler.levels.WARN,
+      metadata: { endpoint: 'POST /api/session/batch-tick' }
+    });
+    res.status(500).json({
+      success: false,
+      error: { code: 'BATCH_TICK_ERROR', message: error.message }
+    });
+  }
+});
+
+/**
  * 세션 추론 결과 조회 API
  * GET /api/session/:id/inferences
  *
