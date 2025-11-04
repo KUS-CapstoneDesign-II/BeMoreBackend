@@ -53,6 +53,14 @@ class Session extends Sequelize.Model {
       paranoid: false,
       charset: 'utf8',
       collate: 'utf8_general_ci',
+      indexes: [
+        { fields: ['sessionId'], unique: true },
+        { fields: ['userId'] },
+        { fields: ['createdAt'] },
+        { fields: ['userId', 'startedAt'] },
+        { fields: ['userId', 'endedAt'] },
+        { fields: ['id'] }
+      ]
     });
   }
 
