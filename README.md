@@ -91,15 +91,41 @@ open http://localhost:8000
 ### **환경 변수 (.env)**
 
 ```bash
-# Google Gemini API
+# ============================================================
+# 🔐 API Keys & Credentials
+# ============================================================
+
+# Google Gemini API (감정 분석)
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# OpenAI API
+# OpenAI API (STT/TTS)
 OPENAI_API_KEY=your_openai_api_key_here
+
+# ============================================================
+# 🗄️ Database Configuration (⚠️ CRITICAL FOR DEPLOYMENT)
+# ============================================================
+
+# Supabase PostgreSQL - 프로덕션 필수!
+# Format: postgresql://username:password@host:port/database
+# ⚠️ IMPORTANT: Production 환경에서 반드시 설정 필요
+# 미설정 시: Report 모델 로드 실패 → 감정 분석 데이터 미저장
+DATABASE_URL=postgresql://postgres:your_password@db.zyujxskhparxovpydjez.supabase.co:5432/postgres
+
+# ============================================================
+# 🌐 Server Configuration
+# ============================================================
+
+# Frontend URL (CORS 화이트리스트)
+FRONTEND_URLS=http://localhost:5173,https://be-more-frontend.vercel.app
 
 # 서버 포트
 PORT=8000
+
+# 개발/프로덕션 모드
+NODE_ENV=development
 ```
+
+**자세한 설정 가이드**: [.env.example](./.env.example)
 
 ---
 
@@ -157,31 +183,54 @@ BeMoreBackend/
 
 ---
 
-## 📊 현재 개발 상태 (v0.1.0 - MVP)
+## 📊 현재 개발 상태 (v0.2.0 - Phase 2/3/4 진행 중)
 
-### **✅ 구현 완료**
+### **✅ 구현 완료 (Phase 1-4)**
 
+#### **Phase 1: 기초 구축**
 - [x] MediaPipe 실시간 얼굴 랜드마크 추출 (468 points)
-- [x] WebSocket으로 1분간 표정 데이터 누적 전송
-- [x] OpenAI Whisper STT 음성 변환 (5초 단위)
+- [x] WebSocket으로 표정 데이터 전송
+- [x] OpenAI Whisper STT 음성 변환
 - [x] ffmpeg 무음 감지로 API 호출 최적화
-- [x] Gemini로 표정+STT 통합 분석
-- [x] 1분 주기 감정 분석 결과 반환
-- [x] 중복 녹음 방지 로직
+- [x] Gemini로 감정 분석
+
+#### **Phase 2: VAD 통합** ✅ **완료**
+- [x] Silero VAD 음성 활동 감지 (7가지 메트릭)
+- [x] 실시간 VAD 메트릭 계산 (speechRate, pauseRatio 등)
+- [x] 10초 주기 VAD 분석 결과 전송
+- [x] 심리 지표 분석 (위험도, 경고)
+- [x] Frontend VAD 호환성 검증 ✅
+
+#### **Phase 3: CBT 분석 & Session Management**
+- [x] 세션 관리 시스템 (시작/종료)
+- [x] WebSocket 3채널 분리 (landmarks/voice/session)
+- [x] 감정 데이터 수집 및 집계
+- [x] 감정 요약 및 트렌드 분석
+- [x] Supabase 데이터 저장
+
+#### **Phase 4: 멀티모달 통합 & 리포트 생성** ✅ **완료**
+- [x] 세션별 통합 분석
+- [x] 감정 분석 데이터 저장 (Supabase)
+- [x] 세션 리포트 자동 생성
+- [x] VAD 메트릭 저장 및 조회
+- [x] Dashboard API 구현
 
 ### **🚧 진행 중**
 
-- [ ] 세션 관리 시스템 (시작/일시정지/종료)
-- [ ] WebSocket 3채널 분리 (표정/음성/세션)
-- [ ] 프론트엔드 통합 (React/Next.js)
-- [ ] 10초 단위 분석 (현재 1분 → 10초로 단축)
+- [ ] **Phase 5**: 성능 최적화, 보안 강화
+- [ ] Frontend-Backend 통합 테스트
+- [ ] VAD 필드명 표준화 (선택사항)
+- [ ] API 문서 업데이트
 
-### **📋 예정**
+### **🎯 Frontend 통합 상태**
 
-- [ ] **Phase 2**: VAD 음성 활동 감지 (Silero VAD)
-- [ ] **Phase 3**: CBT 인지 왜곡 탐지 및 개입 추천
-- [ ] **Phase 4**: 멀티모달 통합 분석 & 리포트 생성
-- [ ] **Phase 5**: 성능 최적화, DB 통합, 보안 강화
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| **WebSocket 연결** | ✅ | 3채널 정상 작동 |
+| **감정 데이터 수신** | ✅ | Gemini 분석 정상 |
+| **VAD 메트릭 수신** | ✅ | 필드명 매핑 완료 |
+| **리포트 생성** | ✅ | Dashboard API 정상 |
+| **Database 연동** | ✅ | Supabase 저장 정상 |
 
 ---
 
@@ -218,11 +267,25 @@ gantt
 | [🗺️ ROADMAP.md](./docs/ROADMAP.md) | 개발 로드맵 | PM, 개발자 |
 | [📡 API.md](./docs/API.md) | API 명세서 | 백엔드/프론트엔드 |
 
+### **최신 통합 검토 문서 (2025-11-04)**
+
+| 문서 | 설명 | 중요도 |
+|------|------|------|
+| [📋 BACKEND_VAD_CODE_REVIEW_2025-11-04.md](./BACKEND_VAD_CODE_REVIEW_2025-11-04.md) | Backend VAD 코드 상세 검사 | 🟡 참고 |
+| [📊 FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md](./FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md) | Frontend VAD 호환성 처리 분석 | 🟡 참고 |
+| [📧 FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md](./FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md) | Frontend 팀 협력 메시지 | 📢 협력 |
+| [📋 FRONTEND_BACKEND_INTEGRATION_CHECK.md](./FRONTEND_BACKEND_INTEGRATION_CHECK.md) | 통합 검증 체크리스트 | ✅ 테스트 |
+| [🔍 INTEGRATION_DIAGNOSIS_2025-11-04.md](./INTEGRATION_DIAGNOSIS_2025-11-04.md) | 통합 진단 보고서 | 📊 분석 |
+| [🚀 RENDER_DEPLOYMENT_SETUP_2025-11-04.md](./RENDER_DEPLOYMENT_SETUP_2025-11-04.md) | Render 배포 설정 가이드 | 🔧 배포 |
+
 ### **빠른 링크**
 
 - **처음 시작하는 분**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md) → [ROADMAP.md](./docs/ROADMAP.md)
 - **API 구현하는 분**: [API.md](./docs/API.md)
-- **프론트엔드 개발자**: [API.md](./docs/API.md) → [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- **프론트엔드 개발자**: [API.md](./docs/API.md) → [FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md](./FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md)
+- **배포 담당자**: [RENDER_DEPLOYMENT_SETUP_2025-11-04.md](./RENDER_DEPLOYMENT_SETUP_2025-11-04.md)
+- **Backend-Frontend 협력**: [FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md](./FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md)
+- **통합 검증**: [FRONTEND_BACKEND_INTEGRATION_CHECK.md](./FRONTEND_BACKEND_INTEGRATION_CHECK.md)
 
 ---
 
@@ -243,24 +306,59 @@ POST /api/session/:id/end
 
 # 리포트 조회
 GET /api/session/:id/report
+
+# Dashboard 조회
+GET /api/dashboard/summary
 ```
 
-### **WebSocket API**
+### **WebSocket API (3채널)**
 
 ```javascript
-// 3개 채널 연결
+// Channel 1: 얼굴 표정 랜드마크
 const landmarksWs = new WebSocket('ws://localhost:8000/ws/landmarks?sessionId=xxx');
-const voiceWs = new WebSocket('ws://localhost:8000/ws/voice?sessionId=xxx');
-const sessionWs = new WebSocket('ws://localhost:8000/ws/session?sessionId=xxx');
-
-// 감정 업데이트 수신
 landmarksWs.onmessage = (event) => {
+  const { emotion, confidence } = JSON.parse(event.data);
+  console.log('감정:', emotion); // "불안", "평온" 등
+};
+
+// Channel 2: 음성 활동 감지 (VAD)
+const voiceWs = new WebSocket('ws://localhost:8000/ws/voice?sessionId=xxx');
+voiceWs.onmessage = (event) => {
+  const { type, data } = JSON.parse(event.data);
+  if (type === 'vad_analysis') {
+    console.log('VAD 메트릭:', {
+      speechRate: data.metrics.speechRate,      // 0-100 (%)
+      silenceRate: data.metrics.silenceRate,
+      avgSpeechDuration: data.metrics.avgSpeechDuration, // ms
+      avgSilenceDuration: data.metrics.avgSilenceDuration,
+      speechTurnCount: data.metrics.speechTurnCount,
+      psychologicalRiskScore: data.psychological.riskScore // 0-100
+    });
+  }
+};
+
+// Channel 3: 세션 관리
+const sessionWs = new WebSocket('ws://localhost:8000/ws/session?sessionId=xxx');
+sessionWs.onmessage = (event) => {
   const data = JSON.parse(event.data);
-  console.log('현재 감정:', data.emotion); // "불안", "평온" 등
+  console.log('세션 상태:', data);
 };
 ```
 
+### **VAD 메트릭 필드**
+
+| 필드명 | 범위 | 단위 | 설명 |
+|------|------|------|------|
+| `speechRate` | 0-100 | % | 발화 비율 |
+| `silenceRate` | 0-100 | % | 침묵 비율 |
+| `avgSpeechDuration` | ≥0 | ms | 평균 발화 지속시간 |
+| `avgSilenceDuration` | ≥0 | ms | 평균 침묵 지속시간 |
+| `speechTurnCount` | ≥0 | count | 발화 구간 수 |
+| `interruptionRate` | 0-100 | % | 중단 빈도 (500ms 이하의 발화) |
+| `energyVariance` | ≥0 | variance | 음성 에너지 변동성 |
+
 **상세 API 명세:** [docs/API.md](./docs/API.md)
+**VAD 코드 검토:** [BACKEND_VAD_CODE_REVIEW_2025-11-04.md](./BACKEND_VAD_CODE_REVIEW_2025-11-04.md)
 
 ---
 
@@ -377,6 +475,29 @@ chore: 빌드/설정 변경
 
 ---
 
-**마지막 업데이트:** 2025-01-17
-**프로젝트 버전:** v0.1.0 (MVP)
-**문서 버전:** 1.0.0
+**마지막 업데이트:** 2025-11-04
+**프로젝트 버전:** v0.2.0 (Phase 2/3/4 완료)
+**문서 버전:** 2.0.0
+
+---
+
+## 🔄 최근 업데이트 (2025-11-04)
+
+### ✅ 완료 사항
+- VAD (Voice Activity Detection) 통합 완료
+- 세션 관리 시스템 구현
+- Supabase 데이터 저장소 연동
+- Frontend-Backend 통합 검증 완료
+- 상세 검토 문서 작성
+
+### 📊 검증 결과
+- Backend VAD 데이터 → Frontend: ✅ 정상 작동
+- 감정 분석 데이터 저장: ✅ 정상 작동
+- Dashboard API: ✅ 정상 작동
+- WebSocket 3채널: ✅ 정상 작동
+
+### 📋 신규 문서
+- `BACKEND_VAD_CODE_REVIEW_2025-11-04.md` - Backend 코드 검사 결과
+- `FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md` - Frontend 호환성 분석
+- `FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md` - 협력 메시지
+- 기타 통합 검증 및 배포 문서
