@@ -171,14 +171,17 @@ async function end(req, res) {
       if (allEmotions.length > 0) {
         try {
           const emotionAnalyzer = new EmotionAnalyzer();
-          allEmotions.forEach(emotion => {
-            emotionAnalyzer.addEmotion(emotion, 80); // Default intensity
+          allEmotions.forEach((emotion, idx) => {
+            // ✅ 올바른 인자: emotion, timestamp (ms), metadata
+            const timestamp = Date.now() - (allEmotions.length - idx) * 1000; // 역순 타임스탬프
+            emotionAnalyzer.addEmotion(emotion, timestamp, { frameCount: 30 });
           });
           emotionSummary = emotionAnalyzer.getSummary();
 
-          console.log(`📊 [CRITICAL] 감정 통합 분석 완료 (총 ${emotionSummary.emotionCount}개)`);
-          console.log(`   - 주요 감정: ${emotionSummary.emotionSummary?.primaryEmotion?.emotionKo} (${emotionSummary.emotionSummary?.primaryEmotion?.percentage}%)`);
-          console.log(`   - 감정 상태: ${emotionSummary.emotionSummary?.emotionalState}`);
+          // ✅ EmotionAnalyzer 반환 구조에 맞게 수정
+          console.log(`📊 [CRITICAL] 감정 통합 분석 완료 (총 ${emotionSummary.totalCount}개)`);
+          console.log(`   - 주요 감정: ${emotionSummary.primaryEmotion?.emotionKo} (${emotionSummary.primaryEmotion?.percentage}%)`);
+          console.log(`   - 감정 상태: ${emotionSummary.emotionalState}`);
 
           // 세션에 분석 결과 추가
           session.emotionAnalysis = emotionSummary;
@@ -221,11 +224,13 @@ async function end(req, res) {
       duration: SessionManager.getSessionDuration(sessionId),
       emotionCount: finalEmotionCount,
       emotionSummary: emotionSummary ? {
-        primaryEmotion: emotionSummary.emotionSummary?.primaryEmotion,
-        emotionalState: emotionSummary.emotionSummary?.emotionalState,
-        trend: emotionSummary.emotionSummary?.trend,
-        positiveRatio: emotionSummary.emotionSummary?.positiveRatio,
-        negativeRatio: emotionSummary.emotionSummary?.negativeRatio
+        primaryEmotion: emotionSummary.primaryEmotion,
+        emotionalState: emotionSummary.emotionalState,
+        trend: emotionSummary.trend,
+        positiveRatio: emotionSummary.positiveRatio,
+        negativeRatio: emotionSummary.negativeRatio,
+        topEmotions: emotionSummary.topEmotions,
+        averageIntensity: emotionSummary.averageIntensity
       } : null,
       // 🔄 멀티모달 추론 통계 (Phase 4 확장)
       inferenceStats: inferenceStats || {
