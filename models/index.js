@@ -25,7 +25,12 @@ try {
   if (dbEnabled) {
     const config = require('../config/config.json')[env];
     if (process.env.DATABASE_URL) {
-      sequelize = new Sequelize(process.env.DATABASE_URL, { ...config });
+      // DATABASE_URL은 PostgreSQL (Supabase) 형식으로 강제 설정
+      sequelize = new Sequelize(process.env.DATABASE_URL, {
+        ...config,
+        dialect: 'postgres',  // PostgreSQL 지정
+        protocol: 'postgres'
+      });
     } else {
       sequelize = new Sequelize(config.database, config.username, config.password, config);
     }
