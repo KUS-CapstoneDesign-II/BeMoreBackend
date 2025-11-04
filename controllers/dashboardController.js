@@ -26,19 +26,20 @@ async function summary(req, res) {
   try {
     console.log(`📊 [Dashboard] Summary request received`);
 
+    const now = new Date();
+    const start7d = new Date(now.getTime() - 7*24*60*60*1000);
+
+    console.log(`📊 [Dashboard] Querying reports from ${start7d.toISOString()} to ${now.toISOString()}`);
+
     // ⏱️ Add timeout protection (5 seconds max for database query)
-    const queryPromise = Report && typeof Report.findAll === 'function'
+    // ✅ Report 모델이 제대로 로드되었는지 확인
+    const queryPromise = (Report && typeof Report.findAll === 'function')
       ? Report.findAll({
           where: { createdAt: { [Op.gte]: start7d } },
           order: [['createdAt', 'DESC']],
           limit: 100
         })
-      : Promise.reject(new Error('Report model unavailable'));
-
-    const now = new Date();
-    const start7d = new Date(now.getTime() - 7*24*60*60*1000);
-
-    console.log(`📊 [Dashboard] Querying reports from ${start7d.toISOString()} to ${now.toISOString()}`);
+      : Promise.resolve([]); // ✅ Empty array 반환 (에러 대신)
 
     // Execute with timeout while preventing stray unhandled rejections
     let reports = [];
