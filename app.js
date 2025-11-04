@@ -15,6 +15,7 @@ const surveyRouter = require("./routes/survey");
 const dashboardRouter = require("./routes/dashboard");
 const emotionRouter = require("./routes/emotion");
 const userRouter = require("./routes/user");
+const healthRouter = require("./routes/health");
 const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
 const { sequelize } = require("./models");
@@ -117,6 +118,7 @@ app.use("/api/survey", surveyRouter);
 app.use("/api/dashboard", optionalJwtAuth, dashboardRouter);
 app.use("/api/user", optionalJwtAuth, userRouter);
 app.use("/api/emotion", emotionRouter);
+app.use("/api/health", healthRouter);
 // Remove static site serving to keep API-only backend
 // app.use(express.static(path.join(__dirname, "public")));
 
