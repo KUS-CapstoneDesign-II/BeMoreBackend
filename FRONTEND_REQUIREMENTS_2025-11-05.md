@@ -9,30 +9,35 @@
 ## 🔴 **[필수] 요청 1: CORS 헤더 설정 수정**
 
 ### 문제점
-프로덕션 환경에서 모든 API 요청이 CORS 정책으로 인해 차단됨:
+프로덕션 환경에서 모든 API 요청이 CORS 정책으로 인해 차단됨 (3개 커스텀 헤더):
 
 ```
-Access to XMLHttpRequest at 'https://bemorebackend.onrender.com/api/...'
-has been blocked by CORS policy: Request header field 'x-request-id' is not allowed
-by Access-Control-Allow-Headers in preflight response.
+1. Request header field 'x-request-id' is not allowed
+2. Request header field 'x-device-id' is not allowed
+3. Request header field 'x-csrf-token' is not allowed
 ```
 
 ### 근본 원인
-**app.js 라인 93**: `allowedHeaders`에 `x-request-id` 미포함
+**app.js 라인 93**: `allowedHeaders`에 **3개 커스텀 헤더 모두 미포함**
 ```javascript
 // ❌ 문제 코드
-allowedHeaders: ['Content-Type', 'Authorization']  // x-request-id 없음!
+allowedHeaders: ['Content-Type', 'Authorization']  // 3개 헤더 모두 없음!
 ```
+
+**Frontend에서 보내는 헤더**:
+- `x-request-id`: 요청 추적 ID
+- `x-device-id`: 디바이스 식별
+- `x-csrf-token`: CSRF 공격 방지
 
 ### 해결책 (✅ 이미 적용됨)
 ```javascript
-// ✅ 수정 코드
-allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
-exposedHeaders: ['x-request-id']
+// ✅ 수정 코드 - 3개 커스텀 헤더 모두 추가
+allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-device-id', 'x-csrf-token'],
+exposedHeaders: ['x-request-id', 'x-device-id', 'x-csrf-token']
 ```
 
-**커밋**: 수정되었음
-**상태**: ✅ **완료 (app.js 수정됨)**
+**커밋**: 67151c1 - fix(cors): add all custom headers to CORS allowlist
+**상태**: ✅ **완료 (app.js 수정됨)** - 모든 3개 헤더 포함
 
 ### 영향도
 - ✅ 모든 Frontend API 요청 차단 해제
@@ -41,17 +46,26 @@ exposedHeaders: ['x-request-id']
 
 ### 검증 방법
 ```bash
-# OPTIONS 프리플라이트 요청 테스트
-curl -X OPTIONS https://bemorebackend.onrender.com/api/users/preferences \
+# OPTIONS 프리플라이트 요청 테스트 (3개 헤더 모두)
+curl -X OPTIONS https://bemorebackend.onrender.com/api/dashboard/summary \
   -H "Origin: https://be-more-frontend.vercel.app" \
-  -H "Access-Control-Request-Method: POST" \
-  -H "Access-Control-Request-Headers: Content-Type, x-request-id" \
+  -H "Access-Control-Request-Method: GET" \
+  -H "Access-Control-Request-Headers: Content-Type, x-request-id, x-device-id, x-csrf-token" \
   -v
 
 # 응답 헤더 확인 사항:
-# ✅ Access-Control-Allow-Headers: ...x-request-id...
+# ✅ Access-Control-Allow-Headers: ...x-request-id, x-device-id, x-csrf-token...
 # ✅ Access-Control-Allow-Origin: https://be-more-frontend.vercel.app
 # ✅ HTTP 200
+
+# 실제 요청 테스트
+curl -X GET https://bemorebackend.onrender.com/api/dashboard/summary \
+  -H "Origin: https://be-more-frontend.vercel.app" \
+  -H "x-request-id: test-12345" \
+  -H "x-device-id: device-xyz" \
+  -H "x-csrf-token: csrf-abc" \
+  -v
+# 응답: 200 OK (CORS 에러 없음)
 ```
 
 ---
@@ -145,11 +159,14 @@ VITE_ANALYTICS_ENABLED=false
 
 ### 🔴 **필수 작업 (BLOCKING)**
 - [x] **CORS 헤더 수정**
-  - 상태: ✅ **완료**
+  - 상태: ✅ **완료** - 모든 3개 헤더 포함
   - 수정 파일: `app.js` (라인 93-94)
-  - 변경: `x-request-id` 추가 + `exposedHeaders` 추가
-  - 검증: 필요 (curl 명령어 참조)
-  - 배포: Render 자동 재배포 필요 (git push → Render rebuild)
+  - 변경:
+    - `allowedHeaders`: x-request-id, x-device-id, x-csrf-token 추가
+    - `exposedHeaders`: 3개 헤더 모두 추가
+  - 커밋: `67151c1`
+  - 검증: curl 명령어 참조 (프리플라이트 + 실제 요청)
+  - 배포: Render 자동 재배포 진행 중 (git push 완료)
 
 ### 🟡 **선택 작업 (NON-BLOCKING)**
 - [ ] **Web Vitals 엔드포인트**
@@ -163,26 +180,23 @@ VITE_ANALYTICS_ENABLED=false
 
 ### Backend 팀의 작업
 
-1. **CORS 수정 검증** (5분)
+1. **CORS 수정 검증** ✅ **완료**
    ```bash
    # 코드 확인
    grep -A 5 "allowedHeaders" app.js
 
-   # 결과: x-request-id 포함되어 있어야 함
+   # 결과: x-request-id, x-device-id, x-csrf-token 모두 포함
    ```
 
-2. **배포** (2-3분)
+2. **배포** ✅ **완료**
    ```bash
-   git add app.js
-   git commit -m "fix(cors): add x-request-id to allowedHeaders and exposedHeaders"
-   git push origin woo
-
-   # Render 자동 재배포 (2-3분)
+   # 커밋 67151c1로 이미 push됨
+   # Render 자동 재배포 진행 중 (2-5분 소요)
    ```
 
 3. **Web Vitals 검토** (선택사항)
    - 옵션 A 또는 B 중 선택
-   - 이 문서에서 응답 메시지
+   - 이 문서에서 응답 메시지 필요
 
 ### Frontend 팀의 기다림
 - CORS 수정 후 자동으로 모든 API 요청 정상화됨
