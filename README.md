@@ -1,63 +1,202 @@
-# 🧠 BeMore - AI 기반 심리 상담 지원 시스템
+# 🧠 BeMore Backend - AI 기반 심리 상담 지원 시스템
 
-> 실시간 멀티모달 감정 분석을 통한 인지행동치료(CBT) 상담 지원 플랫폼
+> 실시간 멀티모달 감정 분석을 통한 인지행동치료(CBT) 상담 지원 플랫폼의 백엔드 API 서버
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/license-ISC-green.svg)](./LICENSE)
 
 ---
 
-## 🎯 프로젝트 소개
+## 📌 목차
 
-**BeMore**는 실시간으로 **얼굴 표정**, **음성 활동**, **대화 내용**을 분석하여 사용자의 심리 상태를 예측하고, **인지행동치료(CBT)** 기반의 치료적 개입을 자동으로 추천하는 AI 상담 지원 시스템입니다.
+1. [프로젝트 개요](#-프로젝트-개요)
+2. [기술 스택](#-기술-스택)
+3. [아키텍처 개요](#-아키텍처-개요)
+4. [빠른 시작](#-빠른-시작)
+5. [환경 변수](#-환경-변수)
+6. [스크립트 일람](#-스크립트-일람)
+7. [코드 구조](#-코드-구조)
+8. [API 문서화](#-api-문서화)
+9. [품질 정책](#-품질-정책)
+10. [테스트 전략](#-테스트-전략)
+11. [로깅/모니터링](#-로깅모니터링)
+12. [배포/CI](#-배포ci)
+13. [보안 유의사항](#-보안-유의사항)
+14. [로드맵](#-로드맵)
+15. [변경 기록](#-변경-기록)
+16. [문의](#-문의)
 
-### **핵심 기능**
+---
 
-```mermaid
-graph LR
-    A[얼굴 표정<br/>MediaPipe] --> D[멀티모달<br/>통합 분석]
-    B[음성 활동<br/>VAD] --> D
-    C[대화 내용<br/>STT] --> D
-    D --> E[감정 분석<br/>Gemini AI]
-    D --> F[CBT 분석<br/>인지 왜곡 탐지]
-    E --> G[실시간<br/>상담 지원]
-    F --> G
-    G --> H[세션 리포트<br/>생성]
+## 🎯 프로젝트 개요
+
+**BeMore Backend**는 실시간으로 **얼굴 표정**, **음성 활동**, **대화 내용**을 분석하여 사용자의 심리 상태를 예측하고, **인지행동치료(CBT)** 기반의 치료적 개입을 자동으로 추천하는 AI 상담 지원 시스템의 백엔드 서버입니다.
+
+### 핵심 가치
+
+- 🎭 **멀티모달 감정 분석**: 얼굴 표정 + 음성 활동 + 대화 내용을 통합 분석
+- 🧠 **CBT 인지 왜곡 탐지**: 10가지 인지 왜곡 유형 자동 탐지 및 소크라테스식 질문 생성
+- 📊 **실시간 분석**: 10초 단위 감정 변화 추적 및 세션별 종합 리포트 자동 생성
+- 🔒 **안전한 API**: JWT 인증, Rate Limiting, Helmet 보안 헤더 적용
+
+### 백엔드 역할
+
+1. **REST API 제공**: 세션 관리, 감정 분석, 리포트 조회, 대시보드
+2. **3채널 WebSocket**: 얼굴 랜드마크, 음성 활동, 세션 상태 실시간 전송
+3. **멀티모달 데이터 처리**: STT, VAD, 감정 분석 통합 및 저장
+4. **데이터 영속화**: PostgreSQL (Supabase) 기반 세션/리포트 저장
+
+---
+
+## 🛠️ 기술 스택
+
+### Backend Core
+
+| 기술 | 버전 | 용도 | 근거 |
+|------|------|------|------|
+| **Node.js** | 18.20.4+ | JavaScript 런타임 | Dockerfile:2, CI:19 |
+| **Express** | 5.1.0 | 웹 프레임워크 | package.json:22 |
+| **ws** | 8.18.3 | WebSocket 서버 | package.json:43 |
+| **Sequelize** | 6.37.7 | ORM | package.json:36 |
+| **PostgreSQL** | - | 데이터베이스 (Supabase) | models/index.js:29 |
+
+### AI/ML 서비스
+
+| 서비스 | 버전 | 용도 | 근거 |
+|--------|------|------|------|
+| **Google Gemini** | 2.5 Flash | 감정 분석 | package.json:14 |
+| **OpenAI Whisper** | - | STT/TTS | package.json:31 |
+| **Silero VAD** | - | 음성 활동 감지 | package.json:17 |
+| **MediaPipe** | - | 얼굴 랜드마크 (클라이언트) | package.json:15-16 |
+| **NLP Libraries** | - | 텍스트 분석 (compromise, natural, sentiment) | package.json:19,30,35 |
+
+### 보안 & 미들웨어
+
+| 라이브러리 | 버전 | 용도 | 근거 |
+|-----------|------|------|------|
+| **helmet** | 7.1.0 | 보안 헤더 | package.json:25, app.js:40 |
+| **express-rate-limit** | 7.4.0 | 레이트 리미팅 | package.json:23, app.js:52 |
+| **jsonwebtoken** | 9.0.2 | JWT 인증 | package.json:26 |
+| **cors** | 2.8.5 | CORS 정책 | package.json:20, app.js:85 |
+| **morgan** | 1.10.0 | HTTP 로깅 | package.json:27, app.js:75 |
+
+### 개발 도구
+
+| 도구 | 버전 | 용도 | 근거 |
+|------|------|------|------|
+| **Jest** | 29.7.0 | 테스트 프레임워크 | package.json:47 |
+| **Supertest** | 7.0.0 | HTTP 테스트 | package.json:49 |
+| **nodemon** | 3.1.10 | 개발 서버 자동 재시작 | package.json:48 |
+
+---
+
+## 🏗️ 아키텍처 개요
+
+### 시스템 아키텍처
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Frontend (React)                        │
+│              https://be-more-frontend.vercel.app                │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               │ HTTP(S) + WebSocket
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    BeMore Backend (Express)                     │
+│                https://bemorebackend.onrender.com               │
+├─────────────────────────────────────────────────────────────────┤
+│  🔒 Security Layer (Helmet, CORS, Rate Limit, JWT)             │
+├─────────────────────────────────────────────────────────────────┤
+│  🛣️  REST API Routes                                            │
+│    - /api/session    : 세션 관리 (시작/종료/조회)                │
+│    - /api/stt        : 음성→텍스트 변환                          │
+│    - /api/dashboard  : 대시보드 데이터                           │
+│    - /api/emotion    : 감정 분석                                │
+│    - /api/monitoring : 시스템 모니터링                           │
+│    - /api/health     : 헬스체크                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  🔌 WebSocket 3 Channels                                        │
+│    - ws://host/ws/landmarks?sessionId=xxx  (얼굴 표정)          │
+│    - ws://host/ws/voice?sessionId=xxx      (음성 활동)          │
+│    - ws://host/ws/session?sessionId=xxx    (세션 상태)          │
+├─────────────────────────────────────────────────────────────────┤
+│  🧠 Business Logic (Services)                                   │
+│    ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
+│    │ Gemini       │  │ OpenAI       │  │ VAD          │        │
+│    │ 감정 분석    │  │ Whisper STT  │  │ 음성 활동    │        │
+│    └──────────────┘  └──────────────┘  └──────────────┘        │
+│    ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
+│    │ CBT 분석     │  │ Inference    │  │ Report       │        │
+│    │ 인지 왜곡    │  │ 멀티모달     │  │ PDF 생성     │        │
+│    └──────────────┘  └──────────────┘  └──────────────┘        │
+├─────────────────────────────────────────────────────────────────┤
+│  💾 Data Layer (Sequelize ORM)                                  │
+│    - User, Session, Report, Counseling, Feedback               │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               │ SQL (PostgreSQL Protocol)
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              PostgreSQL (Supabase)                              │
+│            Database + Authentication + Storage                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
----
+### 요청 흐름 (멀티모달 분석)
 
-## ✨ 주요 특징
+```
+Client (브라우저/앱)
+  │
+  ├─ [1] WebSocket: ws/landmarks → 얼굴 468개 랜드마크 전송 (30fps)
+  │    └─> services/socket/setupLandmarkSocket.js
+  │         └─> services/gemini/gemini.js (감정 분석)
+  │              └─> Supabase 저장 (10초 단위)
+  │
+  ├─ [2] WebSocket: ws/voice → 오디오 스트림 전송
+  │    └─> services/socket/setupVoiceSocket.js
+  │         ├─> services/vad/VADProcessor.js (음성 활동 감지)
+  │         └─> routes/stt.js (OpenAI Whisper STT)
+  │              └─> services/cbt/CBTAnalyzer.js (인지 왜곡 탐지)
+  │
+  ├─ [3] WebSocket: ws/session → 세션 상태 관리
+  │    └─> services/socket/setupSessionSocket.js
+  │         └─> controllers/sessionController.js
+  │
+  └─ [4] HTTP API: POST /api/session/:id/end
+       └─> controllers/sessionController.js
+            └─> services/inference/InferenceService.js (멀티모달 통합)
+                 └─> services/report/ReportGenerator.js (PDF 생성)
+                      └─> Supabase 저장 + Frontend 응답
+```
 
-### **🎭 멀티모달 감정 분석**
-- **얼굴 표정**: MediaPipe Face Mesh로 468개 랜드마크 실시간 추출
-- **음성 활동**: Silero VAD로 발화 패턴 및 침묵 분석
-- **대화 내용**: OpenAI Whisper로 음성을 텍스트로 변환
+### 디렉터리 패턴
 
-### **🧠 CBT 인지 왜곡 탐지**
-- 10가지 인지 왜곡 유형 자동 탐지 (파국화, 흑백논리, 과일반화 등)
-- 소크라테스식 질문 자동 생성
-- 행동 과제 추천
-- 실시간 치료적 개입 제안
-
-### **📊 실시간 분석 & 리포트**
-- 10초 단위 감정 변화 추적
-- 세션별 종합 리포트 자동 생성
-- 감정 타임라인 시각화
-- VAD 메트릭 분석 (발화 속도, 침묵 길이, 발화 빈도)
+**MVC + Repository + Service 패턴**
+```
+routes/ (라우팅)
+  ↓
+controllers/ (HTTP 요청 처리)
+  ↓
+services/ (비즈니스 로직)
+  ↓
+repositories/ (데이터 접근)
+  ↓
+models/ (Sequelize ORM)
+```
 
 ---
 
 ## 🚀 빠른 시작
 
-### **전제 조건**
+### 전제 조건
 
 ```bash
-# Node.js 18+ 필요
+# Node.js 18+ 필요 (근거: Dockerfile:2, package.json 권장)
 node --version  # v18.0.0 이상
 
-# ffmpeg 설치 (무음 감지용)
+# ffmpeg 설치 (무음 감지용, 근거: README.md:60-66)
 # macOS
 brew install ffmpeg
 
@@ -65,7 +204,7 @@ brew install ffmpeg
 sudo apt install ffmpeg
 ```
 
-### **설치 및 실행**
+### 설치 및 실행
 
 ```bash
 # 1. 저장소 클론
@@ -77,222 +216,229 @@ npm install
 
 # 3. 환경 변수 설정
 cp .env.example .env
-# .env 파일에 API 키 입력
+# .env 파일에 API 키 및 DATABASE_URL 입력
 # GEMINI_API_KEY=your_gemini_api_key
 # OPENAI_API_KEY=your_openai_api_key
+# DATABASE_URL=postgresql://user:pass@host:5432/db
 
 # 4. 개발 서버 실행
 npm run dev
 
 # 5. 브라우저 접속
-open http://localhost:8000
+# http://localhost:8000/health
 ```
 
-### **환경 변수 (.env)**
+### Docker 실행
 
 ```bash
-# ============================================================
-# 🔐 API Keys & Credentials
-# ============================================================
+# 이미지 빌드
+docker build -t bemore-backend .
 
-# Google Gemini API (감정 분석)
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# OpenAI API (STT/TTS)
-OPENAI_API_KEY=your_openai_api_key_here
-
-# ============================================================
-# 🗄️ Database Configuration (⚠️ CRITICAL FOR DEPLOYMENT)
-# ============================================================
-
-# Supabase PostgreSQL - 프로덕션 필수!
-# Format: postgresql://username:password@host:port/database
-# ⚠️ IMPORTANT: Production 환경에서 반드시 설정 필요
-# 미설정 시: Report 모델 로드 실패 → 감정 분석 데이터 미저장
-DATABASE_URL=postgresql://postgres:your_password@db.zyujxskhparxovpydjez.supabase.co:5432/postgres
-
-# ============================================================
-# 🌐 Server Configuration
-# ============================================================
-
-# Frontend URL (CORS 화이트리스트)
-FRONTEND_URLS=http://localhost:5173,https://be-more-frontend.vercel.app
-
-# 서버 포트
-PORT=8000
-
-# 개발/프로덕션 모드
-NODE_ENV=development
+# 컨테이너 실행 (환경 변수 전달)
+docker run -p 8000:8000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e GEMINI_API_KEY="..." \
+  -e OPENAI_API_KEY="..." \
+  -e JWT_SECRET="your-secret-key-32-chars-min" \
+  bemore-backend
 ```
-
-**자세한 설정 가이드**: [.env.example](./.env.example)
 
 ---
 
-## 📁 프로젝트 구조
+## 🔐 환경 변수
+
+환경 변수는 `.env` 파일에 설정합니다. `.env.example` 파일을 복사하여 시작하세요.
+
+### 필수 환경 변수
+
+| 변수명 | 설명 | 예시 | 근거 |
+|-------|------|------|------|
+| `DATABASE_URL` | PostgreSQL 연결 문자열 (⚠️ **프로덕션 필수**) | `postgresql://user:pass@host:5432/db` | models/index.js:27 |
+| `JWT_SECRET` | JWT 서명 키 (32자 이상 권장) | `your-super-secret-key-min-32-chars` | .env.example:43 |
+| `FRONTEND_URLS` | CORS 허용 URL (쉼표 구분) | `http://localhost:5173,https://bemore-app.vercel.app` | .env.example:40 |
+
+### 선택 환경 변수
+
+<details>
+<summary><b>API Keys</b> (클릭하여 펼치기)</summary>
+
+| 변수명 | 설명 | 기본값 |
+|-------|------|--------|
+| `GEMINI_API_KEY` | Google Gemini API 키 (감정 분석) | - |
+| `OPENAI_API_KEY` | OpenAI API 키 (Whisper STT) | - |
+
+</details>
+
+<details>
+<summary><b>Server Configuration</b></summary>
+
+| 변수명 | 설명 | 기본값 |
+|-------|------|--------|
+| `PORT` | 서버 포트 | `8000` |
+| `NODE_ENV` | 환경 (development/production) | `development` |
+| `LOG_LEVEL` | 로그 수준 (debug/info/warn/error) | `debug` |
+| `ENABLE_REQUEST_ID` | 요청 ID 추적 활성화 | `true` |
+
+</details>
+
+<details>
+<summary><b>Multimodal Inference</b></summary>
+
+| 변수명 | 설명 | 기본값 |
+|-------|------|--------|
+| `INFERENCE_FACIAL_WEIGHT` | 얼굴 표정 가중치 | `0.5` |
+| `INFERENCE_VAD_WEIGHT` | VAD 음성 활동 가중치 | `0.3` |
+| `INFERENCE_TEXT_WEIGHT` | 텍스트 내용 가중치 | `0.2` |
+| `INFERENCE_MODEL_VERSION` | 모델 버전 | `rules-v1.0` |
+
+</details>
+
+<details>
+<summary><b>Feature Flags</b></summary>
+
+| 변수명 | 설명 | 기본값 |
+|-------|------|--------|
+| `USE_MOCK_STT` | Mock STT 사용 (API 키 없을 때) | `false` |
+| `DETAILED_ERROR_MESSAGES` | 상세 에러 메시지 (프로덕션: false) | `true` |
+
+</details>
+
+**상세 설정 가이드**: [.env.example](./.env.example) (근거: .env.example:1-85)
+
+---
+
+## 📜 스크립트 일람
+
+| 스크립트 | 명령어 | 설명 | 근거 |
+|---------|--------|------|------|
+| **개발 서버** | `npm run dev` | nodemon으로 개발 서버 실행 (자동 재시작) | package.json:9 |
+| **프로덕션 서버** | `npm start` | 프로덕션 서버 실행 | package.json:8 |
+| **테스트** | `npm test` | Jest 테스트 실행 | package.json:7 |
+
+### 권장 추가 스크립트 (향후 도입 예정)
+
+```json
+{
+  "scripts": {
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
+    "format": "prettier --write \"**/*.js\"",
+    "test:coverage": "jest --coverage",
+    "migrate": "sequelize-cli db:migrate",
+    "migrate:undo": "sequelize-cli db:migrate:undo"
+  }
+}
+```
+
+---
+
+## 📁 코드 구조
 
 ```
 BeMoreBackend/
-├── app.js                              # 🚀 서버 진입점
-├── package.json                        # 📦 의존성 관리
+├── app.js                    # 🚀 서버 진입점 (274 lines)
+│                             # - Express 앱 설정
+│                             # - 미들웨어 초기화 (Helmet, CORS, Rate Limit)
+│                             # - 라우터 등록
+│                             # - WebSocket 설정
+│                             # - 전역 에러 핸들러
+│                             # (근거: app.js:1-274)
 │
-├── docs/                               # 📚 프로젝트 문서
-│   ├── README.md                       # 문서 인덱스
-│   ├── ARCHITECTURE.md                 # 시스템 아키텍처
-│   ├── ROADMAP.md                      # 개발 로드맵
-│   └── API.md                          # API 명세서
+├── package.json              # 📦 의존성 관리 (근거: package.json:1-51)
 │
-├── public/                             # 🎨 정적 파일
-│   └── index.html                      # 테스트용 프론트엔드
+├── config/                   # ⚙️ 설정 파일
+│   ├── config.json           # Sequelize DB 연결 설정 (MySQL 템플릿)
+│   └── config.example.json   # 설정 예제
 │
-├── routes/                             # 🛣️ API 라우터
-│   └── stt.js                          # STT API 라우터
+├── models/                   # 💾 Sequelize 모델 (7개)
+│   ├── index.js              # 모델 초기화 (DATABASE_URL 우선)
+│   ├── User.js               # 사용자 모델
+│   ├── Session.js            # 세션 모델
+│   ├── Report.js             # 분석 리포트 모델
+│   ├── Counseling.js         # 상담 기록 모델
+│   ├── Feedback.js           # 피드백 모델
+│   └── UserPreferences.js    # 사용자 설정 모델
 │
-├── services/                           # 🔧 비즈니스 로직
-│   ├── socket/
-│   │   └── setupLandmarkSocket.js      # WebSocket 핸들러
-│   ├── gemini/
-│   │   └── gemini.js                   # Gemini 감정 분석
-│   └── memory.js                       # STT 버퍼 관리
+├── controllers/              # 🎮 컨트롤러 계층 (3개)
+│   ├── sessionController.js  # 세션 관리 로직 (24.6KB, 주요 로직)
+│   ├── dashboardController.js # 대시보드 API
+│   └── userController.js     # 사용자 관리
 │
-├── face_detector/                      # (사용 안 함)
-└── tmp/                                # 임시 오디오 파일
+├── routes/                   # 🛣️ API 라우터 (9개)
+│   ├── session.js            # 세션 API (37.2KB, 주요 엔드포인트)
+│   │                         # POST /start, POST /:id/end, GET /:id
+│   ├── stt.js                # STT 음성 변환 API
+│   ├── health.js             # 헬스체크 엔드포인트
+│   ├── monitoring.js         # 시스템 모니터링
+│   ├── dashboard.js          # 대시보드 데이터
+│   ├── emotion.js            # 감정 분석 단독 API
+│   ├── user.js               # 사용자 관리
+│   └── survey.js             # 설문조사
+│
+├── services/                 # 🔧 비즈니스 로직 (15개 디렉터리)
+│   ├── analysis/             # 데이터 분석 서비스
+│   ├── cbt/                  # CBT 인지 왜곡 탐지
+│   │   ├── CBTAnalyzer.js    # 10가지 왜곡 유형 탐지
+│   │   └── SocraticQuestioner.js # 소크라테스식 질문 생성
+│   ├── emotion/              # 감정 분석 서비스
+│   ├── gemini/               # Gemini API 클라이언트
+│   │   └── gemini.js         # 감정 분석 요청 처리
+│   ├── inference/            # 멀티모달 추론 엔진
+│   │   ├── DataStore.js      # 프레임/오디오/STT 저장소
+│   │   └── InferenceService.js # 통합 분석 (0.5*facial+0.3*vad+0.2*text)
+│   ├── report/               # 리포트 생성 서비스
+│   │   └── ReportGenerator.js # PDF 생성
+│   ├── session/              # 세션 관리 서비스
+│   ├── socket/               # WebSocket 핸들러
+│   │   ├── setupWebSockets.js      # 3채널 라우터
+│   │   ├── setupLandmarkSocket.js  # 얼굴 표정 채널
+│   │   ├── setupVoiceSocket.js     # 음성 활동 채널
+│   │   └── setupSessionSocket.js   # 세션 상태 채널
+│   ├── vad/                  # 음성 활동 감지 (Silero VAD)
+│   │   └── VADProcessor.js   # 7가지 VAD 메트릭 계산
+│   ├── config/               # 환경 변수 검증
+│   │   └── validateEnv.js    # Zod 기반 스키마 검증
+│   ├── conversation/         # 대화 엔진
+│   ├── system/               # 시스템 유틸리티
+│   │   └── TempFileCleanup.js # 임시 파일 자동 정리
+│   ├── cache.js              # 캐싱 서비스
+│   ├── memory.js             # STT 버퍼 관리
+│   └── ErrorHandler.js       # 전역 에러 핸들러
+│
+├── middlewares/              # 🔒 미들웨어 (5개)
+│   ├── auth.js               # JWT 인증 (optionalJwtAuth, requireJwtAuth)
+│   ├── zod.js                # Zod 스키마 유효성 검증
+│   ├── requestId.js          # 요청 ID 추적 (UUID)
+│   └── validate.js           # 커스텀 검증 로직
+│
+├── repositories/             # 📚 저장소 패턴 (2개)
+│   ├── sessionRepository.js  # 세션 데이터 접근
+│   └── reportRepository.js   # 리포트 데이터 접근
+│
+├── utils/                    # 🛠️ 유틸리티
+│   └── supabase.js           # Supabase 클라이언트 초기화
+│
+├── test/                     # 🧪 Jest 테스트 (5개)
+│   ├── smoke.test.js         # 기본 동작 테스트 (health, emotion)
+│   ├── session.idempotency.test.js # 세션 멱등성 테스트
+│   ├── zod.validation.test.js # Zod 유효성 검사 테스트
+│   └── pdf-smoke.js          # PDF 생성 테스트
+│
+├── scripts/                  # 📜 스크립트
+├── tmp/                      # 📂 임시 오디오 파일
+├── docs/                     # 📚 프로젝트 문서 (19개 파일)
+├── .github/workflows/        # 🤖 GitHub Actions CI
+├── Dockerfile                # 🐳 컨테이너 이미지 정의
+└── .env.example              # 📝 환경 변수 템플릿
 ```
 
 ---
 
-## 🛠️ 기술 스택
+## 🔌 API 문서화
 
-### **Backend**
-- **Runtime**: Node.js 18+
-- **Framework**: Express 5.1
-- **WebSocket**: ws 8.18
-- **Media Processing**: ffmpeg
+### REST API 엔드포인트
 
-### **AI/ML**
-- **감정 분석**: Google Gemini 2.5 Flash
-- **음성 변환**: OpenAI Whisper
-- **얼굴 추적**: MediaPipe Face Mesh (클라이언트)
-- **음성 활동 감지**: Silero VAD (예정)
-
-### **Frontend** (예정)
-- **Framework**: React 18 / Next.js 14
-- **State**: Context API / Zustand
-- **Charts**: Chart.js / Recharts
-- **Styling**: Tailwind CSS
-
----
-
-## 📊 현재 개발 상태 (v0.2.0 - Phase 2/3/4 진행 중)
-
-### **✅ 구현 완료 (Phase 1-4)**
-
-#### **Phase 1: 기초 구축**
-- [x] MediaPipe 실시간 얼굴 랜드마크 추출 (468 points)
-- [x] WebSocket으로 표정 데이터 전송
-- [x] OpenAI Whisper STT 음성 변환
-- [x] ffmpeg 무음 감지로 API 호출 최적화
-- [x] Gemini로 감정 분석
-
-#### **Phase 2: VAD 통합** ✅ **완료**
-- [x] Silero VAD 음성 활동 감지 (7가지 메트릭)
-- [x] 실시간 VAD 메트릭 계산 (speechRate, pauseRatio 등)
-- [x] 10초 주기 VAD 분석 결과 전송
-- [x] 심리 지표 분석 (위험도, 경고)
-- [x] Frontend VAD 호환성 검증 ✅
-
-#### **Phase 3: CBT 분석 & Session Management**
-- [x] 세션 관리 시스템 (시작/종료)
-- [x] WebSocket 3채널 분리 (landmarks/voice/session)
-- [x] 감정 데이터 수집 및 집계
-- [x] 감정 요약 및 트렌드 분석
-- [x] Supabase 데이터 저장
-
-#### **Phase 4: 멀티모달 통합 & 리포트 생성** ✅ **완료**
-- [x] 세션별 통합 분석
-- [x] 감정 분석 데이터 저장 (Supabase)
-- [x] 세션 리포트 자동 생성
-- [x] VAD 메트릭 저장 및 조회
-- [x] Dashboard API 구현
-
-### **🚧 진행 중**
-
-- [ ] **Phase 5**: 성능 최적화, 보안 강화
-- [ ] Frontend-Backend 통합 테스트
-- [ ] VAD 필드명 표준화 (선택사항)
-- [ ] API 문서 업데이트
-
-### **🎯 Frontend 통합 상태**
-
-| 항목 | 상태 | 비고 |
-|------|------|------|
-| **WebSocket 연결** | ✅ | 3채널 정상 작동 |
-| **감정 데이터 수신** | ✅ | Gemini 분석 정상 |
-| **VAD 메트릭 수신** | ✅ | 필드명 매핑 완료 |
-| **리포트 생성** | ✅ | Dashboard API 정상 |
-| **Database 연동** | ✅ | Supabase 저장 정상 |
-
----
-
-## 🗺️ 개발 로드맵
-
-```mermaid
-gantt
-    title BeMore 개발 로드맵 (12주)
-    dateFormat YYYY-MM-DD
-    section Phase 1
-    기반 구축          :p1, 2025-01-20, 14d
-    section Phase 2
-    VAD 통합          :p2, 2025-02-03, 14d
-    section Phase 3
-    CBT 분석          :p3, 2025-02-17, 21d
-    section Phase 4
-    통합 & 리포트      :p4, 2025-03-10, 14d
-    section Phase 5
-    최적화            :p5, 2025-03-24, 21d
-```
-
-**상세 로드맵:** [docs/ROADMAP.md](./docs/ROADMAP.md)
-
----
-
-## 📚 문서
-
-### **전체 문서 목록**
-
-| 문서 | 설명 | 대상 |
-|------|------|------|
-| [📖 docs/README.md](./docs/README.md) | 문서 인덱스 | 모든 팀원 |
-| [🏗️ ARCHITECTURE.md](./docs/ARCHITECTURE.md) | 시스템 아키텍처 | 개발자, 아키텍트 |
-| [🗺️ ROADMAP.md](./docs/ROADMAP.md) | 개발 로드맵 | PM, 개발자 |
-| [📡 API.md](./docs/API.md) | API 명세서 | 백엔드/프론트엔드 |
-
-### **최신 통합 검토 문서 (2025-11-04)**
-
-| 문서 | 설명 | 중요도 |
-|------|------|------|
-| [📋 BACKEND_VAD_CODE_REVIEW_2025-11-04.md](./BACKEND_VAD_CODE_REVIEW_2025-11-04.md) | Backend VAD 코드 상세 검사 | 🟡 참고 |
-| [📊 FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md](./FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md) | Frontend VAD 호환성 처리 분석 | 🟡 참고 |
-| [📧 FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md](./FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md) | Frontend 팀 협력 메시지 | 📢 협력 |
-| [📋 FRONTEND_BACKEND_INTEGRATION_CHECK.md](./FRONTEND_BACKEND_INTEGRATION_CHECK.md) | 통합 검증 체크리스트 | ✅ 테스트 |
-| [🔍 INTEGRATION_DIAGNOSIS_2025-11-04.md](./INTEGRATION_DIAGNOSIS_2025-11-04.md) | 통합 진단 보고서 | 📊 분석 |
-| [🚀 RENDER_DEPLOYMENT_SETUP_2025-11-04.md](./RENDER_DEPLOYMENT_SETUP_2025-11-04.md) | Render 배포 설정 가이드 | 🔧 배포 |
-
-### **빠른 링크**
-
-- **처음 시작하는 분**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md) → [ROADMAP.md](./docs/ROADMAP.md)
-- **API 구현하는 분**: [API.md](./docs/API.md)
-- **프론트엔드 개발자**: [API.md](./docs/API.md) → [FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md](./FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md)
-- **배포 담당자**: [RENDER_DEPLOYMENT_SETUP_2025-11-04.md](./RENDER_DEPLOYMENT_SETUP_2025-11-04.md)
-- **Backend-Frontend 협력**: [FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md](./FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md)
-- **통합 검증**: [FRONTEND_BACKEND_INTEGRATION_CHECK.md](./FRONTEND_BACKEND_INTEGRATION_CHECK.md)
-
----
-
-## 🔌 API 미리보기
-
-### **REST API**
-
+**세션 관리**
 ```bash
 # 세션 시작
 POST /api/session/start
@@ -304,124 +450,97 @@ POST /api/session/start
 # 세션 종료
 POST /api/session/:id/end
 
+# 세션 조회
+GET /api/session/:id
+
 # 리포트 조회
 GET /api/session/:id/report
+```
 
-# Dashboard 조회
+**대시보드**
+```bash
+# 대시보드 요약
 GET /api/dashboard/summary
 ```
 
-### **WebSocket API (3채널)**
+**감정 분석**
+```bash
+# 단독 감정 분석
+POST /api/emotion
+{
+  "text": "오늘은 조금 불안하지만 괜찮아요"
+}
+```
 
+**헬스체크**
+```bash
+# 서버 상태 확인
+GET /health
+GET /api/health
+```
+
+### WebSocket API (3채널)
+
+**Channel 1: 얼굴 표정 랜드마크**
 ```javascript
-// Channel 1: 얼굴 표정 랜드마크
 const landmarksWs = new WebSocket('ws://localhost:8000/ws/landmarks?sessionId=xxx');
 landmarksWs.onmessage = (event) => {
-  const { emotion, confidence } = JSON.parse(event.data);
+  const { emotion, confidence, timestamp } = JSON.parse(event.data);
   console.log('감정:', emotion); // "불안", "평온" 등
 };
+```
 
-// Channel 2: 음성 활동 감지 (VAD)
+**Channel 2: 음성 활동 감지 (VAD)**
+```javascript
 const voiceWs = new WebSocket('ws://localhost:8000/ws/voice?sessionId=xxx');
 voiceWs.onmessage = (event) => {
   const { type, data } = JSON.parse(event.data);
   if (type === 'vad_analysis') {
     console.log('VAD 메트릭:', {
-      speechRate: data.metrics.speechRate,      // 0-100 (%)
-      silenceRate: data.metrics.silenceRate,
+      speechRate: data.metrics.speechRate,              // 0-100 (%)
+      silenceRate: data.metrics.silenceRate,            // 0-100 (%)
       avgSpeechDuration: data.metrics.avgSpeechDuration, // ms
-      avgSilenceDuration: data.metrics.avgSilenceDuration,
-      speechTurnCount: data.metrics.speechTurnCount,
+      avgSilenceDuration: data.metrics.avgSilenceDuration, // ms
+      speechTurnCount: data.metrics.speechTurnCount,    // count
       psychologicalRiskScore: data.psychological.riskScore // 0-100
     });
   }
 };
+```
 
-// Channel 3: 세션 관리
+**Channel 3: 세션 관리**
+```javascript
 const sessionWs = new WebSocket('ws://localhost:8000/ws/session?sessionId=xxx');
 sessionWs.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log('세션 상태:', data);
+  const { type, sessionId, status } = JSON.parse(event.data);
+  console.log('세션 상태:', status); // "active", "ended" 등
 };
 ```
 
-### **VAD 메트릭 필드**
+### 상세 API 명세
 
-| 필드명 | 범위 | 단위 | 설명 |
-|------|------|------|------|
-| `speechRate` | 0-100 | % | 발화 비율 |
-| `silenceRate` | 0-100 | % | 침묵 비율 |
-| `avgSpeechDuration` | ≥0 | ms | 평균 발화 지속시간 |
-| `avgSilenceDuration` | ≥0 | ms | 평균 침묵 지속시간 |
-| `speechTurnCount` | ≥0 | count | 발화 구간 수 |
-| `interruptionRate` | 0-100 | % | 중단 빈도 (500ms 이하의 발화) |
-| `energyVariance` | ≥0 | variance | 음성 에너지 변동성 |
+**완전한 API 문서**: [docs/API.md](./docs/API.md)
 
-**상세 API 명세:** [docs/API.md](./docs/API.md)
-**VAD 코드 검토:** [BACKEND_VAD_CODE_REVIEW_2025-11-04.md](./BACKEND_VAD_CODE_REVIEW_2025-11-04.md)
+**관련 문서**:
+- [BACKEND_VAD_CODE_REVIEW_2025-11-04.md](./BACKEND_VAD_CODE_REVIEW_2025-11-04.md) - VAD 코드 검토
+- [FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md](./FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md) - Frontend 호환성
 
 ---
 
-## 🧪 테스트
+## ✅ 품질 정책
 
-### **개발 서버 테스트**
+### 현재 적용 중
 
-```bash
-# 서버 실행
-npm run dev
+#### 코드 스타일
+- **언어**: JavaScript (ES6+)
+- **포맷**: 수동 관리 (⚠️ ESLint/Prettier 도입 권장)
 
-# 브라우저에서 테스트 페이지 열기
-open http://localhost:8000
+#### 테스트
+- **프레임워크**: Jest 29.7.0 + Supertest 7.0.0
+- **현황**: 기본 smoke 테스트 구현
+- **목표**: 유닛 테스트 커버리지 70%+ (권장)
 
-# 카메라와 마이크 권한 허용 후 테스트
-```
-
-### **API 테스트** (Phase 1 이후)
-
-```bash
-# 세션 시작 테스트
-curl -X POST http://localhost:8000/api/session/start \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"user_123","counselorId":"counselor_456"}'
-
-# 세션 조회 테스트
-curl http://localhost:8000/api/session/sess_20250117_001
-```
-
----
-
-## 📈 성능 특성
-
-### **데이터 처리량** (1분 상담 기준)
-
-```
-얼굴 랜드마크: ~1,200 frames × 468 points = 1.68 MB
-STT 요청:      12회 (5초 단위)
-VAD 분석:      ~600회 (100ms 단위, Phase 2)
-Gemini 요청:   6회 (10초 단위, Phase 1 이후)
-```
-
-### **병목 지점**
-
-1. **WebSocket 대역폭**: 1.68 MB/분 → **압축 필요** (468개 → 9개)
-2. **Gemini API 응답 시간**: 2-5초 → **캐싱 고려**
-3. **Whisper API 호출 빈도**: 12회/분 → **무음 필터 적용 완료**
-
----
-
-## 🤝 기여 가이드
-
-### **브랜치 전략**
-
-```
-main          # 안정 버전
-├─ develop    # 개발 브랜치
-   ├─ feature/session-management
-   ├─ feature/vad-integration
-   └─ feature/cbt-analysis
-```
-
-### **커밋 컨벤션**
+#### 커밋 컨벤션
 
 ```bash
 feat: 새로운 기능 추가
@@ -430,37 +549,421 @@ docs: 문서 수정
 refactor: 코드 리팩토링
 test: 테스트 코드
 chore: 빌드/설정 변경
+perf: 성능 개선
+style: 코드 포맷팅
 ```
 
-### **이슈 템플릿**
+**근거**: README.md:426-432
 
-```markdown
-## 이슈 유형
-- [ ] 버그
-- [ ] 기능 요청
-- [ ] 문서 개선
+#### 브랜치 전략
 
-## 설명
-...
+```
+main          # 안정 버전 (프로덕션 배포)
+├─ develop    # 개발 브랜치
+   ├─ feature/session-management
+   ├─ feature/vad-integration
+   └─ feature/cbt-analysis
+```
 
-## 재현 방법 (버그인 경우)
-1. ...
-2. ...
+**근거**: README.md:417-422
+
+### 권장 개선 사항
+
+#### ESLint + Prettier 도입 (P0)
+
+**설치**:
+```bash
+npm install --save-dev eslint prettier eslint-config-prettier eslint-plugin-prettier
+```
+
+**`.eslintrc.js`**:
+```javascript
+module.exports = {
+  env: { node: true, es2021: true, jest: true },
+  extends: ['eslint:recommended', 'prettier'],
+  plugins: ['prettier'],
+  rules: {
+    'prettier/prettier': 'error',
+    'no-console': 'off',
+    'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
+  }
+};
+```
+
+**`.prettierrc`**:
+```json
+{
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "es5"
+}
+```
+
+**근거**: SUMMARY.md - P0 리스크
+
+#### Jest 커버리지 설정 (P1)
+
+**`jest.config.js`**:
+```javascript
+module.exports = {
+  testEnvironment: 'node',
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: [
+    'services/**/*.js',
+    'controllers/**/*.js',
+    '!**/node_modules/**'
+  ],
+  coverageThresholds: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70
+    }
+  }
+};
+```
+
+**근거**: SUMMARY.md - P1 리스크
+
+---
+
+## 🧪 테스트 전략
+
+### 현황
+
+**테스트 프레임워크**: Jest 29.7.0 + Supertest 7.0.0 (근거: package.json:47,49)
+
+**기존 테스트**:
+- `test/smoke.test.js` - 기본 동작 테스트 (health, emotion API)
+- `test/session.idempotency.test.js` - 세션 멱등성 테스트
+- `test/zod.validation.test.js` - Zod 스키마 검증 테스트
+
+**실행 방법**:
+```bash
+npm test
+```
+
+### 권장 테스트 전략
+
+#### 테스트 피라미드
+
+```
+         ┌──────────────┐
+         │  E2E Tests   │  10% - 프론트엔드 통합
+         │   (Cypress)  │
+         ├──────────────┤
+         │  Integration │  30% - API + DB 통합
+         │    (Jest)    │
+         ├──────────────┤
+         │  Unit Tests  │  60% - 개별 함수/서비스
+         │    (Jest)    │
+         └──────────────┘
+```
+
+#### 우선순위별 테스트 계획
+
+**P0 (즉시 작성)**:
+- services/gemini/gemini.js - Gemini API 호출 유닛 테스트
+- services/vad/VADProcessor.js - VAD 메트릭 계산 테스트
+- controllers/sessionController.js - 세션 관리 로직 테스트
+
+**P1 (단기)**:
+- routes/session.js - 세션 API 통합 테스트
+- services/inference/InferenceService.js - 멀티모달 통합 테스트
+- middlewares/auth.js - JWT 인증 테스트
+
+**P2 (장기)**:
+- E2E 테스트 (Cypress) - 프론트엔드 통합
+- 성능 테스트 (k6/Artillery) - API 부하 테스트
+
+#### 커버리지 목표
+
+| 영역 | 목표 | 근거 |
+|------|------|------|
+| **전체** | 70%+ | 업계 표준 |
+| **핵심 서비스** | 80%+ | services/gemini, vad, inference |
+| **컨트롤러** | 70%+ | controllers/ |
+| **미들웨어** | 80%+ | middlewares/auth, validate |
+
+---
+
+## 📊 로깅/모니터링
+
+### 현황
+
+#### HTTP 로깅 (morgan)
+```javascript
+// app.js:74-75
+morgan.token('id', (req) => req.requestId);
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms reqId=:id'));
+```
+
+**출력 예시**:
+```
+POST /api/session/start 200 1234 - 150.5 ms reqId=uuid-1234-5678
+```
+
+#### 요청 ID 추적 (requestId 미들웨어)
+- 모든 요청에 UUID 부여
+- 로그, 에러 응답에 포함
+- 근거: middlewares/requestId.js, app.js:72
+
+#### 에러 핸들링 (ErrorHandler)
+- 전역 에러 핸들러
+- 에러 통계 수집 (`GET /api/errors/stats`)
+- 근거: services/ErrorHandler.js, app.js:168
+
+### 권장 개선 사항 (P2)
+
+#### 구조화된 로깅 (winston/pino)
+
+**설치**:
+```bash
+npm install winston
+```
+
+**설정 예시**:
+```javascript
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+});
+
+module.exports = logger;
+```
+
+#### 모니터링 대시보드
+
+**추천 도구**:
+- **Prometheus + Grafana** - 메트릭 수집 및 시각화
+- **Sentry** - 에러 추적 및 알림
+- **Datadog/New Relic** - APM (Application Performance Monitoring)
+
+---
+
+## 🚀 배포/CI
+
+### Docker 배포
+
+**Dockerfile** (근거: Dockerfile:1-17)
+```dockerfile
+FROM node:18-alpine AS base
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev || npm install --omit=dev --no-audit --no-fund
+
+COPY . .
+ENV NODE_ENV=production PORT=8000
+
+EXPOSE 8000
+CMD ["npm","start"]
+```
+
+### GitHub Actions CI
+
+**CI 파이프라인** (근거: .github/workflows/ci.yml:1-48)
+```yaml
+name: Backend CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'  # ⚠️ 로컬(18.20.4)과 불일치
+      - run: npm ci || npm install
+      - run: npm test || echo "Tests failing (non-blocking)"
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+```
+
+### Render 자동 배포
+
+**프로덕션 URL**: https://bemorebackend.onrender.com (추정)
+
+**배포 트리거**:
+- `main` 브랜치 push 시 자동 배포
+- GitHub Actions에서 Render Deploy Hook 호출
+
+**환경 변수 설정** (Render Dashboard):
+```
+DATABASE_URL=postgresql://...
+GEMINI_API_KEY=...
+OPENAI_API_KEY=...
+JWT_SECRET=...
+FRONTEND_URLS=https://be-more-frontend.vercel.app
+NODE_ENV=production
+```
+
+**근거**: RENDER_DEPLOYMENT_SETUP_2025-11-04.md
+
+### ⚠️ Node 버전 통일 필요 (P0)
+
+| 환경 | 현재 버전 | 근거 |
+|------|----------|------|
+| **로컬** | 18.20.4 | `node -v` |
+| **CI** | 20 | .github/workflows/ci.yml:19 |
+| **Dockerfile** | 18 | Dockerfile:2 |
+
+**권장 조치**: package.json에 `engines` 필드 추가
+```json
+{
+  "engines": {
+    "node": ">=18.20.0 <19.0.0",
+    "npm": ">=10.0.0"
+  }
+}
 ```
 
 ---
 
-## 📄 라이선스
+## 🔒 보안 유의사항
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](./LICENSE) 파일을 참조하세요.
+### 환경 변수 보호
+
+**✅ 적용된 보안 조치**:
+- `.env` 파일 `.gitignore`에 추가됨 (근거: .gitignore:2)
+- 모든 민감 정보 환경 변수로 관리
+- Render 대시보드에서 환경 변수 암호화 저장
+
+**⚠️ 주의 사항**:
+- `JWT_SECRET`은 32자 이상 강력한 키 사용
+- 프로덕션에서 `DETAILED_ERROR_MESSAGES=false` 설정 (스택 트레이스 노출 방지)
+
+### API 키 관리
+
+**하드코딩 검사 결과**: ✅ 통과 (근거: SUMMARY.md - 보안 검증)
+
+```bash
+# 정기적으로 하드코딩 체크 실행
+grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_modules .
+```
+
+### 보안 헤더 (Helmet)
+
+**적용된 헤더** (근거: app.js:40-49):
+- `X-Frame-Options: SAMEORIGIN`
+- `X-Content-Type-Options: nosniff`
+- `X-XSS-Protection: 1; mode=block`
+- `Content-Security-Policy` (reportOnly 모드)
+
+### 레이트 리미팅
+
+**기본 리미터** (근거: app.js:52-58):
+- 10분당 600 요청 (IP당)
+
+**Write 엔드포인트** (근거: app.js:60-71):
+- POST/PUT/DELETE: 10분당 300 요청
+
+### CORS 정책
+
+**허용 Origin** (근거: app.js:78-95):
+- `http://localhost:5173` (개발)
+- `https://be-more-frontend.vercel.app` (프로덕션)
+- 환경 변수 `FRONTEND_URLS`로 커스터마이징 가능
+
+**허용 헤더**:
+- `Content-Type`, `Authorization`, `x-request-id`, `x-device-id`, `x-csrf-token`
+
+---
+
+## 🗺️ 로드맵
+
+**상세 로드맵**: [ROADMAP.md](./ROADMAP.md)
+
+### 개발 현황
+
+| Phase | 상태 | 설명 |
+|-------|------|------|
+| **Phase 1** | ✅ 완료 | 기초 구축 (MediaPipe, STT, Gemini) |
+| **Phase 2** | ✅ 완료 | VAD 통합 (Silero VAD) |
+| **Phase 3** | ✅ 완료 | CBT 분석 & Session Management |
+| **Phase 4** | ✅ 완료 | 멀티모달 통합 & 리포트 생성 |
+| **Phase 5** | 🚧 진행 중 | 성능 최적화, 보안 강화 |
+
+### 향후 작업 우선순위
+
+**P0 (즉시 조치)**:
+- [ ] Node 버전 통일 (package.json `engines`)
+- [ ] ESLint + Prettier 도입
+- [ ] Swagger/OpenAPI 도입 또는 명시적 제외 결정
+
+**P1 (단기 조치)**:
+- [ ] Jest 커버리지 설정 (70%+ 목표)
+- [ ] 핵심 로직 유닛 테스트 작성
+- [ ] DB 설정 통일 (PostgreSQL)
+- [ ] Sequelize 마이그레이션 표준화
+
+**P2 (장기 조치)**:
+- [ ] docker-compose 추가
+- [ ] CI 파이프라인 개선 (lint, typecheck)
+- [ ] husky + lint-staged 도입
+- [ ] TypeScript 마이그레이션 검토
+
+**근거**: [SUMMARY.md](./SUMMARY.md) - 권고 사항
+
+---
+
+## 📄 변경 기록
+
+### v1.0.0 (2025-11-06)
+
+**✅ Phase 1-4 완료**
+- MediaPipe 실시간 얼굴 랜드마크 추출
+- OpenAI Whisper STT 음성 변환
+- Gemini 감정 분석
+- Silero VAD 음성 활동 감지
+- CBT 인지 왜곡 탐지
+- 세션 관리 시스템
+- Supabase 데이터 저장
+- 멀티모달 통합 분석
+- PDF 리포트 생성
+
+**📊 통합 검증 완료**
+- Backend VAD 데이터 → Frontend: ✅ 정상 작동
+- 감정 분석 데이터 저장: ✅ 정상 작동
+- Dashboard API: ✅ 정상 작동
+- WebSocket 3채널: ✅ 정상 작동
+
+**📋 신규 문서**
+- `SUMMARY.md` - 저장소 점검 요약
+- `ROADMAP.md` - 향후 작업 로드맵
+- `BACKEND_VAD_CODE_REVIEW_2025-11-04.md` - Backend 코드 검사
+- `FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md` - Frontend 호환성 분석
+- `FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md` - 협력 메시지
+
+**근거**: README.md:484-504, SUMMARY.md
 
 ---
 
 ## 📞 문의
 
 - **GitHub Issues**: [프로젝트 이슈](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend/issues)
-- **Email**: [이메일 주소]
 - **문서 질문**: [docs/README.md](./docs/README.md) FAQ 참조
+- **저장소 점검 요약**: [SUMMARY.md](./SUMMARY.md)
+- **향후 작업 계획**: [ROADMAP.md](./ROADMAP.md)
 
 ---
 
@@ -475,29 +978,17 @@ chore: 빌드/설정 변경
 
 ---
 
-**마지막 업데이트:** 2025-11-04
-**프로젝트 버전:** v0.2.0 (Phase 2/3/4 완료)
-**문서 버전:** 2.0.0
+**마지막 업데이트**: 2025-11-06
+**프로젝트 버전**: 1.0.0
+**문서 버전**: 3.0.0
 
 ---
 
-## 🔄 최근 업데이트 (2025-11-04)
+## 📌 Quick Links
 
-### ✅ 완료 사항
-- VAD (Voice Activity Detection) 통합 완료
-- 세션 관리 시스템 구현
-- Supabase 데이터 저장소 연동
-- Frontend-Backend 통합 검증 완료
-- 상세 검토 문서 작성
-
-### 📊 검증 결과
-- Backend VAD 데이터 → Frontend: ✅ 정상 작동
-- 감정 분석 데이터 저장: ✅ 정상 작동
-- Dashboard API: ✅ 정상 작동
-- WebSocket 3채널: ✅ 정상 작동
-
-### 📋 신규 문서
-- `BACKEND_VAD_CODE_REVIEW_2025-11-04.md` - Backend 코드 검사 결과
-- `FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md` - Frontend 호환성 분석
-- `FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md` - 협력 메시지
-- 기타 통합 검증 및 배포 문서
+- 📋 [저장소 점검 요약](./SUMMARY.md) - 현황 및 리스크 분석
+- 🗺️ [향후 작업 로드맵](./ROADMAP.md) - 우선순위별 작업 체크리스트
+- 🏗️ [시스템 아키텍처](./docs/ARCHITECTURE.md) - 상세 아키텍처 (확실하지 않음 - 파일 존재 확인 필요)
+- 📡 [API 명세서](./docs/API.md) - 완전한 API 문서
+- 🚀 [Render 배포 가이드](./RENDER_DEPLOYMENT_SETUP_2025-11-04.md) - 배포 설정
+- 🤝 [Frontend 협력 메시지](./FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md) - Frontend 팀 가이드
