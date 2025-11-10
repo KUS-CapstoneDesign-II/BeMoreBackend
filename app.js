@@ -131,8 +131,9 @@ app.get('/', (req, res) => {
 });
 
 
-// 초기 배포: alter로 스키마 자동 생성 (TODO: Migration으로 전환 필요)
-sequelize.sync({ force: false, alter: true })
+// 데이터베이스 연결 확인만 수행 (스키마 변경 없음)
+// 스키마 관리: schema/init.sql 파일을 Supabase SQL Editor에서 실행
+sequelize.authenticate()
   .then(() => {
     console.log("✅ 데이터베이스 연결 성공");
   }).catch((err) => {
