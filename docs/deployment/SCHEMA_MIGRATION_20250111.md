@@ -1,12 +1,12 @@
-# 긴급 스키마 마이그레이션 가이드
+# 긴급 스키마 마이그레이션 가이드 v2
 
 **날짜**: 2025-01-11
-**우선순위**: 🚨 HIGH
+**우선순위**: 🚨 CRITICAL
 **영향**: Session 생성, 대화 저장, AI 감정 분석
 
 ---
 
-## 📋 문제 요약
+## 📋 문제 요약 (Updated)
 
 ### 증상
 ```
@@ -17,10 +17,24 @@
    Error: column sessions.session_id does not exist
 ```
 
-### 근본 원인
-- **코드 기대값**: snake_case 컬럼명 (`session_id`, `created_at`)
-- **Supabase 실제**: camelCase 컬럼명 (`sessionId`, `createdAt`)
-- **발생 시점**: Render 배포 후 프로덕션 환경에서 발견
+### 근본 원인 (Critical Discovery)
+- **테이블 충돌**: `sessions` 테이블이 Supabase Auth의 `auth.sessions`와 충돌
+- **컬럼 혼재**: 우리 애플리케이션 컬럼 + Supabase Auth 컬럼이 섞여 있음
+- **중복 컬럼**: `id`, `user_id`, `created_at`, `updated_at`가 각각 2개씩 존재
+- **발생 시점**: 테이블 생성 시점부터 충돌 발생
+
+### 발견된 컬럼들
+**우리 애플리케이션 컬럼**:
+- `session_id`, `counselor_id`, `started_at`, `ended_at`, `emotions_data`, `status`, `duration`
+
+**Supabase Auth 컬럼**:
+- `factor_id`, `aal`, `not_after`, `refreshed_at`, `user_agent`, `ip`, `tag`, `oauth_client_id`, `refresh_token_hmac_key`
+
+**중복 컬럼** (각 2개씩):
+- `id` (integer, uuid)
+- `user_id` (uuid, varchar)
+- `created_at` (timestamp)
+- `updated_at` (timestamp)
 
 ### 영향 범위
 - ✅ 서버 실행: 정상
@@ -32,7 +46,14 @@
 
 ---
 
-## 🔧 해결 방법
+## 🔧 해결 방법 (Updated Solution)
+
+### 해결 전략
+테이블명을 변경하여 Supabase Auth 테이블과의 충돌을 완전히 회피:
+- `sessions` → `counseling_sessions` (새 이름)
+- `conversations` 테이블도 외래 키 참조 업데이트
+- 코드: camelCase 사용 (JavaScript), DB: snake_case 사용 (PostgreSQL)
+- Sequelize의 `underscored: true` 옵션으로 자동 변환
 
 ### Step 1: Supabase SQL Editor 접속
 
@@ -49,7 +70,7 @@
 1. **로컬에서 스크립트 복사**
    ```bash
    cd /Users/_woo_s.j/Desktop/woo/workspace/BeMoreBackend
-   cat schema/migrations/001-fix-sessions-column-names.sql | pbcopy
+   cat schema/migrations/002-create-counseling-sessions.sql | pbcopy
    ```
 
 2. **SQL Editor에 붙여넣기**
@@ -58,36 +79,55 @@
 
 4. **예상 출력**
    ```
-   ALTER TABLE
-   ALTER TABLE
-   ALTER TABLE
-   ... (8개의 ALTER TABLE 성공 메시지)
+   DROP TABLE
+   DROP TABLE
+   CREATE TABLE
+   CREATE INDEX
+   CREATE INDEX
+   CREATE INDEX
+   ... (테이블 생성 및 인덱스 생성 메시지)
    ```
+
+⚠️ **주의**: 이 마이그레이션은 기존 sessions 및 conversations 테이블을 삭제합니다. 프로덕션 데이터가 있다면 백업을 먼저 수행하세요.
 
 ### Step 3: 검증
 
-1. **컬럼명 확인 쿼리 실행**
+1. **테이블 생성 확인 쿼리 실행**
    ```sql
-   SELECT column_name, data_type, is_nullable
+   SELECT table_name, column_name, data_type, is_nullable
    FROM information_schema.columns
-   WHERE table_name = 'sessions'
-   ORDER BY ordinal_position;
+   WHERE table_name IN ('counseling_sessions', 'conversations')
+   ORDER BY table_name, ordinal_position;
    ```
 
-2. **예상 결과**
+2. **예상 결과 - counseling_sessions**
    | column_name | data_type | is_nullable |
    |-------------|-----------|-------------|
+   | id | integer | NO |
    | session_id | character varying | NO |
    | user_id | integer | NO |
    | counselor_id | integer | YES |
    | started_at | timestamp with time zone | YES |
    | ended_at | timestamp with time zone | YES |
+   | duration | integer | YES |
    | emotions_data | jsonb | YES |
+   | status | character varying | YES |
    | created_at | timestamp with time zone | YES |
    | updated_at | timestamp with time zone | YES |
 
-3. **Render 로그 확인**
+3. **예상 결과 - conversations**
+   | column_name | data_type | is_nullable |
+   |-------------|-----------|-------------|
+   | id | uuid | NO |
+   | session_id | character varying | NO |
+   | role | character varying | NO |
+   | content | text | NO |
+   | emotion | character varying | YES |
+   | created_at | timestamp with time zone | YES |
+
+4. **Render 로그 확인**
    - Render Dashboard → BeMore Backend → Logs
+   - 자동 재배포 대기 (git push 후)
    - 새로운 요청 시도 후 에러 없는지 확인
 
 ---
@@ -163,34 +203,55 @@ curl https://bemorebackend.onrender.com/api/conversations/SESSION_ID \
 
 ### 변경 내역
 
-| Before (camelCase) | After (snake_case) |
-|--------------------|--------------------|
-| `sessionId` | `session_id` |
-| `userId` | `user_id` |
-| `counselorId` | `counselor_id` |
-| `startedAt` | `started_at` |
-| `endedAt` | `ended_at` |
-| `emotionsData` | `emotions_data` |
-| `createdAt` | `created_at` |
-| `updatedAt` | `updated_at` |
+| 구분 | Before | After | 이유 |
+|------|--------|-------|------|
+| **테이블명** | `sessions` | `counseling_sessions` | auth.sessions 충돌 회피 |
+| **컬럼 규칙** | camelCase (혼재) | snake_case (일관) | PostgreSQL 표준 |
+| **코드 규칙** | 혼재 | camelCase (JS) | JavaScript 표준 |
+| **자동 변환** | 없음 | `underscored: true` | Sequelize 설정 |
+
+### 변경된 컬럼명 (counseling_sessions)
+
+| 코드 (camelCase) | DB (snake_case) | 타입 |
+|------------------|-----------------|------|
+| `sessionId` | `session_id` | VARCHAR(64) UNIQUE |
+| `userId` | `user_id` | INTEGER |
+| `counselorId` | `counselor_id` | INTEGER |
+| `startedAt` | `started_at` | TIMESTAMP |
+| `endedAt` | `ended_at` | TIMESTAMP |
+| `emotionsData` | `emotions_data` | JSONB |
+| `createdAt` | `created_at` | TIMESTAMP |
+| `updatedAt` | `updated_at` | TIMESTAMP |
+
+### 코드 변경 사항
+
+**models/Session.js**:
+- `tableName: 'sessions'` → `tableName: 'counseling_sessions'`
+- `underscored: false` → `underscored: true`
+- 인덱스 필드명: camelCase → snake_case
+
+**models/Conversation.js**:
+- `session_id` 필드 → `sessionId` (코드), `field: 'session_id'` (DB)
+- `where: { session_id }` → `where: { sessionId }`
+- 외래 키 참조: `sessions.sessionId` → `counseling_sessions.session_id`
 
 ### 외래 키 영향
-- `conversations.session_id` → `sessions.session_id` 참조 유지
-- 마이그레이션 스크립트에 외래 키 검증 쿼리 포함
+- `conversations.session_id` → `counseling_sessions.session_id` (새 참조)
+- CASCADE DELETE 유지: 세션 삭제 시 대화도 자동 삭제
+- 마이그레이션 스크립트에 자동으로 포함됨
 
 ### 롤백 방법
-만약 문제 발생 시:
+만약 문제 발생 시 (⚠️ 데이터 손실 발생):
 ```sql
--- 원래대로 되돌리기 (camelCase로 복원)
-ALTER TABLE sessions RENAME COLUMN session_id TO "sessionId";
-ALTER TABLE sessions RENAME COLUMN user_id TO "userId";
-ALTER TABLE sessions RENAME COLUMN counselor_id TO "counselorId";
-ALTER TABLE sessions RENAME COLUMN started_at TO "startedAt";
-ALTER TABLE sessions RENAME COLUMN ended_at TO "endedAt";
-ALTER TABLE sessions RENAME COLUMN emotions_data TO "emotionsData";
-ALTER TABLE sessions RENAME COLUMN created_at TO "createdAt";
-ALTER TABLE sessions RENAME COLUMN updated_at TO "updatedAt";
+-- 코드 변경 전 버전으로 Git revert 후 실행
+DROP TABLE IF EXISTS conversations CASCADE;
+DROP TABLE IF EXISTS counseling_sessions CASCADE;
+
+-- schema/init.sql의 sessions 테이블 재생성
+-- (init.sql 참조)
 ```
+
+**권장**: 프로덕션 데이터가 있다면 백업 후 마이그레이션 실행
 
 ---
 

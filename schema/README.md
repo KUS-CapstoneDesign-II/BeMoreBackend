@@ -132,9 +132,9 @@ sequelize.authenticate()
 
 ---
 
-## 🔧 긴급 마이그레이션 (2025-01-11)
+## 🔧 긴급 마이그레이션 (2025-01-11) - v2
 
-### Sessions 테이블 컬럼명 수정
+### Sessions → Counseling_Sessions 테이블 재생성
 
 **문제**: Render 배포 후 세션 생성 실패
 ```
@@ -142,7 +142,14 @@ sequelize.authenticate()
 ❌ Could not find the 'created_at' column of 'sessions'
 ```
 
-**원인**: Supabase의 컬럼명이 camelCase인데 코드는 snake_case 기대
+**근본 원인**: `sessions` 테이블이 Supabase Auth의 `auth.sessions`와 충돌
+- 우리 애플리케이션 컬럼 + Supabase Auth 컬럼이 혼재
+- `id`, `user_id`, `created_at` 등이 각각 2개씩 존재
+
+**해결 전략**: 테이블명을 변경하여 충돌 회피
+- `sessions` → `counseling_sessions`
+- 코드: camelCase (JS), DB: snake_case (PostgreSQL)
+- Sequelize `underscored: true`로 자동 변환
 
 **해결 방법**:
 1. **Supabase SQL Editor 접속**
@@ -151,29 +158,31 @@ sequelize.authenticate()
 2. **마이그레이션 스크립트 실행**
    ```bash
    # 로컬에서 복사
-   cat schema/migrations/001-fix-sessions-column-names.sql | pbcopy
+   cat schema/migrations/002-create-counseling-sessions.sql | pbcopy
    ```
 
 3. **SQL Editor에 붙여넣기 후 RUN**
 
+⚠️ **주의**: 기존 sessions 및 conversations 테이블이 삭제됩니다.
+
 4. **검증 쿼리 실행** (스크립트 마지막 부분)
    ```sql
-   SELECT column_name, data_type, is_nullable
+   SELECT table_name, column_name, data_type
    FROM information_schema.columns
-   WHERE table_name = 'sessions'
-   ORDER BY ordinal_position;
+   WHERE table_name IN ('counseling_sessions', 'conversations')
+   ORDER BY table_name, ordinal_position;
    ```
 
-5. **예상 결과**: 모든 컬럼명이 snake_case로 변경
-   - `sessionId` → `session_id` ✅
-   - `userId` → `user_id` ✅
-   - `createdAt` → `created_at` ✅
-   - 등등...
+5. **예상 결과**:
+   - ✅ `counseling_sessions` 테이블 생성 (snake_case 컬럼)
+   - ✅ `conversations` 테이블 재생성 (외래 키 업데이트)
+   - ✅ auth.sessions와 충돌 없음
 
 **영향**:
 - ✅ 세션 생성 정상화
 - ✅ 대화 저장 정상화
 - ✅ AI 감정 분석 결과 저장 가능
+- ✅ Supabase Auth와 충돌 없음
 
 ---
 

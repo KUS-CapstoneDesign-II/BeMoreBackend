@@ -47,18 +47,18 @@ class Session extends Sequelize.Model {
     }, {
       sequelize,
       timestamps: true,
-      underscored: false,
+      underscored: true, // Changed to true: use snake_case in database
       modelName: 'Session',
-      tableName: 'sessions',
+      tableName: 'counseling_sessions', // Changed from 'sessions' to avoid auth.sessions conflict
       paranoid: false,
       charset: 'utf8',
       collate: 'utf8_general_ci',
       indexes: [
-        { fields: ['sessionId'], unique: true },
-        { fields: ['userId'] },
-        { fields: ['createdAt'] },
-        { fields: ['userId', 'startedAt'] },
-        { fields: ['userId', 'endedAt'] },
+        { fields: ['session_id'], unique: true },
+        { fields: ['user_id'] },
+        { fields: ['created_at'] },
+        { fields: ['user_id', 'started_at'] },
+        { fields: ['user_id', 'ended_at'] },
         { fields: ['id'] }
       ]
     });

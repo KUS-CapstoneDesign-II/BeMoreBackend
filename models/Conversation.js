@@ -17,10 +17,11 @@ const Conversation = sequelize.define('Conversation', {
     primaryKey: true,
     comment: 'Primary key (UUID)',
   },
-  session_id: {
+  sessionId: {
     type: DataTypes.STRING(64),
     allowNull: false,
-    comment: 'Foreign key to sessions.sessionId (VARCHAR)',
+    field: 'session_id', // Database column name (snake_case)
+    comment: 'Foreign key to counseling_sessions.session_id (VARCHAR)',
   },
   role: {
     type: DataTypes.ENUM('user', 'assistant'),
@@ -66,7 +67,7 @@ const Conversation = sequelize.define('Conversation', {
  */
 Conversation.getHistory = async function(sessionId, limit = 10) {
   return await this.findAll({
-    where: { session_id: sessionId },
+    where: { sessionId }, // Changed from session_id to sessionId (Sequelize uses JS property names)
     order: [['created_at', 'DESC']],
     limit,
     attributes: ['role', 'content', 'emotion', 'created_at'],
@@ -78,12 +79,12 @@ Conversation.getHistory = async function(sessionId, limit = 10) {
  * @param {string} sessionId - Session UUID
  * @param {string} role - 'user' or 'assistant'
  * @param {string} content - Message content
- * @param {string} emotion - Optional emotion (anxious, sad, angry, happy, neutral)
+ * @param {string} emotion - Optional emotion (anxious, sad, angry, happy, neutral, fearful, disgusted, surprised)
  * @returns {Promise<Object>} Created conversation record
  */
 Conversation.saveMessage = async function(sessionId, role, content, emotion = null) {
   return await this.create({
-    session_id: sessionId,
+    sessionId, // Changed from session_id to sessionId (Sequelize uses JS property names)
     role,
     content,
     emotion,
