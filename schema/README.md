@@ -108,6 +108,28 @@ sequelize.authenticate()
 - `emotion`: VARCHAR(20) (감정: anxious, sad, angry, happy, neutral)
 - `created_at`: TIMESTAMP
 
+### Row Level Security (RLS) 정책
+
+**파일**: `schema/04_rls_policies.sql`
+
+**목적**: 데이터베이스 직접 접근 차단, Backend API 전용 접근
+
+**실행 방법**:
+1. Supabase SQL Editor 접속
+2. `schema/04_rls_policies.sql` 내용 복사 후 실행
+3. 모든 테이블에 RLS 활성화 확인
+
+**보안 효과**:
+- ✅ Supabase 클라이언트 SDK를 통한 직접 접근 차단
+- ✅ Backend API (DATABASE_URL)만 접근 가능
+- ✅ 모든 테이블: `unrestricted` → `enabled (1 policy)`
+- ⚠️ 프로덕션 환경 필수 설정
+
+**중요 사항**:
+- Backend는 PostgreSQL 직접 연결 (RLS 우회)
+- Supabase anon/authenticated 키로는 접근 불가
+- 모든 데이터 접근은 Backend API를 통해서만 가능
+
 ---
 
 ## 📝 스키마 변경 워크플로우
