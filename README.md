@@ -58,7 +58,7 @@
 | **Node.js** | 18.20.4+ | JavaScript 런타임 | Dockerfile:2, CI:19 |
 | **Express** | 5.1.0 | 웹 프레임워크 | package.json:22 |
 | **ws** | 8.18.3 | WebSocket 서버 | package.json:43 |
-| **Sequelize** | 6.37.7 | ORM | package.json:36 |
+| **Sequelize** | 6.37.7 | ORM (SQL 스크립트 기반) | package.json:36, schema/init.sql |
 | **PostgreSQL** | - | 데이터베이스 (Supabase) | models/index.js:29 |
 
 ### AI/ML 서비스
@@ -77,9 +77,11 @@
 |-----------|------|------|------|
 | **helmet** | 7.1.0 | 보안 헤더 | package.json:25, app.js:40 |
 | **express-rate-limit** | 7.4.0 | 레이트 리미팅 | package.json:23, app.js:52 |
-| **jsonwebtoken** | 9.0.2 | JWT 인증 | package.json:26 |
+| **jsonwebtoken** | 9.0.2 | JWT 인증 (Access + Refresh Token) | package.json:26, services/auth |
+| **bcrypt** | 5.1.1 | 비밀번호 해싱 | package.json, services/auth/authService.js |
 | **cors** | 2.8.5 | CORS 정책 | package.json:20, app.js:85 |
 | **morgan** | 1.10.0 | HTTP 로깅 | package.json:27, app.js:75 |
+| **zod** | 3.23.8 | 스키마 유효성 검증 | package.json, middlewares/zod.js |
 
 ### 개발 도구
 
@@ -110,10 +112,12 @@
 │  🔒 Security Layer (Helmet, CORS, Rate Limit, JWT)             │
 ├─────────────────────────────────────────────────────────────────┤
 │  🛣️  REST API Routes                                            │
+│    - /api/auth       : 인증 (회원가입/로그인/토큰 갱신)          │
 │    - /api/session    : 세션 관리 (시작/종료/조회)                │
 │    - /api/stt        : 음성→텍스트 변환                          │
 │    - /api/dashboard  : 대시보드 데이터                           │
 │    - /api/emotion    : 감정 분석                                │
+│    - /api/user       : 사용자 설정 관리                          │
 │    - /api/monitoring : 시스템 모니터링                           │
 │    - /api/health     : 헬스체크                                 │
 ├─────────────────────────────────────────────────────────────────┤
@@ -350,32 +354,40 @@ BeMoreBackend/
 │   ├── config.json           # Sequelize DB 연결 설정 (MySQL 템플릿)
 │   └── config.example.json   # 설정 예제
 │
-├── models/                   # 💾 Sequelize 모델 (7개)
-│   ├── index.js              # 모델 초기화 (DATABASE_URL 우선)
-│   ├── User.js               # 사용자 모델
-│   ├── Session.js            # 세션 모델
+├── models/                   # 💾 Sequelize 모델 (6개)
+│   ├── index.js              # 모델 초기화 (DATABASE_URL 우선, DB 비활성화 지원)
+│   ├── User.js               # 사용자 모델 (인증 정보 포함)
+│   ├── Session.js            # 세션 모델 (멀티모달 데이터)
 │   ├── Report.js             # 분석 리포트 모델
 │   ├── Counseling.js         # 상담 기록 모델
 │   ├── Feedback.js           # 피드백 모델
-│   └── UserPreferences.js    # 사용자 설정 모델
+│   └── UserPreferences.js    # 사용자 설정 모델 (language, theme, etc.)
 │
-├── controllers/              # 🎮 컨트롤러 계층 (3개)
-│   ├── sessionController.js  # 세션 관리 로직 (24.6KB, 주요 로직)
+├── schema/                   # 🗄️ SQL 기반 스키마 관리
+│   ├── README.md             # 스키마 관리 가이드
+│   ├── init.sql              # 초기 스키마 (Supabase SQL Editor 실행)
+│   └── migrations/           # 스키마 변경 이력 (향후 추가)
+│
+├── controllers/              # 🎮 컨트롤러 계층 (4개)
+│   ├── authController.js     # 인증 로직 (회원가입/로그인/토큰 갱신)
+│   ├── sessionController.js  # 세션 관리 로직 (시작/종료/조회)
 │   ├── dashboardController.js # 대시보드 API
-│   └── userController.js     # 사용자 관리
+│   └── userController.js     # 사용자 설정 관리 (preferences)
 │
-├── routes/                   # 🛣️ API 라우터 (8개)
-│   ├── session.js            # 세션 API (37.2KB, 주요 엔드포인트)
-│   │                         # POST /start, POST /:id/end, GET /:id
+├── routes/                   # 🛣️ API 라우터 (9개)
+│   ├── auth.js               # 인증 API (회원가입/로그인/토큰 갱신/프로필)
+│   ├── session.js            # 세션 API (시작/종료/조회)
 │   ├── stt.js                # STT 음성 변환 API
-│   ├── health.js             # 헬스체크 엔드포인트
+│   ├── health.js             # 헬스체크 엔드포인트 (상세 시스템 정보)
 │   ├── monitoring.js         # 시스템 모니터링
 │   ├── dashboard.js          # 대시보드 데이터
 │   ├── emotion.js            # 감정 분석 단독 API
-│   ├── user.js               # 사용자 관리
+│   ├── user.js               # 사용자 설정 (preferences GET/PUT)
 │   └── survey.js             # 설문조사
 │
-├── services/                 # 🔧 비즈니스 로직 (12개 서브디렉터리 + 3개 파일)
+├── services/                 # 🔧 비즈니스 로직 (13개 서브디렉터리 + 3개 파일)
+│   ├── auth/                 # 🔐 인증 서비스
+│   │   └── authService.js    # JWT 생성/검증, 비밀번호 해싱
 │   ├── analysis/             # 데이터 분석 서비스
 │   ├── cbt/                  # CBT 인지 왜곡 탐지
 │   │   ├── CBTAnalyzer.js    # 10가지 왜곡 유형 탐지
@@ -405,9 +417,9 @@ BeMoreBackend/
 │   ├── memory.js             # STT 버퍼 관리
 │   └── ErrorHandler.js       # 전역 에러 핸들러
 │
-├── middlewares/              # 🔒 미들웨어 (5개)
-│   ├── auth.js               # JWT 인증 (optionalJwtAuth, requireJwtAuth)
-│   ├── zod.js                # Zod 스키마 유효성 검증
+├── middlewares/              # 🔒 미들웨어 (4개)
+│   ├── auth.js               # JWT 인증 (optionalJwtAuth, requireAuth)
+│   ├── zod.js                # Zod 스키마 유효성 검증 (validateBody)
 │   ├── requestId.js          # 요청 ID 추적 (UUID)
 │   └── validate.js           # 커스텀 검증 로직
 │
@@ -418,7 +430,8 @@ BeMoreBackend/
 ├── utils/                    # 🛠️ 유틸리티
 │   └── supabase.js           # Supabase 클라이언트 초기화
 │
-├── test/                     # 🧪 Jest 테스트 (5개)
+├── tests/                    # 🧪 Jest 테스트 (6개)
+│   ├── auth.test.js          # 인증 API 테스트 (회원가입/로그인)
 │   ├── smoke.test.js         # 기본 동작 테스트 (health, emotion)
 │   ├── session.idempotency.test.js # 세션 멱등성 테스트
 │   ├── zod.validation.test.js # Zod 유효성 검사 테스트
@@ -437,6 +450,67 @@ BeMoreBackend/
 ## 🔌 API 문서화
 
 ### REST API 엔드포인트
+
+**인증 (Phase 0-1.5)** 🔐
+```bash
+# 회원가입
+POST /api/auth/signup
+{
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "securepass123"
+}
+
+# 로그인
+POST /api/auth/login
+{
+  "email": "john@example.com",
+  "password": "securepass123"
+}
+
+# Access Token 갱신
+POST /api/auth/refresh
+{
+  "refreshToken": "eyJhbGci..."
+}
+
+# 로그아웃
+POST /api/auth/logout
+{
+  "refreshToken": "eyJhbGci..."
+}
+
+# 내 정보 조회 (인증 필요)
+GET /api/auth/me
+Headers: Authorization: Bearer {accessToken}
+
+# 프로필 업데이트 (인증 필요)
+PUT /api/auth/profile
+Headers: Authorization: Bearer {accessToken}
+{
+  "username": "newusername",
+  "profileImage": "https://example.com/avatar.jpg"
+}
+```
+
+**사용자 설정**
+```bash
+# 사용자 설정 조회
+GET /api/user/preferences
+Headers: Authorization: Bearer {accessToken} (optional)
+
+# 사용자 설정 저장
+PUT /api/user/preferences
+Headers: Authorization: Bearer {accessToken} (optional)
+{
+  "preferences": {
+    "language": "ko",
+    "theme": "dark",
+    "density": "compact",
+    "notifications": true
+  }
+}
+```
 
 **세션 관리**
 ```bash
@@ -897,11 +971,12 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 
 | Phase | 상태 | 설명 |
 |-------|------|------|
+| **Phase 0-1.5** | ✅ 완료 (2025-01-10) | JWT 인증 시스템 (회원가입/로그인/토큰 갱신) |
 | **Phase 1** | ✅ 완료 | 기초 구축 (MediaPipe, STT, Gemini) |
 | **Phase 2** | ✅ 완료 | VAD 통합 (Silero VAD) |
 | **Phase 3** | ✅ 완료 | CBT 분석 & Session Management |
 | **Phase 4** | ✅ 완료 | 멀티모달 통합 & 리포트 생성 |
-| **Phase 5** | 🚧 진행 중 | 성능 최적화, 보안 강화 |
+| **Phase 5** | 🚧 진행 중 | 성능 최적화, 보안 강화, SQL 스키마 관리 |
 
 ### 향후 작업 우선순위
 
@@ -927,6 +1002,45 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 ---
 
 ## 📄 변경 기록
+
+### v1.1.0 (2025-01-10) ⭐ 최신
+
+**✅ Phase 0-1.5 완료 - JWT 인증 시스템**
+- JWT 기반 인증 구현 (Access Token 15분 + Refresh Token 7일)
+- 회원가입/로그인/토큰 갱신/로그아웃 API
+- bcrypt 비밀번호 해싱
+- Zod 스키마 유효성 검증
+- 사용자 프로필 관리 (/api/auth/me, /api/auth/profile)
+- User Preferences API 최적화 (조건부 인증 지원)
+
+**🗄️ SQL 기반 스키마 관리로 전환**
+- `sequelize.sync()` 제거 (데이터 손실 방지)
+- `schema/init.sql` 도입 (Supabase SQL Editor 실행)
+- `schema/README.md` 스키마 관리 가이드 작성
+- 명시적 스키마 버전 관리 (Git 추적)
+
+**📚 프론트엔드 협업 문서**
+- `FRONTEND_PREFERENCES_GUIDE.md` - User Preferences 최적화 가이드
+- `FRONTEND_PREFERENCES_IMPLEMENTATION.md` - 프론트엔드 완료 보고서 (구현 예정)
+- `PHASE_0-1.5_UPDATE.md` - 인증 API 업데이트 가이드
+- `PHASE_0-1.5_TEST_GUIDE.md` - 상세 테스트 가이드
+
+**🔧 주요 개선사항**
+- DATABASE_URL 파싱 개선 (Port 타입 안전성)
+- User Preferences 인증 체크 추가 (anon 에러 수정)
+- Supabase Session Pooler 연결 안정화
+
+**🧪 테스트 추가**
+- `tests/auth.test.js` - 인증 API 테스트
+- `test-phase-0-1.5.sh` - 프로덕션 라이브 테스트 스크립트
+- `test-supabase-integration.js` - DB 연결 통합 테스트
+
+**📦 배포**
+- Render 프로덕션 배포 완료
+- JWT 환경 변수 설정 완료
+- 3/4 인증 엔드포인트 정상 작동 확인
+
+---
 
 ### v1.0.0 (2025-11-06)
 
@@ -954,8 +1068,6 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - `FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md` - Frontend 호환성 분석
 - `FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md` - 협력 메시지
 
-**근거**: README.md:484-504, SUMMARY.md
-
 ---
 
 ## 📞 문의
@@ -978,17 +1090,31 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 
 ---
 
-**마지막 업데이트**: 2025-11-06
-**프로젝트 버전**: 1.0.0
-**문서 버전**: 3.0.0
+**마지막 업데이트**: 2025-01-10
+**프로젝트 버전**: 1.1.0
+**문서 버전**: 3.1.0
 
 ---
 
 ## 📌 Quick Links
 
+### 프로젝트 개요
 - 📋 [저장소 점검 요약](./SUMMARY.md) - 현황 및 리스크 분석
 - 🗺️ [향후 작업 로드맵](./ROADMAP.md) - 우선순위별 작업 체크리스트
-- 🏗️ [시스템 아키텍처](./docs/ARCHITECTURE.md) - 상세 아키텍처 (확실하지 않음 - 파일 존재 확인 필요)
-- 📡 [API 명세서](./docs/API.md) - 완전한 API 문서
-- 🚀 [Render 배포 가이드](./RENDER_DEPLOYMENT_SETUP_2025-11-04.md) - 배포 설정
+
+### 최신 업데이트 (Phase 0-1.5)
+- 🔐 [Phase 0-1.5 업데이트](./PHASE_0-1.5_UPDATE.md) - 인증 API 가이드
+- 🧪 [Phase 0-1.5 테스트 가이드](./PHASE_0-1.5_TEST_GUIDE.md) - 상세 테스트 방법
+- 🗄️ [스키마 관리 가이드](./schema/README.md) - SQL 기반 스키마 관리
+
+### 프론트엔드 협업
+- 🎯 [User Preferences 최적화 가이드](./FRONTEND_PREFERENCES_GUIDE.md) - API 최적화 방법
 - 🤝 [Frontend 협력 메시지](./FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md) - Frontend 팀 가이드
+
+### 배포 및 인프라
+- 🚀 [Render 배포 가이드](./RENDER_DEPLOYMENT_SETUP_2025-11-04.md) - 배포 설정
+- 📊 [DATABASE_URL 설정 가이드](./DATABASE_URL_SETUP_GUIDE.md) - Supabase 연결
+
+### API 문서
+- 📡 [API 엔드포인트 레퍼런스](./API_ENDPOINT_REFERENCE.md) - 완전한 API 문서
+- 🏗️ [시스템 아키텍처](./docs/ARCHITECTURE.md) - 상세 아키텍처 (확실하지 않음)
