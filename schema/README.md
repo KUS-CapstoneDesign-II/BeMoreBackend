@@ -82,6 +82,34 @@ sequelize.authenticate()
 
 ---
 
+## 🆕 최신 스키마 추가 (2025-01-10)
+
+### Conversations Table (AI 상담 대화 히스토리)
+
+**파일**: `schema/03_conversations.sql`
+
+**실행 방법**:
+1. Supabase SQL Editor 접속
+2. `schema/03_conversations.sql` 내용 복사:
+   ```bash
+   cat schema/03_conversations.sql | pbcopy
+   ```
+3. SQL Editor에 붙여넣기 후 **RUN**
+4. 테이블 생성 확인:
+   - ✅ conversations (대화 히스토리)
+   - ✅ idx_conversations_session_id (세션 ID 인덱스)
+   - ✅ idx_conversations_created_at (생성일 인덱스)
+
+**테이블 구조**:
+- `id`: UUID (PK)
+- `session_id`: UUID (FK → sessions)
+- `role`: VARCHAR(20) ('user' | 'assistant')
+- `content`: TEXT (메시지 내용)
+- `emotion`: VARCHAR(20) (감정: anxious, sad, angry, happy, neutral)
+- `created_at`: TIMESTAMP
+
+---
+
 ## 📝 스키마 변경 워크플로우
 
 ### 새 컬럼 추가 예시

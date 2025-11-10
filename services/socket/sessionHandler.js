@@ -1,4 +1,6 @@
 const SessionManager = require('../session/SessionManager');
+const Conversation = require('../../models/Conversation');
+const { streamCounselingResponse } = require('../gemini/gemini');
 
 /**
  * Session WebSocket 핸들러
@@ -47,6 +49,11 @@ function handleSession(ws, session) {
           sendStatusUpdate(ws, session);
           break;
 
+        case 'request_ai_response':
+          // AI 상담 응답 요청
+          handleAIResponseRequest(ws, session, message.data);
+          break;
+
         default:
           console.warn(`⚠️ 알 수 없는 세션 명령: ${message.type}`);
           ws.send(JSON.stringify({
@@ -90,7 +97,7 @@ function handleSession(ws, session) {
       sessionId: session.sessionId,
       status: session.status,
       message: 'Session 채널 연결 성공',
-      commands: ['pause', 'resume', 'end', 'ping', 'get_status']
+      commands: ['pause', 'resume', 'end', 'ping', 'get_status', 'request_ai_response']
     }
   }));
 
@@ -258,6 +265,114 @@ function notifyOtherChannels(session, message) {
   // Voice 채널에 알림
   if (session.wsConnections.voice && session.wsConnections.voice.readyState === 1) {
     session.wsConnections.voice.send(JSON.stringify(message));
+  }
+}
+
+/**
+ * AI 응답 요청 처리
+ * @param {WebSocket} ws - WebSocket 연결
+ * @param {Object} session - 세션 객체
+ * @param {Object} data - 요청 데이터 {message: string, emotion?: string}
+ */
+async function handleAIResponseRequest(ws, session, data) {
+  try {
+    const { message: userMessage, emotion } = data || {};
+
+    // 입력 검증
+    if (!userMessage || typeof userMessage !== 'string') {
+      ws.send(JSON.stringify({
+        type: 'ai_stream_error',
+        data: {
+          code: 'INVALID_MESSAGE',
+          message: '사용자 메시지가 필요합니다'
+        }
+      }));
+      return;
+    }
+
+    console.log(`🤖 AI 응답 요청: ${session.sessionId}, emotion: ${emotion || 'neutral'}`);
+
+    // 1. 사용자 메시지를 대화 히스토리에 저장
+    const currentEmotion = emotion || 'neutral';
+    await Conversation.saveMessage(session.sessionId, 'user', userMessage, currentEmotion);
+
+    // 2. 최근 대화 히스토리 조회 (최대 10개)
+    const conversationHistory = await Conversation.getHistory(session.sessionId, 10);
+
+    // 3. 스트리밍 시작 알림
+    ws.send(JSON.stringify({
+      type: 'ai_stream_begin',
+      data: {
+        timestamp: Date.now(),
+        emotion: currentEmotion
+      }
+    }));
+
+    let fullResponse = '';
+
+    // 4. Gemini 스트리밍 호출
+    await streamCounselingResponse(
+      conversationHistory,
+      currentEmotion,
+      // onChunk: 각 청크를 클라이언트에 전송
+      (chunk) => {
+        if (ws.readyState === 1) {  // OPEN
+          fullResponse += chunk;
+          ws.send(JSON.stringify({
+            type: 'ai_stream_chunk',
+            data: {
+              chunk,
+              timestamp: Date.now()
+            }
+          }));
+        }
+      },
+      // onComplete: 완료 시 DB 저장 및 클라이언트 알림
+      async (response) => {
+        // AI 응답을 대화 히스토리에 저장
+        await Conversation.saveMessage(session.sessionId, 'assistant', response);
+
+        if (ws.readyState === 1) {
+          ws.send(JSON.stringify({
+            type: 'ai_stream_complete',
+            data: {
+              fullResponse: response,
+              timestamp: Date.now(),
+              conversationId: session.sessionId
+            }
+          }));
+        }
+
+        console.log(`✅ AI 응답 완료: ${session.sessionId} (${response.length} chars)`);
+      },
+      // onError: 에러 발생 시 클라이언트 알림
+      (error) => {
+        console.error(`❌ AI 스트리밍 오류: ${session.sessionId}`, error);
+        if (ws.readyState === 1) {
+          ws.send(JSON.stringify({
+            type: 'ai_stream_error',
+            data: {
+              code: 'STREAMING_ERROR',
+              message: 'AI 응답 생성 중 오류가 발생했습니다',
+              error: error.message
+            }
+          }));
+        }
+      }
+    );
+
+  } catch (error) {
+    console.error('❌ AI 응답 요청 오류:', error);
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({
+        type: 'ai_stream_error',
+        data: {
+          code: 'REQUEST_ERROR',
+          message: 'AI 응답 요청 처리 중 오류가 발생했습니다',
+          error: error.message
+        }
+      }));
+    }
   }
 }
 

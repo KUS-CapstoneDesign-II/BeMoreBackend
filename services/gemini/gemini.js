@@ -486,4 +486,83 @@ async function generateDetailedReport(accumulatedData, speechText = "") {
   }
 }
 
-module.exports = { analyzeExpression, generateDetailedReport, analyzeEmotion };
+/**
+ * Stream AI counseling response with conversation history and emotion context
+ * @param {Array} conversationHistory - Array of {role, content} objects
+ * @param {string} currentEmotion - Current user emotion (anxious, sad, angry, happy, neutral)
+ * @param {Function} onChunk - Callback function for each chunk: (chunk: string) => void
+ * @param {Function} onComplete - Callback function on completion: (fullResponse: string) => void
+ * @param {Function} onError - Callback function on error: (error: Error) => void
+ * @returns {Promise<void>}
+ */
+async function streamCounselingResponse(conversationHistory, currentEmotion, onChunk, onComplete, onError) {
+  try {
+    const { buildSystemPrompt, formatConversationHistory } = require('./prompts');
+
+    // Build emotion-based system prompt
+    const systemPrompt = buildSystemPrompt(currentEmotion);
+
+    // Format conversation history for Gemini
+    const formattedHistory = formatConversationHistory(conversationHistory);
+
+    // Prepare the model with system instructions
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: systemPrompt,
+    });
+
+    // Start chat with history
+    const chat = model.startChat({
+      history: formattedHistory,
+    });
+
+    console.log(`🤖 Starting AI streaming response (emotion: ${currentEmotion}, history: ${formattedHistory.length} messages)`);
+    const startTime = Date.now();
+
+    // Stream the response
+    const result = await withTimeout(
+      chat.sendMessageStream("Continue the conversation based on the context above."),
+      GEMINI_TIMEOUT_MS,
+      'Gemini counseling stream'
+    );
+
+    let fullResponse = '';
+
+    // Process each chunk as it arrives
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      fullResponse += chunkText;
+
+      // Send chunk to client via callback
+      if (onChunk && typeof onChunk === 'function') {
+        onChunk(chunkText);
+      }
+    }
+
+    const elapsedTime = Date.now() - startTime;
+    console.log(`✅ AI streaming completed (${elapsedTime}ms, ${fullResponse.length} chars)`);
+
+    // Call completion callback
+    if (onComplete && typeof onComplete === 'function') {
+      onComplete(fullResponse);
+    }
+
+  } catch (err) {
+    console.error('❌ AI streaming error:', err.message);
+    errorHandler.handle(err, {
+      module: 'gemini-streaming',
+      level: errorHandler.levels.ERROR,
+      metadata: {
+        emotion: currentEmotion,
+        historyLength: conversationHistory?.length || 0,
+      },
+    });
+
+    // Call error callback
+    if (onError && typeof onError === 'function') {
+      onError(err);
+    }
+  }
+}
+
+module.exports = { analyzeExpression, generateDetailedReport, analyzeEmotion, streamCounselingResponse };
