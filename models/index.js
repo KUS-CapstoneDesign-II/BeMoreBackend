@@ -16,25 +16,32 @@ let sequelize;
 let dbEnabled = true;
 
 try {
-  // Allow disabling DB via env or when config file is missing in container builds
-  const cfgPath = path.join(__dirname, '..', 'config', 'config.json');
-  if (process.env.DB_DISABLED === 'true' || !fs.existsSync(cfgPath)) {
+  // Allow disabling DB via env
+  if (process.env.DB_DISABLED === 'true') {
     dbEnabled = false;
   }
 
   if (dbEnabled) {
-    const config = require('../config/config.json')[env];
+    // DATABASE_URL이 있으면 config.json 없이도 작동
     if (process.env.DATABASE_URL) {
-      // DATABASE_URL은 PostgreSQL (Supabase) 형식으로 강제 설정
       sequelize = new Sequelize(process.env.DATABASE_URL, {
-        ...config,
-        dialect: 'postgres',  // PostgreSQL 지정
-        protocol: 'postgres'
+        dialect: 'postgres',
+        protocol: 'postgres',
+        logging: false
       });
     } else {
-      sequelize = new Sequelize(config.database, config.username, config.password, config);
+      // DATABASE_URL이 없으면 config.json 사용
+      const cfgPath = path.join(__dirname, '..', 'config', 'config.json');
+      if (!fs.existsSync(cfgPath)) {
+        dbEnabled = false;
+      } else {
+        const config = require('../config/config.json')[env];
+        sequelize = new Sequelize(config.database, config.username, config.password, config);
+      }
     }
-  } else {
+  }
+
+  if (!dbEnabled) {
     // No-op sequelize shim so app.js can safely call sequelize.sync()
     sequelize = { sync: async () => Promise.resolve() };
   }
