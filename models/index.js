@@ -111,5 +111,9 @@ if (dbEnabled && sequelize instanceof Sequelize) {
   db.Feedback = null;
 }
 
+// Export sequelize instance for models that need it
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
+
 module.exports = db;
 
