@@ -91,8 +91,8 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-device-id', 'x-csrf-token'],
-  exposedHeaders: ['x-request-id', 'x-device-id', 'x-csrf-token']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-device-id', 'x-csrf-token', 'x-timestamp', 'x-client-version'],
+  exposedHeaders: ['x-request-id', 'x-device-id', 'x-csrf-token', 'x-timestamp']
 }));
 // Preflight handled by CORS middleware (Express v5-safe)
 
