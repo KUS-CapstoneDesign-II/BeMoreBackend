@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   session_id VARCHAR(64) NOT NULL REFERENCES sessions("sessionId") ON DELETE CASCADE,
   role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
   content TEXT NOT NULL,
-  emotion VARCHAR(20) CHECK (emotion IN ('anxious', 'sad', 'angry', 'happy', 'neutral')),
+  emotion VARCHAR(20) CHECK (emotion IN ('anxious', 'sad', 'angry', 'happy', 'neutral', 'fearful', 'disgusted', 'surprised')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

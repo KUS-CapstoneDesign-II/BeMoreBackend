@@ -622,7 +622,7 @@ sessionWs.send(JSON.stringify({
   type: 'request_ai_response',
   data: {
     message: '오늘 상담 받고 싶어요',
-    emotion: 'anxious' // anxious|sad|angry|happy|neutral
+    emotion: 'anxious' // anxious|sad|angry|happy|neutral|fearful|disgusted|surprised
   }
 }));
 
@@ -1049,7 +1049,7 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 **🤖 AI 음성 상담 WebSocket 구현**
 - 실시간 AI 상담 응답 스트리밍 (`request_ai_response`)
 - Gemini 2.5 Flash 기반 감정 맞춤형 상담
-- 5가지 감정 유형 시스템 프롬프트 (anxious, sad, angry, happy, neutral)
+- 8가지 감정 유형 시스템 프롬프트 (anxious, sad, angry, happy, neutral, fearful, disgusted, surprised)
 - 대화 히스토리 컨텍스트 지원 (최근 10개 메시지)
 - 스트리밍 이벤트: `ai_stream_begin`, `ai_stream_chunk`, `ai_stream_complete`, `ai_stream_error`
 

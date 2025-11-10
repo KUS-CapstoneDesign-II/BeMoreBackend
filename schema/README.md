@@ -105,7 +105,7 @@ sequelize.authenticate()
 - `session_id`: VARCHAR(64) (FK → sessions.sessionId)
 - `role`: VARCHAR(20) ('user' | 'assistant')
 - `content`: TEXT (메시지 내용)
-- `emotion`: VARCHAR(20) (감정: anxious, sad, angry, happy, neutral)
+- `emotion`: VARCHAR(20) (감정: anxious, sad, angry, happy, neutral, fearful, disgusted, surprised)
 - `created_at`: TIMESTAMP
 
 ### Row Level Security (RLS) 정책

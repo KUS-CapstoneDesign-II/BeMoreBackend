@@ -36,7 +36,7 @@ const Conversation = sequelize.define('Conversation', {
     type: DataTypes.STRING(20),
     allowNull: true,
     validate: {
-      isIn: [['anxious', 'sad', 'angry', 'happy', 'neutral']],
+      isIn: [['anxious', 'sad', 'angry', 'happy', 'neutral', 'fearful', 'disgusted', 'surprised']],
     },
     comment: 'Detected emotion for the message (optional)',
   },
