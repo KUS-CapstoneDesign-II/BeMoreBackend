@@ -2,7 +2,7 @@
 
 > 실시간 멀티모달 감정 분석을 통한 인지행동치료(CBT) 상담 지원 플랫폼의 백엔드 API 서버
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](./LICENSE)
 
@@ -546,6 +546,17 @@ POST /api/emotion
 }
 ```
 
+**분석 모니터링** 📊
+```bash
+# 프론트엔드 성능 알림
+POST /api/analytics/alert
+{
+  "message": "Long API call: /api/session/start took 3000ms",
+  "timestamp": "2025-01-10T12:34:56.789Z",
+  "url": "https://be-more-frontend.vercel.app/app/session"
+}
+```
+
 **헬스체크**
 ```bash
 # 서버 상태 확인
@@ -582,13 +593,43 @@ voiceWs.onmessage = (event) => {
 };
 ```
 
-**Channel 3: 세션 관리**
+**Channel 3: 세션 관리 & AI 상담** 🤖
 ```javascript
 const sessionWs = new WebSocket('ws://localhost:8000/ws/session?sessionId=xxx');
+
+// 세션 상태 수신
 sessionWs.onmessage = (event) => {
-  const { type, sessionId, status } = JSON.parse(event.data);
-  console.log('세션 상태:', status); // "active", "ended" 등
+  const { type, data } = JSON.parse(event.data);
+
+  if (type === 'status_update') {
+    console.log('세션 상태:', data.status); // "active", "ended" 등
+  }
+
+  // AI 상담 스트리밍
+  if (type === 'ai_stream_begin') {
+    console.log('AI 응답 시작:', data.emotion);
+  }
+  if (type === 'ai_stream_chunk') {
+    console.log('청크:', data.chunk); // 실시간 텍스트 조각
+  }
+  if (type === 'ai_stream_complete') {
+    console.log('전체 응답:', data.fullResponse);
+  }
 };
+
+// AI 상담 요청 (사용자 메시지 전송)
+sessionWs.send(JSON.stringify({
+  type: 'request_ai_response',
+  data: {
+    message: '오늘 상담 받고 싶어요',
+    emotion: 'anxious' // anxious|sad|angry|happy|neutral
+  }
+}));
+
+// 세션 제어 명령
+sessionWs.send(JSON.stringify({ type: 'pause' }));  // 일시정지
+sessionWs.send(JSON.stringify({ type: 'resume' })); // 재개
+sessionWs.send(JSON.stringify({ type: 'end' }));    // 종료
 ```
 
 ### 상세 API 명세
@@ -1003,7 +1044,45 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 
 ## 📄 변경 기록
 
-### v1.1.0 (2025-01-10) ⭐ 최신
+### v1.2.0 (2025-01-10) ⭐ 최신
+
+**🤖 AI 음성 상담 WebSocket 구현**
+- 실시간 AI 상담 응답 스트리밍 (`request_ai_response`)
+- Gemini 2.5 Flash 기반 감정 맞춤형 상담
+- 5가지 감정 유형 시스템 프롬프트 (anxious, sad, angry, happy, neutral)
+- 대화 히스토리 컨텍스트 지원 (최근 10개 메시지)
+- 스트리밍 이벤트: `ai_stream_begin`, `ai_stream_chunk`, `ai_stream_complete`, `ai_stream_error`
+
+**🗄️ 대화 히스토리 저장소**
+- `conversations` 테이블 추가 (user/assistant 대화 기록)
+- Conversation 모델 구현 (`getHistory()`, `saveMessage()`)
+- 세션별 대화 히스토리 관리 (Foreign Key: `sessions.sessionId`)
+- 감정 태그 지원 (사용자 메시지에 감정 메타데이터)
+
+**🛡️ 데이터베이스 보안 강화**
+- Row Level Security (RLS) 정책 활성화 (7개 테이블)
+- Backend API 전용 접근 (DATABASE_URL 직접 연결)
+- Supabase 클라이언트 SDK 직접 접근 차단
+- 모든 테이블 상태: `unrestricted` → `enabled (1 policy)`
+
+**📊 분석 엔드포인트 추가**
+- `POST /api/analytics/alert` - 프론트엔드 성능 알림 수신
+- Zod 스키마 유효성 검증 (message, timestamp, url)
+- 로그 기반 모니터링 (데이터베이스 저장 없음)
+
+**🔧 스키마 개선**
+- Conversations FK 타입 수정 (UUID → VARCHAR(64))
+- Foreign Key 참조 수정 (`sessions.id` → `sessions.sessionId`)
+- 스키마 문서 업데이트 (Conversations, RLS 섹션 추가)
+
+**📦 배포**
+- Render 자동 배포 완료
+- Supabase RLS 정책 적용 완료
+- AI 상담 기능 프로덕션 준비 완료
+
+---
+
+### v1.1.0 (2025-01-10)
 
 **✅ Phase 0-1.5 완료 - JWT 인증 시스템**
 - JWT 기반 인증 구현 (Access Token 15분 + Refresh Token 7일)
@@ -1091,8 +1170,8 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 ---
 
 **마지막 업데이트**: 2025-01-10
-**프로젝트 버전**: 1.1.0
-**문서 버전**: 3.1.0
+**프로젝트 버전**: 1.2.0
+**문서 버전**: 3.2.0
 
 ---
 
