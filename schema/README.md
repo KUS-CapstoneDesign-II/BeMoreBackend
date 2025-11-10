@@ -102,7 +102,7 @@ sequelize.authenticate()
 
 **테이블 구조**:
 - `id`: UUID (PK)
-- `session_id`: UUID (FK → sessions)
+- `session_id`: VARCHAR(64) (FK → sessions.sessionId)
 - `role`: VARCHAR(20) ('user' | 'assistant')
 - `content`: TEXT (메시지 내용)
 - `emotion`: VARCHAR(20) (감정: anxious, sad, angry, happy, neutral)

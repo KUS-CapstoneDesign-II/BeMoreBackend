@@ -9,7 +9,7 @@
 -- Create conversations table
 CREATE TABLE IF NOT EXISTS conversations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  session_id VARCHAR(64) NOT NULL REFERENCES sessions("sessionId") ON DELETE CASCADE,
   role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
   content TEXT NOT NULL,
   emotion VARCHAR(20) CHECK (emotion IN ('anxious', 'sad', 'angry', 'happy', 'neutral')),

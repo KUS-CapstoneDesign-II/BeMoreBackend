@@ -18,9 +18,9 @@ const Conversation = sequelize.define('Conversation', {
     comment: 'Primary key (UUID)',
   },
   session_id: {
-    type: DataTypes.UUID,
+    type: DataTypes.STRING(64),
     allowNull: false,
-    comment: 'Foreign key to sessions table',
+    comment: 'Foreign key to sessions.sessionId (VARCHAR)',
   },
   role: {
     type: DataTypes.ENUM('user', 'assistant'),
