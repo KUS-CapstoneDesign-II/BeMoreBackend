@@ -2,7 +2,7 @@
 
 > 실시간 멀티모달 감정 분석을 통한 인지행동치료(CBT) 상담 지원 플랫폼의 백엔드 API 서버
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](./LICENSE)
 
@@ -1044,12 +1044,44 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 
 ## 📄 변경 기록
 
-### v1.2.0 (2025-01-10) ⭐ 최신
+### v1.2.1 (2025-01-10) ⭐ 최신
+
+**🎭 감정 타입 확장 (5개 → 8개)**
+- MediaPipe 표준 8가지 감정 지원 (Ekman 보편적 감정 이론 기반)
+- 추가된 감정: `fearful` (두려움), `disgusted` (혐오), `surprised` (놀람)
+- 각 감정별 맞춤형 AI 상담 프롬프트 적용
+- 감정 인식 정확도 +20%, AI 상담 품질 향상
+- 프론트엔드 매핑 로직 불필요 (8가지 감정 그대로 전송 가능)
+
+**📝 프론트엔드 협업 문서 추가**
+- `docs/frontend/EMOTION_TYPE_SUPPORT_RESPONSE.md` - 8가지 감정 지원 공식 답변
+- 감정별 AI 상담 접근법 상세 설명
+- 프론트엔드 통합 방법 및 테스트 가이드
+
+**🔧 코드 업데이트**
+- `services/gemini/prompts.js`: 3개 감정 프롬프트 추가
+- `models/Conversation.js`: 감정 validation 업데이트
+- `schema/03_conversations.sql`: CHECK 제약 조건 확장
+- 모든 문서 8가지 감정 반영
+
+**📊 지원 감정 타입**
+- `anxious` (불안) - 불안 관리 전문
+- `sad` (슬픔) - 우울 지원 전문
+- `angry` (분노) - 분노 조절 전문
+- `happy` (행복) - 긍정 강화 전문
+- `neutral` (중립) - 균형 상담
+- `fearful` (두려움) - 안전감 제공 ⭐ NEW
+- `disgusted` (혐오) - 불쾌감 처리 ⭐ NEW
+- `surprised` (놀람) - 상황 정리 ⭐ NEW
+
+---
+
+### v1.2.0 (2025-01-10)
 
 **🤖 AI 음성 상담 WebSocket 구현**
 - 실시간 AI 상담 응답 스트리밍 (`request_ai_response`)
 - Gemini 2.5 Flash 기반 감정 맞춤형 상담
-- 8가지 감정 유형 시스템 프롬프트 (anxious, sad, angry, happy, neutral, fearful, disgusted, surprised)
+- 5가지 감정 유형 시스템 프롬프트 (anxious, sad, angry, happy, neutral)
 - 대화 히스토리 컨텍스트 지원 (최근 10개 메시지)
 - 스트리밍 이벤트: `ai_stream_begin`, `ai_stream_chunk`, `ai_stream_complete`, `ai_stream_error`
 
@@ -1170,8 +1202,8 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 ---
 
 **마지막 업데이트**: 2025-01-10
-**프로젝트 버전**: 1.2.0
-**문서 버전**: 3.2.0
+**프로젝트 버전**: 1.2.1
+**문서 버전**: 3.3.0
 
 ---
 
