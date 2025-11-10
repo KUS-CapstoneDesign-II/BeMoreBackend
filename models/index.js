@@ -24,10 +24,16 @@ try {
   if (dbEnabled) {
     // DATABASE_URL이 있으면 config.json 없이도 작동
     if (process.env.DATABASE_URL) {
-      sequelize = new Sequelize(process.env.DATABASE_URL, {
+      // Sequelize의 URL 파싱 문제를 피하기 위해 직접 파싱
+      const dbUrl = new URL(process.env.DATABASE_URL);
+      sequelize = new Sequelize(dbUrl.pathname.slice(1), dbUrl.username, decodeURIComponent(dbUrl.password), {
+        host: dbUrl.hostname,
+        port: dbUrl.port || 5432,
         dialect: 'postgres',
-        protocol: 'postgres',
-        logging: false
+        logging: false,
+        dialectOptions: {
+          ssl: false
+        }
       });
     } else {
       // DATABASE_URL이 없으면 config.json 사용
