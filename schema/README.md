@@ -132,6 +132,51 @@ sequelize.authenticate()
 
 ---
 
+## 🔧 긴급 마이그레이션 (2025-01-11)
+
+### Sessions 테이블 컬럼명 수정
+
+**문제**: Render 배포 후 세션 생성 실패
+```
+❌ column sessions.session_id does not exist
+❌ Could not find the 'created_at' column of 'sessions'
+```
+
+**원인**: Supabase의 컬럼명이 camelCase인데 코드는 snake_case 기대
+
+**해결 방법**:
+1. **Supabase SQL Editor 접속**
+   - https://supabase.com/dashboard → BeMore 프로젝트 → SQL Editor
+
+2. **마이그레이션 스크립트 실행**
+   ```bash
+   # 로컬에서 복사
+   cat schema/migrations/001-fix-sessions-column-names.sql | pbcopy
+   ```
+
+3. **SQL Editor에 붙여넣기 후 RUN**
+
+4. **검증 쿼리 실행** (스크립트 마지막 부분)
+   ```sql
+   SELECT column_name, data_type, is_nullable
+   FROM information_schema.columns
+   WHERE table_name = 'sessions'
+   ORDER BY ordinal_position;
+   ```
+
+5. **예상 결과**: 모든 컬럼명이 snake_case로 변경
+   - `sessionId` → `session_id` ✅
+   - `userId` → `user_id` ✅
+   - `createdAt` → `created_at` ✅
+   - 등등...
+
+**영향**:
+- ✅ 세션 생성 정상화
+- ✅ 대화 저장 정상화
+- ✅ AI 감정 분석 결과 저장 가능
+
+---
+
 ## 📝 스키마 변경 워크플로우
 
 ### 새 컬럼 추가 예시
