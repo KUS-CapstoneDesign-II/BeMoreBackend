@@ -270,9 +270,131 @@ async function logout(req, res) {
   }
 }
 
+/**
+ * GET /api/auth/me
+ * 현재 로그인된 사용자 정보 조회
+ */
+async function getMe(req, res) {
+  try {
+    // req.user는 requireAuth 미들웨어에서 설정됨
+    const userId = req.user.sub;
+
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'username', 'email', 'profileImage'],
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found',
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          profileImage: user.profileImage,
+        },
+      },
+    });
+  } catch (err) {
+    errorHandler.handle(err, {
+      module: 'auth',
+      level: errorHandler.levels.ERROR,
+      metadata: { method: 'GET', path: '/api/auth/me', requestId: req.requestId },
+    });
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_ME_ERROR',
+        message: err.message,
+      },
+    });
+  }
+}
+
+/**
+ * PUT /api/auth/profile
+ * 사용자 프로필 업데이트
+ */
+async function updateProfile(req, res) {
+  try {
+    const userId = req.user.sub;
+    const { username, profileImage } = req.body;
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found',
+        },
+      });
+    }
+
+    // username 중복 체크 (변경하려는 경우만)
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ where: { username } });
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: 'USERNAME_EXISTS',
+            message: 'Username already exists',
+          },
+        });
+      }
+      user.username = username;
+    }
+
+    // profileImage 업데이트
+    if (profileImage !== undefined) {
+      user.profileImage = profileImage;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          profileImage: user.profileImage,
+        },
+      },
+    });
+  } catch (err) {
+    errorHandler.handle(err, {
+      module: 'auth',
+      level: errorHandler.levels.ERROR,
+      metadata: { method: 'PUT', path: '/api/auth/profile', requestId: req.requestId },
+    });
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_PROFILE_ERROR',
+        message: err.message,
+      },
+    });
+  }
+}
+
 module.exports = {
   signup,
   login,
   refresh,
   logout,
+  getMe,
+  updateProfile,
 };
