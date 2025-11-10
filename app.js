@@ -131,7 +131,8 @@ app.get('/', (req, res) => {
 });
 
 
-sequelize.sync({ force: false })
+// 초기 배포: alter로 스키마 자동 생성 (TODO: Migration으로 전환 필요)
+sequelize.sync({ force: false, alter: true })
   .then(() => {
     console.log("✅ 데이터베이스 연결 성공");
   }).catch((err) => {
