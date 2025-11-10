@@ -1020,10 +1020,10 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 명시적 스키마 버전 관리 (Git 추적)
 
 **📚 프론트엔드 협업 문서**
-- `FRONTEND_PREFERENCES_GUIDE.md` - User Preferences 최적화 가이드
-- `FRONTEND_PREFERENCES_IMPLEMENTATION.md` - 프론트엔드 완료 보고서 (구현 예정)
-- `PHASE_0-1.5_UPDATE.md` - 인증 API 업데이트 가이드
-- `PHASE_0-1.5_TEST_GUIDE.md` - 상세 테스트 가이드
+- `docs/frontend/FRONTEND_PREFERENCES_GUIDE.md` - User Preferences 최적화 가이드
+- `docs/frontend/FRONTEND_PREFERENCES_IMPLEMENTATION.md` - 프론트엔드 완료 보고서 (구현 예정)
+- `docs/phase-0-1.5/PHASE_0-1.5_UPDATE.md` - 인증 API 업데이트 가이드
+- `docs/phase-0-1.5/PHASE_0-1.5_TEST_GUIDE.md` - 상세 테스트 가이드
 
 **🔧 주요 개선사항**
 - DATABASE_URL 파싱 개선 (Port 타입 안전성)
@@ -1064,9 +1064,9 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 **📋 신규 문서**
 - `SUMMARY.md` - 저장소 점검 요약
 - `ROADMAP.md` - 향후 작업 로드맵
-- `BACKEND_VAD_CODE_REVIEW_2025-11-04.md` - Backend 코드 검사
-- `FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md` - Frontend 호환성 분석
-- `FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md` - 협력 메시지
+- `docs/archive/BACKEND_VAD_CODE_REVIEW_2025-11-04.md` - Backend 코드 검사
+- `docs/frontend/FRONTEND_VAD_INTEGRATION_REPORT_2025-11-04.md` - Frontend 호환성 분석
+- `docs/frontend/FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md` - 협력 메시지
 
 ---
 
@@ -1103,18 +1103,20 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🗺️ [향후 작업 로드맵](./ROADMAP.md) - 우선순위별 작업 체크리스트
 
 ### 최신 업데이트 (Phase 0-1.5)
-- 🔐 [Phase 0-1.5 업데이트](./PHASE_0-1.5_UPDATE.md) - 인증 API 가이드
-- 🧪 [Phase 0-1.5 테스트 가이드](./PHASE_0-1.5_TEST_GUIDE.md) - 상세 테스트 방법
+- 🔐 [Phase 0-1.5 업데이트](./docs/phase-0-1.5/PHASE_0-1.5_UPDATE.md) - 인증 API 가이드
+- 🧪 [Phase 0-1.5 테스트 가이드](./docs/phase-0-1.5/PHASE_0-1.5_TEST_GUIDE.md) - 상세 테스트 방법
 - 🗄️ [스키마 관리 가이드](./schema/README.md) - SQL 기반 스키마 관리
 
 ### 프론트엔드 협업
-- 🎯 [User Preferences 최적화 가이드](./FRONTEND_PREFERENCES_GUIDE.md) - API 최적화 방법
-- 🤝 [Frontend 협력 메시지](./FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md) - Frontend 팀 가이드
+- 🎯 [User Preferences 최적화 가이드](./docs/frontend/FRONTEND_PREFERENCES_GUIDE.md) - API 최적화 방법
+- 🤝 [Frontend 협력 메시지](./docs/frontend/FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md) - Frontend 팀 가이드
+- 📱 [Frontend 빠른 시작](./docs/frontend/FRONTEND_QUICK_START.md) - 프론트엔드 개발 시작 가이드
 
 ### 배포 및 인프라
-- 🚀 [Render 배포 가이드](./RENDER_DEPLOYMENT_SETUP_2025-11-04.md) - 배포 설정
-- 📊 [DATABASE_URL 설정 가이드](./DATABASE_URL_SETUP_GUIDE.md) - Supabase 연결
+- 🚀 [Render 배포 가이드](./docs/deployment/RENDER_DEPLOYMENT_SETUP_2025-11-04.md) - 배포 설정
+- 📊 [Supabase 설정 가이드](./docs/database/SUPABASE_SETUP_GUIDE.md) - Supabase 연결
 
-### API 문서
-- 📡 [API 엔드포인트 레퍼런스](./API_ENDPOINT_REFERENCE.md) - 완전한 API 문서
-- 🏗️ [시스템 아키텍처](./docs/ARCHITECTURE.md) - 상세 아키텍처 (확실하지 않음)
+### 개발 가이드
+- 📡 [API 엔드포인트 레퍼런스](./docs/guides/API_ENDPOINT_REFERENCE.md) - 완전한 API 문서
+- 🚀 [빠른 시작 가이드](./docs/guides/QUICK_START.md) - 프로젝트 시작하기
+- 🧪 [테스트 명령어 모음](./docs/guides/QUICK_TEST_COMMANDS.md) - 빠른 테스트 실행
