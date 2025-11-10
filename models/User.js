@@ -24,6 +24,10 @@ class User extends Sequelize.Model {
         type: Sequelize.TEXT,
         allowNull: true,
       },
+      profileImage: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
     },
       {
         sequelize,
