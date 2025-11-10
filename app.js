@@ -16,6 +16,7 @@ const dashboardRouter = require("./routes/dashboard");
 const emotionRouter = require("./routes/emotion");
 const userRouter = require("./routes/user");
 const healthRouter = require("./routes/health");
+const authRouter = require("./routes/auth");
 const { setupWebSockets } = require("./services/socket/setupWebSockets");
 const errorHandler = require("./services/ErrorHandler");
 const { sequelize } = require("./models");
@@ -112,6 +113,7 @@ const missing = requiredEnv.filter((k) => !process.env[k]);
 if (missing.length) {
   console.warn(`⚠️ Missing required env: ${missing.join(', ')}`);
 }
+app.use("/api/auth", authRouter);
 app.use("/api/stt", optionalJwtAuth, sttRouter);
 app.use("/api/session", optionalJwtAuth, sessionRouter);
 app.use("/api/monitoring", monitoringRouter);
