@@ -26,15 +26,38 @@ try {
     if (process.env.DATABASE_URL) {
       // Sequelize의 URL 파싱 문제를 피하기 위해 직접 파싱
       const dbUrl = new URL(process.env.DATABASE_URL);
-      sequelize = new Sequelize(dbUrl.pathname.slice(1), dbUrl.username, decodeURIComponent(dbUrl.password), {
+
+      // Port를 명시적으로 숫자로 변환 (빈 문자열 방지)
+      const port = dbUrl.port ? parseInt(dbUrl.port, 10) : 5432;
+
+      const dbConfig = {
+        database: dbUrl.pathname.slice(1),
+        username: dbUrl.username,
+        password: decodeURIComponent(dbUrl.password),
         host: dbUrl.hostname,
-        port: dbUrl.port || 5432,
+        port: port,
         dialect: 'postgres',
         logging: false,
         dialectOptions: {
-          ssl: false
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          }
         }
+      };
+
+      // 디버깅: DATABASE_URL 마스킹 출력
+      const maskedUrl = process.env.DATABASE_URL.replace(/:([^@]+)@/, ':****@');
+      console.log('🔗 DATABASE_URL (masked):', maskedUrl);
+      console.log('📊 DB Connection Config:', {
+        database: dbConfig.database,
+        username: dbConfig.username,
+        host: dbConfig.host,
+        port: dbConfig.port,
+        ssl: 'enabled'
       });
+
+      sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, dbConfig);
     } else {
       // DATABASE_URL이 없으면 config.json 사용
       const cfgPath = path.join(__dirname, '..', 'config', 'config.json');
