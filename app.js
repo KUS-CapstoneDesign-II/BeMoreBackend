@@ -131,12 +131,11 @@ app.get('/', (req, res) => {
 });
 
 
-// 초기 배포: force로 테이블 재생성 (⚠️ 모든 데이터 삭제!)
-// TODO: 스키마 안정화 후 force: false로 변경 및 Migration으로 전환
-const FORCE_RECREATE = process.env.FORCE_RECREATE === 'true';
-sequelize.sync({ force: FORCE_RECREATE, alter: !FORCE_RECREATE })
+// 데이터베이스 연결 확인만 수행 (스키마 변경 없음)
+// 스키마 관리: schema/init.sql 파일을 Supabase SQL Editor에서 실행
+sequelize.authenticate()
   .then(() => {
-    console.log("✅ 데이터베이스 연결 성공", FORCE_RECREATE ? "(테이블 재생성됨)" : "");
+    console.log("✅ 데이터베이스 연결 성공");
   }).catch((err) => {
     console.error("❌ 데이터베이스 연결 실패:", err)
   });
