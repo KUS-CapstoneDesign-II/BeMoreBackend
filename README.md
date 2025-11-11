@@ -1109,6 +1109,23 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
   - `docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md` - Frontend 팀 공지 ⭐ NEW
 - 배포: commit fcd95ff (P1 코드), commit 3890d73 (P0 문서), commit cee5bdd (Frontend 공지)
 
+**🎉 DB 연결 복구 완료 (2025-01-11 저녁)**
+- IPv6/IPv4 호환성 문제 해결
+  - Render IPv4 전용 네트워크 ↔ Supabase Direct Connection IPv6 충돌
+  - Session Pooler 전환으로 IPv4 호환 확보
+- 비밀번호 인증 문제 해결
+  - 비밀번호 내 특수문자 `@` → URL 인코딩 `%40` 적용
+  - DATABASE_URL 파싱 오류 해결
+- 데이터베이스 연결 성공 (2025-01-11 23:15 UTC)
+  - 회원가입/로그인 API 정상 작동 확인
+  - 한국어 에러 메시지 작동 (Phase 11 검증)
+  - 총 문제 해결 시간: 17분 (22:58-23:15 UTC)
+- 관련 문서:
+  - `docs/troubleshooting/LOGIN_500_DIAGNOSTIC_GUIDE.md` - 로그인 500 에러 진단
+  - `docs/troubleshooting/DB_RECONNECTION_GUIDE.md` - DB 재연결 가이드
+  - `docs/frontend/DB_CONNECTION_RESOLVED_20250111.md` - Frontend 팀 공지 ⭐ NEW
+- 배포: commit 00a84db (진단 가이드), commit bdc0aeb (재연결 가이드)
+
 ---
 
 ### v1.2.1 (2025-01-10)
@@ -1293,6 +1310,7 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🗄️ [스키마 관리 가이드](./schema/README.md) - SQL 기반 스키마 관리
 
 ### 프론트엔드 협업
+- 🎉 [DB 연결 복구 완료 (2025-01-11)](./docs/frontend/DB_CONNECTION_RESOLVED_20250111.md) - 테스트 준비 완료 ⭐ NEW
 - 🚨 [프로덕션 긴급 수정 공지 (2025-01-11)](./docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md) - Database + Performance 수정 ⭐ HOT
 - 📢 [Backend 업데이트 공지 (2025-01-11)](./docs/frontend/BACKEND_UPDATE_20250111.md) - v1.2.2 변경사항
 - 🎯 [User Preferences 최적화 가이드](./docs/frontend/FRONTEND_PREFERENCES_GUIDE.md) - API 최적화 방법
