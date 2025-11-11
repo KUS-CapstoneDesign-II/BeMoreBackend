@@ -1311,5 +1311,6 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🧪 [테스트 명령어 모음](./docs/guides/QUICK_TEST_COMMANDS.md) - 빠른 테스트 실행
 
 ### 문제 해결 (Troubleshooting)
+- 🚨 [로그인 500 에러 진단 가이드](./docs/troubleshooting/LOGIN_500_DIAGNOSTIC_GUIDE.md) - 로그인 실패 해결 방법 ⭐ NEW
 - 🔍 [프로덕션 로그 분석 (2025-01-11)](./docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md) - 상세 로그 분석
 - 🗄️ [P0: Supabase 테이블 설정](./docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md) - 긴급 DB 설정
