@@ -1,7 +1,7 @@
 # P0: Supabase 테이블 생성 가이드
 
 **우선순위**: 🔴 P0 (즉시 실행)
-**소요 시간**: 30분
+**소요 시간**: 20분
 **위험도**: LOW
 **날짜**: 2025-01-11
 
@@ -15,236 +15,190 @@
    Error: Could not find the table 'public.sessions' in the schema cache
 ```
 
-**원인**: Supabase Database에 `sessions` 테이블 미생성
-**해결**: `schema/init.sql` 실행하여 전체 스키마 생성
+**원인**: Supabase Database에 테이블 미생성
+**해결**: 프로젝트의 `schema/init.sql` 실행하여 전체 스키마 생성
 
 ---
 
-## 🚀 빠른 실행 (5단계)
+## 🚀 빠른 실행 (3단계)
 
 ### 1단계: Supabase Dashboard 접속
 
-```
 1. https://supabase.com 접속
-2. 프로젝트 선택
-3. 좌측 메뉴 → SQL Editor 클릭
-4. "New Query" 버튼 클릭
-```
+2. BeMore 프로젝트 선택
+3. 좌측 메뉴 → **SQL Editor** 클릭
+4. **"New Query"** 버튼 클릭
 
-### 2단계: init.sql 복사
+### 2단계: schema/init.sql 실행
 
-**로컬에서 복사**:
+**로컬에서 파일 내용 복사**:
 ```bash
 cat schema/init.sql
 ```
 
-또는 아래 전체 SQL을 복사하세요:
+**또는 아래 SQL을 전체 복사**:
 
 ```sql
--- =====================================================
--- BeMore Backend Database Schema
--- Version: 1.0
--- Date: 2025-01-11
--- Description: 심리 상담 플랫폼 전체 스키마
--- =====================================================
+-- ============================================================
+-- BeMore Backend - 초기 스키마 생성 스크립트
+-- ============================================================
+-- 작성일: 2025-01-10
+-- 용도: Supabase PostgreSQL 데이터베이스 초기화
+-- 실행 위치: Supabase Dashboard → SQL Editor
+-- ============================================================
 
--- 1. users 테이블 생성
-CREATE TABLE IF NOT EXISTS public.users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username VARCHAR(50) UNIQUE NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  "profileImage" TEXT,
-  "refreshToken" TEXT,
-  "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-  "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+-- 기존 테이블 삭제 (주의: 모든 데이터 삭제!)
+DROP TABLE IF EXISTS "feedbacks" CASCADE;
+DROP TABLE IF EXISTS "user_preferences" CASCADE;
+DROP TABLE IF EXISTS "reports" CASCADE;
+DROP TABLE IF EXISTS "sessions" CASCADE;
+DROP TABLE IF EXISTS "counselings" CASCADE;
+DROP TABLE IF EXISTS "users" CASCADE;
+
+-- ============================================================
+-- 1. Users 테이블
+-- ============================================================
+CREATE TABLE "users" (
+  "id" SERIAL PRIMARY KEY,
+  "username" VARCHAR(50) NOT NULL UNIQUE,
+  "email" VARCHAR(100) NOT NULL UNIQUE,
+  "password" VARCHAR(255) NOT NULL,
+  "name" VARCHAR(100),
+  "profileImage" VARCHAR(255),
+  "role" VARCHAR(20) DEFAULT 'user',
+  "isActive" BOOLEAN DEFAULT true,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. counselings 테이블 생성
-CREATE TABLE IF NOT EXISTS public.counselings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "userId" UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+-- Users 인덱스
+CREATE INDEX "idx_users_username" ON "users" ("username");
+CREATE INDEX "idx_users_email" ON "users" ("email");
+CREATE INDEX "idx_users_created_at" ON "users" ("createdAt");
+
+-- ============================================================
+-- 2. Counselings 테이블
+-- ============================================================
+CREATE TABLE "counselings" (
+  "id" SERIAL PRIMARY KEY,
+  "userId" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "type" VARCHAR(50),
+  "status" VARCHAR(20) DEFAULT 'pending',
+  "notes" TEXT,
+  "scheduledAt" TIMESTAMP WITH TIME ZONE,
+  "completedAt" TIMESTAMP WITH TIME ZONE,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Counselings 인덱스
+CREATE INDEX "idx_counselings_user_id" ON "counselings" ("userId");
+CREATE INDEX "idx_counselings_status" ON "counselings" ("status");
+CREATE INDEX "idx_counselings_scheduled_at" ON "counselings" ("scheduledAt");
+
+-- ============================================================
+-- 3. Sessions 테이블 (⭐ CRITICAL - 프로덕션 에러 해결)
+-- ============================================================
+CREATE TABLE "sessions" (
+  "id" SERIAL PRIMARY KEY,
+  "sessionId" VARCHAR(64) NOT NULL UNIQUE,
+  "userId" VARCHAR(64) NOT NULL,
+  "counselorId" VARCHAR(64),
+  "status" VARCHAR(20) DEFAULT 'active' CHECK ("status" IN ('active', 'paused', 'ended')),
   "startedAt" BIGINT NOT NULL,
   "endedAt" BIGINT,
-  duration INTEGER,
+  "duration" INTEGER,
+  "counters" JSONB DEFAULT '{}',
+  "emotionsData" JSONB DEFAULT '[]',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sessions 인덱스
+CREATE UNIQUE INDEX "idx_sessions_session_id" ON "sessions" ("sessionId");
+CREATE INDEX "idx_sessions_user_id" ON "sessions" ("userId");
+CREATE INDEX "idx_sessions_created_at" ON "sessions" ("createdAt");
+CREATE INDEX "idx_sessions_user_started" ON "sessions" ("userId", "startedAt");
+CREATE INDEX "idx_sessions_user_ended" ON "sessions" ("userId", "endedAt");
+
+-- ============================================================
+-- 4. Reports 테이블
+-- ============================================================
+CREATE TABLE "reports" (
+  "id" SERIAL PRIMARY KEY,
+  "sessionId" VARCHAR(64) NOT NULL,
+  "userId" VARCHAR(64) NOT NULL,
+  "reportType" VARCHAR(50) DEFAULT 'session_summary',
   "emotionSummary" JSONB,
-  notes TEXT,
-  "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-  "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+  "recommendations" TEXT,
+  "generatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. sessions 테이블 생성 (⭐ CRITICAL)
-CREATE TABLE IF NOT EXISTS public.sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "sessionId" VARCHAR(64) UNIQUE NOT NULL,
-  "userId" UUID REFERENCES public.users(id) ON DELETE SET NULL,
-  "counselorId" UUID,
-  status VARCHAR(20) DEFAULT 'active',
-  "startTime" TIMESTAMPTZ DEFAULT NOW(),
-  "endTime" TIMESTAMPTZ,
-  metadata JSONB,
-  "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-  "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+-- Reports 인덱스
+CREATE INDEX "idx_reports_session_id" ON "reports" ("sessionId");
+CREATE INDEX "idx_reports_user_id" ON "reports" ("userId");
+CREATE INDEX "idx_reports_generated_at" ON "reports" ("generatedAt");
+
+-- ============================================================
+-- 5. UserPreferences 테이블
+-- ============================================================
+CREATE TABLE "user_preferences" (
+  "id" SERIAL PRIMARY KEY,
+  "userId" INTEGER NOT NULL UNIQUE REFERENCES "users"("id") ON DELETE CASCADE,
+  "language" VARCHAR(10) DEFAULT 'ko',
+  "theme" VARCHAR(20) DEFAULT 'light',
+  "notifications" BOOLEAN DEFAULT true,
+  "preferences" JSONB DEFAULT '{}',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. reports 테이블 생성
-CREATE TABLE IF NOT EXISTS public.reports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "sessionId" UUID NOT NULL REFERENCES public.sessions(id) ON DELETE CASCADE,
-  "generatedAt" TIMESTAMPTZ DEFAULT NOW(),
-  "pdfUrl" TEXT,
-  summary JSONB,
-  "createdAt" TIMESTAMPTZ DEFAULT NOW()
+-- UserPreferences 인덱스
+CREATE UNIQUE INDEX "idx_user_preferences_user_id" ON "user_preferences" ("userId");
+
+-- ============================================================
+-- 6. Feedbacks 테이블
+-- ============================================================
+CREATE TABLE "feedbacks" (
+  "id" SERIAL PRIMARY KEY,
+  "userId" INTEGER REFERENCES "users"("id") ON DELETE SET NULL,
+  "sessionId" VARCHAR(64),
+  "rating" INTEGER CHECK ("rating" >= 1 AND "rating" <= 5),
+  "comment" TEXT,
+  "category" VARCHAR(50),
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. user_preferences 테이블 생성
-CREATE TABLE IF NOT EXISTS public.user_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "userId" UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  "deviceId" VARCHAR(255),
-  preferences JSONB DEFAULT '{}'::jsonb,
-  "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-  "updatedAt" TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT unique_user_or_device UNIQUE NULLS NOT DISTINCT ("userId", "deviceId")
-);
+-- Feedbacks 인덱스
+CREATE INDEX "idx_feedbacks_user_id" ON "feedbacks" ("userId");
+CREATE INDEX "idx_feedbacks_session_id" ON "feedbacks" ("sessionId");
+CREATE INDEX "idx_feedbacks_created_at" ON "feedbacks" ("createdAt");
 
--- 6. feedbacks 테이블 생성
-CREATE TABLE IF NOT EXISTS public.feedbacks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "userId" UUID REFERENCES public.users(id) ON DELETE SET NULL,
-  "sessionId" UUID REFERENCES public.sessions(id) ON DELETE SET NULL,
-  rating INTEGER CHECK (rating BETWEEN 1 AND 5),
-  comment TEXT,
-  "createdAt" TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 인덱스 생성 (성능 최적화)
-CREATE INDEX IF NOT EXISTS idx_sessions_sessionId ON public.sessions("sessionId");
-CREATE INDEX IF NOT EXISTS idx_sessions_userId ON public.sessions("userId");
-CREATE INDEX IF NOT EXISTS idx_sessions_status ON public.sessions(status);
-CREATE INDEX IF NOT EXISTS idx_counselings_userId ON public.counselings("userId");
-CREATE INDEX IF NOT EXISTS idx_reports_sessionId ON public.reports("sessionId");
-CREATE INDEX IF NOT EXISTS idx_feedbacks_userId ON public.feedbacks("userId");
-CREATE INDEX IF NOT EXISTS idx_feedbacks_sessionId ON public.feedbacks("sessionId");
-
+-- ============================================================
 -- 완료 메시지
-DO $$
-BEGIN
-  RAISE NOTICE '✅ BeMore Backend 스키마 초기화 완료!';
-  RAISE NOTICE '   - 6개 테이블 생성 완료';
-  RAISE NOTICE '   - 7개 인덱스 생성 완료';
-END $$;
+-- ============================================================
+SELECT 'BeMore Backend 스키마 초기화 완료!' AS status;
 ```
 
-### 3단계: SQL 실행
-
-```
-1. SQL Editor에 붙여넣기
-2. "Run" 버튼 클릭 (또는 Ctrl/Cmd + Enter)
-3. 성공 메시지 확인:
-   ✅ BeMore Backend 스키마 초기화 완료!
-```
+**SQL Editor에서 실행**:
+1. 위 SQL 전체를 SQL Editor에 붙여넣기
+2. **"Run"** 버튼 클릭 (또는 Ctrl/Cmd + Enter)
+3. 성공 메시지 확인
 
 **예상 결과**:
 ```
 Success. No rows returned.
-✅ BeMore Backend 스키마 초기화 완료!
-   - 6개 테이블 생성 완료
-   - 7개 인덱스 생성 완료
+[
+  {
+    "status": "BeMore Backend 스키마 초기화 완료!"
+  }
+]
 ```
 
-### 4단계: RLS 정책 적용
-
-**새 쿼리 생성**:
-```
-SQL Editor → New Query
-```
-
-**아래 SQL 복사 및 실행**:
-```sql
--- =====================================================
--- BeMore Backend RLS Policies
--- Backend API 전용 접근 정책
--- =====================================================
-
--- 1. sessions 테이블 RLS 설정
-ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Backend only - sessions"
-ON public.sessions
-FOR ALL
-TO authenticated, anon
-USING (true)
-WITH CHECK (true);
-
--- 2. reports 테이블 RLS 설정
-ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Backend only - reports"
-ON public.reports
-FOR ALL
-TO authenticated, anon
-USING (true)
-WITH CHECK (true);
-
--- 3. counselings 테이블 RLS 설정
-ALTER TABLE public.counselings ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Backend only - counselings"
-ON public.counselings
-FOR ALL
-TO authenticated, anon
-USING (true)
-WITH CHECK (true);
-
--- 4. users 테이블 RLS 설정
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Backend only - users"
-ON public.users
-FOR ALL
-TO authenticated, anon
-USING (true)
-WITH CHECK (true);
-
--- 5. user_preferences 테이블 RLS 설정
-ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Backend only - user_preferences"
-ON public.user_preferences
-FOR ALL
-TO authenticated, anon
-USING (true)
-WITH CHECK (true);
-
--- 6. feedbacks 테이블 RLS 설정
-ALTER TABLE public.feedbacks ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Backend only - feedbacks"
-ON public.feedbacks
-FOR ALL
-TO authenticated, anon
-USING (true)
-WITH CHECK (true);
-
--- 완료 메시지
-DO $$
-BEGIN
-  RAISE NOTICE '✅ RLS 정책 적용 완료!';
-  RAISE NOTICE '   - 6개 테이블 RLS 활성화';
-  RAISE NOTICE '   - Backend 전용 정책 설정';
-END $$;
-```
-
-**예상 결과**:
-```
-Success. No rows returned.
-✅ RLS 정책 적용 완료!
-   - 6개 테이블 RLS 활성화
-   - Backend 전용 정책 설정
-```
-
-### 5단계: 검증
+### 3단계: 검증
 
 **테이블 생성 확인**:
 ```sql
@@ -265,30 +219,34 @@ user_preferences
 users
 ```
 
-**테스트 데이터 삽입**:
+**sessions 테이블 구조 확인**:
 ```sql
--- 테스트 세션 삽입
-INSERT INTO sessions (
-  "sessionId",
-  "userId",
-  status
-) VALUES (
-  'test_' || extract(epoch from now())::text,
-  NULL,
-  'active'
-) RETURNING *;
-
--- 테스트 데이터 조회
-SELECT * FROM sessions
-WHERE "sessionId" LIKE 'test_%'
-ORDER BY "createdAt" DESC
-LIMIT 1;
-
--- 테스트 데이터 삭제
-DELETE FROM sessions WHERE "sessionId" LIKE 'test_%';
+-- sessions 테이블 컬럼 확인
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'sessions'
+ORDER BY ordinal_position;
 ```
 
-**예상 결과**: 테스트 세션이 삽입되고 조회되면 성공!
+---
+
+## ⚠️ RLS (Row Level Security) 설정
+
+**참고**: Backend는 `DATABASE_URL`로 직접 PostgreSQL 연결을 사용하므로 RLS를 우회합니다. RLS는 Supabase 클라이언트 SDK를 사용하는 경우에만 적용됩니다.
+
+현재 Backend 구현에서는 **RLS 설정이 필수가 아닙니다**. 하지만 향후 Supabase 클라이언트를 사용할 경우를 대비하여 설정할 수 있습니다:
+
+```sql
+-- Sessions 테이블 RLS 활성화
+ALTER TABLE "sessions" ENABLE ROW LEVEL SECURITY;
+
+-- Backend 전용 정책 (모든 접근 허용)
+CREATE POLICY "Backend full access - sessions"
+ON "sessions"
+FOR ALL
+USING (true)
+WITH CHECK (true);
+```
 
 ---
 
@@ -301,44 +259,52 @@ Supabase Dashboard → Table Editor
 ```
 
 **확인 사항**:
-- [ ] `sessions` 테이블 표시됨
-- [ ] 6개 테이블 모두 생성됨
-- [ ] 각 테이블 구조 정상
+- [x] `sessions` 테이블 표시됨
+- [x] 6개 테이블 모두 생성됨 (users, counselings, sessions, reports, user_preferences, feedbacks)
+- [x] `sessions` 테이블에 `emotionsData` 컬럼 존재 (JSONB 타입)
 
 ### 2. Render 로그 확인
-
-```
-Render Dashboard → Logs
-```
 
 **5-10분 후 새 세션 시작하고 로그 확인**:
 
 **이전 (에러)**:
 ```
 ❌ [CRITICAL] Failed to fetch session from Supabase:
-   Error: Could not find the table 'public.sessions'
+   Error: Could not find the table 'public.sessions' in the schema cache
 ```
 
 **수정 후 (정상)**:
 ```
-✅ [CRITICAL] Emotion saved to Supabase
-💾 Emotion data saved: { sessionId: 'sess_...', emotion: 'angry' }
+✅ [CRITICAL] Emotion saved to Supabase: angry
+✅ [CRITICAL] Total emotions for session: 3
 ```
 
-### 3. 프론트엔드 테스트
+### 3. 테스트 데이터 삽입 (선택)
 
-**테스트 시나리오**:
-1. 프론트엔드에서 새 세션 시작
-2. 얼굴 랜드마크 전송 (20개 이상)
-3. 감정 분석 완료 대기
-4. Supabase Table Editor에서 데이터 확인
-
-**검증**:
 ```sql
--- 최근 세션 조회
-SELECT * FROM sessions
+-- 테스트 세션 삽입
+INSERT INTO "sessions" (
+  "sessionId",
+  "userId",
+  "status",
+  "startedAt",
+  "emotionsData"
+) VALUES (
+  'test_' || extract(epoch from now())::text,
+  'test_user_123',
+  'active',
+  extract(epoch from now())::bigint * 1000,
+  '[]'::jsonb
+) RETURNING *;
+
+-- 테스트 데이터 조회
+SELECT * FROM "sessions"
+WHERE "sessionId" LIKE 'test_%'
 ORDER BY "createdAt" DESC
-LIMIT 5;
+LIMIT 1;
+
+-- 테스트 데이터 삭제
+DELETE FROM "sessions" WHERE "sessionId" LIKE 'test_%';
 ```
 
 ---
@@ -360,46 +326,7 @@ SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public';
 ```
 
-**재실행**: 위의 1-5단계 다시 실행
-
----
-
-## ⚠️ 주의사항
-
-### DATABASE_URL 확인
-
-**Render Environment Variables**:
-```
-DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/postgres
-```
-
-**형식 확인**:
-- ✅ `postgresql://` 프로토콜
-- ✅ Supabase Connection Pooler URL 사용
-- ✅ Password 특수문자 URL 인코딩
-
-**연결 테스트** (Supabase SQL Editor):
-```sql
-SELECT current_database(), current_user;
-```
-
-### RLS 정책 주의
-
-**Backend는 직접 연결 사용**:
-- Backend: `DATABASE_URL`로 직접 PostgreSQL 연결
-- RLS 정책: Supabase 클라이언트 SDK 사용 시만 적용
-- 결론: Backend는 RLS 우회 가능 (의도된 동작)
-
-**확인 방법**:
-```javascript
-// services/socket/landmarksHandler.js:188-228
-// Supabase 클라이언트 사용 여부 확인
-if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-  // Supabase SDK 사용 (RLS 적용됨)
-} else {
-  // DATABASE_URL 직접 연결 (RLS 우회)
-}
-```
+**재실행**: 위의 2단계 다시 실행
 
 ---
 
@@ -428,12 +355,8 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
 ```
 💾 [CRITICAL] Attempting to save emotion to database...
 🔵 [EMOTION_SAVE] Using Supabase (Production)
-✅ [CRITICAL] Emotion saved to Supabase
-📊 Emotion data: {
-  sessionId: 'sess_1762868391052_c24c891c',
-  emotion: 'angry',
-  timestamp: 1762868564728
-}
+✅ [CRITICAL] Emotion saved to Supabase: angry
+✅ [CRITICAL] Total emotions for session: 3
 ```
 
 ---
@@ -441,19 +364,35 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
 ## 🎯 다음 단계
 
 ### P0 완료 후
-1. ✅ 15분간 로그 모니터링
-2. ✅ 테스트 세션 실행
-3. ✅ 데이터 저장 확인
+
+1. ✅ 15-30분간 로그 모니터링
+2. ✅ 테스트 세션 실행 (프론트엔드에서)
+3. ✅ 데이터 저장 확인 (Supabase Table Editor)
 4. ✅ P0 완료 표시
 
-### P1 준비
-- P0 안정화 확인 후
-- 24시간 내 P1 코드 수정 진행
-- 문서: [P1 코드 수정 가이드](#) (작성 예정)
+### P1 코드 수정 완료
+
+- ✅ Gemini 타임아웃 증가 (30s → 45s)
+- ✅ 프레임 버퍼 제한 (40개)
+- ✅ 환경 변수 설정 필요 (Render)
+
+**Render 환경 변수 추가 필요**:
+```
+GEMINI_TIMEOUT_MS=45000
+MAX_FRAMES_PER_ANALYSIS=40
+```
+
+---
+
+## 📚 관련 문서
+
+- **Production Log Analysis**: [docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md](../troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md)
+- **Schema 파일**: [schema/init.sql](../../schema/init.sql)
+- **Frontend Phase 11 Response**: [docs/frontend/BACKEND_PHASE11_RESPONSE.md](../frontend/BACKEND_PHASE11_RESPONSE.md)
 
 ---
 
 **작성**: Backend 개발팀
 **최종 수정**: 2025-01-11
-**실행 시간**: 30분 예상
+**실행 시간**: 20분 예상
 **위험도**: LOW ✅
