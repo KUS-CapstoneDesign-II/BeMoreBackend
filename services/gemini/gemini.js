@@ -4,8 +4,8 @@ require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ⏱️ Timeout configuration (increased from 5s to 30s)
-const GEMINI_TIMEOUT_MS = 30000; // 30 seconds - allows Gemini to respond after WebSocket closure
+// ⏱️ Timeout configuration (configurable via environment variable)
+const GEMINI_TIMEOUT_MS = parseInt(process.env.GEMINI_TIMEOUT_MS) || 45000; // Default 45 seconds (increased from 30s)
 
 /**
  * Wraps a promise with a timeout mechanism

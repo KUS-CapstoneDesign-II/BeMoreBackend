@@ -12,6 +12,10 @@ const { getAccumulatedSpeechText, clearSpeechBuffer, clearAllSpeechBuffer } = re
 // 10초 분석 주기 (기존 60초에서 단축)
 const ANALYSIS_INTERVAL_MS = 10 * 1000;
 
+// 프레임 버퍼 최대 크기 (configurable via environment variable)
+// 40 프레임 = ~6-8초 분량 (5-6 FPS 기준), Gemini 타임아웃 방지
+const MAX_FRAMES_PER_ANALYSIS = parseInt(process.env.MAX_FRAMES_PER_ANALYSIS) || 40;
+
 /**
  * Landmarks WebSocket 핸들러
  * - 얼굴 표정 데이터 수신
@@ -74,8 +78,8 @@ function handleLandmarks(ws, session) {
     console.log(`🔵 [분석 사이클 #${analysisCycleCount}] 분석 시작 - 버퍼: ${session.landmarkBuffer.length}개 프레임`);
 
     try {
-      // 분석용 데이터 복사
-      const frames = [...session.landmarkBuffer];
+      // 분석용 데이터 복사 (최대 40개 프레임만 사용)
+      const frames = session.landmarkBuffer.slice(-MAX_FRAMES_PER_ANALYSIS);
       const sttText = session.sttBuffer.join(' ');
 
       // 버퍼 초기화 (다음 주기를 위해)
