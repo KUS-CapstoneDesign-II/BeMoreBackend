@@ -23,7 +23,8 @@ async function signup(req, res) {
         success: false,
         error: {
           code: 'USER_EXISTS',
-          message: 'Username or email already exists',
+          message: '이미 사용 중인 이메일입니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -67,7 +68,8 @@ async function signup(req, res) {
       success: false,
       error: {
         code: 'SIGNUP_ERROR',
-        message: err.message,
+        message: '서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        requestId: req.requestId,
       },
     });
   }
@@ -89,7 +91,8 @@ async function login(req, res) {
         success: false,
         error: {
           code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password',
+          message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -102,7 +105,8 @@ async function login(req, res) {
         success: false,
         error: {
           code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password',
+          message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -136,7 +140,8 @@ async function login(req, res) {
       success: false,
       error: {
         code: 'LOGIN_ERROR',
-        message: err.message,
+        message: '서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        requestId: req.requestId,
       },
     });
   }
@@ -155,7 +160,8 @@ async function refresh(req, res) {
         success: false,
         error: {
           code: 'MISSING_REFRESH_TOKEN',
-          message: 'Refresh token is required',
+          message: '리프레시 토큰이 필요합니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -169,7 +175,8 @@ async function refresh(req, res) {
         success: false,
         error: {
           code: 'INVALID_REFRESH_TOKEN',
-          message: 'Invalid or expired refresh token',
+          message: '유효하지 않거나 만료된 리프레시 토큰입니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -182,7 +189,8 @@ async function refresh(req, res) {
         success: false,
         error: {
           code: 'INVALID_REFRESH_TOKEN',
-          message: 'Refresh token does not match',
+          message: '리프레시 토큰이 일치하지 않습니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -225,7 +233,8 @@ async function logout(req, res) {
         success: false,
         error: {
           code: 'MISSING_REFRESH_TOKEN',
-          message: 'Refresh token is required',
+          message: '리프레시 토큰이 필요합니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -238,7 +247,7 @@ async function logout(req, res) {
       // Token이 만료되었거나 유효하지 않아도 로그아웃은 성공 처리
       return res.status(200).json({
         success: true,
-        message: 'Logged out successfully',
+        message: '로그아웃되었습니다.',
       });
     }
 
@@ -252,7 +261,7 @@ async function logout(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: 'Logged out successfully',
+      message: '로그아웃되었습니다.',
     });
   } catch (err) {
     errorHandler.handle(err, {
@@ -288,7 +297,8 @@ async function getMe(req, res) {
         success: false,
         error: {
           code: 'USER_NOT_FOUND',
-          message: 'User not found',
+          message: '사용자를 찾을 수 없습니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -336,7 +346,8 @@ async function updateProfile(req, res) {
         success: false,
         error: {
           code: 'USER_NOT_FOUND',
-          message: 'User not found',
+          message: '사용자를 찾을 수 없습니다.',
+          requestId: req.requestId,
         },
       });
     }
@@ -349,7 +360,8 @@ async function updateProfile(req, res) {
           success: false,
           error: {
             code: 'USERNAME_EXISTS',
-            message: 'Username already exists',
+            message: '이미 사용 중인 사용자 이름입니다.',
+            requestId: req.requestId,
           },
         });
       }
