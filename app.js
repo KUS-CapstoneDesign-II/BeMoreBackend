@@ -77,23 +77,48 @@ morgan.token('id', (req) => req.requestId);
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms reqId=:id'));
 
 // CORS 설정 (프론트엔드 연동)
-const defaultAllowed = ['http://localhost:5173', 'https://be-more-frontend.vercel.app'];
+const defaultAllowed = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://be-more-frontend.vercel.app'
+];
 const envAllowed = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowed;
 
+// Log CORS configuration on startup
+console.log('🌐 CORS allowed origins:', allowedOrigins);
+
 app.use(cors({
   origin(origin, cb) {
-    if (!origin) return cb(null, true); // 서버-서버/헬스체크 등
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(null, false);
+    // Allow requests with no origin (server-to-server, mobile apps, Postman)
+    if (!origin) {
+      return cb(null, true);
+    }
+
+    // Check exact match
+    if (allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
+
+    // Check wildcard for Vercel preview deployments
+    if (origin.match(/^https:\/\/be-more-frontend.*\.vercel\.app$/)) {
+      console.log('✅ CORS: Allowed Vercel preview deployment:', origin);
+      return cb(null, true);
+    }
+
+    // Reject with error
+    console.warn('❌ CORS: Blocked origin:', origin);
+    return cb(new Error(`CORS policy: Origin ${origin} is not allowed`), false);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-device-id', 'x-csrf-token', 'x-timestamp', 'x-client-version'],
-  exposedHeaders: ['x-request-id', 'x-device-id', 'x-csrf-token', 'x-timestamp']
+  exposedHeaders: ['x-request-id', 'x-device-id', 'x-csrf-token', 'x-timestamp'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 // Preflight handled by CORS middleware (Express v5-safe)
 
