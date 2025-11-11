@@ -2,7 +2,7 @@
 
 > 실시간 멀티모달 감정 분석을 통한 인지행동치료(CBT) 상담 지원 플랫폼의 백엔드 API 서버
 
-[![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
+[![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](./LICENSE)
 
@@ -548,6 +548,16 @@ POST /api/emotion
 
 **분석 모니터링** 📊
 ```bash
+# Core Web Vitals 메트릭 전송
+POST /api/analytics/vitals
+{
+  "metric": "LCP",  // CLS | FCP | FID | LCP | TTFB | INP
+  "value": 2500,
+  "pathname": "/app/session",
+  "id": "v3-1704960000000-123",
+  "navigationType": "navigate"
+}
+
 # 프론트엔드 성능 알림
 POST /api/analytics/alert
 {
@@ -994,13 +1004,19 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 
 ### CORS 정책
 
-**허용 Origin** (근거: app.js:78-95):
-- `http://localhost:5173` (개발)
+**허용 Origin** (근거: app.js:78-122):
+- `http://localhost:5173` (개발 - Vite)
+- `http://localhost:3000` (개발 - 대체 포트)
 - `https://be-more-frontend.vercel.app` (프로덕션)
+- `https://be-more-frontend-*.vercel.app` (Vercel Preview Deployments - 와일드카드)
 - 환경 변수 `FRONTEND_URLS`로 커스터마이징 가능
 
 **허용 헤더**:
-- `Content-Type`, `Authorization`, `x-request-id`, `x-device-id`, `x-csrf-token`
+- `Content-Type`, `Authorization`, `x-request-id`, `x-device-id`, `x-csrf-token`, `x-timestamp`, `x-client-version`
+
+**CORS 로깅**:
+- 허용된 Origin: `✅ CORS: Allowed Vercel preview deployment: {origin}`
+- 차단된 Origin: `❌ CORS: Blocked origin: {origin}`
 
 ---
 
@@ -1044,7 +1060,44 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 
 ## 📄 변경 기록
 
-### v1.2.1 (2025-01-10) ⭐ 최신
+### v1.2.2 (2025-01-11) ⭐ 최신
+
+**🌐 CORS 정책 개선**
+- `localhost:3000` 추가 (대체 개발 포트 지원)
+- Vercel Preview Deployments 와일드카드 지원 (`https://be-more-frontend-*.vercel.app`)
+- CORS 허용/차단 상세 로깅 추가
+- `optionsSuccessStatus: 204` 설정으로 Preflight 응답 개선
+
+**📊 Analytics Vitals 엔드포인트 추가**
+- `POST /api/analytics/vitals` - Core Web Vitals 메트릭 수신
+- 6가지 메트릭 지원: CLS, FCP, FID, LCP, TTFB, INP
+- Zod 스키마 유효성 검증 (metric, value, pathname)
+- Web Vitals 로그 수집 (향후 DB 저장 지원 예정)
+
+**🇰🇷 에러 메시지 한국어 변환**
+- `authController.js` 전체 에러 메시지 한국어로 변환
+- Frontend Integration Guide 요구사항 반영
+- 사용자 표시용 메시지 현지화 완료
+- 모든 에러 응답에 `requestId` 필드 추가 (디버깅 지원)
+
+**📚 Frontend 협업 문서 추가**
+- `docs/frontend/BACKEND_UPDATE_20250111.md` - Backend 업데이트 공지
+- CORS 설정, Analytics API, 에러 메시지 변경 내역 포함
+- 테스트 방법 및 코드 예시 제공
+- Frontend 액션 아이템 명시 (Breaking Changes 없음)
+
+**🔧 개선사항**
+- requestId 추적 일관성 향상 (모든 에러 응답 포함)
+- OPTIONS 요청 처리 개선
+- CORS 설정 시작 시 로깅 추가
+
+**📦 배포**
+- Render 자동 배포 완료 (commit dcec327, 7e8c91e, cbd9cdf)
+- 프로덕션 적용 완료
+
+---
+
+### v1.2.1 (2025-01-10)
 
 **🎭 감정 타입 확장 (5개 → 8개)**
 - MediaPipe 표준 8가지 감정 지원 (Ekman 보편적 감정 이론 기반)
@@ -1208,9 +1261,9 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 
 ---
 
-**마지막 업데이트**: 2025-11-11
-**프로젝트 버전**: 1.2.1
-**문서 버전**: 3.4.0
+**마지막 업데이트**: 2025-01-11
+**프로젝트 버전**: 1.2.2
+**문서 버전**: 3.5.0
 
 ---
 
@@ -1226,7 +1279,10 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🗄️ [스키마 관리 가이드](./schema/README.md) - SQL 기반 스키마 관리
 
 ### 프론트엔드 협업
+- 📢 [Backend 업데이트 공지 (2025-01-11)](./docs/frontend/BACKEND_UPDATE_20250111.md) - 최신 변경사항 ⭐ NEW
 - 🎯 [User Preferences 최적화 가이드](./docs/frontend/FRONTEND_PREFERENCES_GUIDE.md) - API 최적화 방법
+- 🤖 [AI Counseling 통합 가이드](./docs/frontend/AI_COUNSELING_INTEGRATION_GUIDE.md) - 8가지 감정 AI 상담
+- 🎭 [감정 타입 지원 공식 답변](./docs/frontend/EMOTION_TYPE_SUPPORT_RESPONSE.md) - 8가지 감정 지원
 - 🤝 [Frontend 협력 메시지](./docs/frontend/FRONTEND_COLLABORATION_MESSAGE_2025-11-04.md) - Frontend 팀 가이드
 - 📱 [Frontend 빠른 시작](./docs/frontend/FRONTEND_QUICK_START.md) - 프론트엔드 개발 시작 가이드
 
