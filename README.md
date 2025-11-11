@@ -1095,6 +1095,20 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - Render 자동 배포 완료 (commit dcec327, 7e8c91e, cbd9cdf)
 - 프로덕션 적용 완료
 
+**🚨 프로덕션 긴급 수정 (2025-01-11 오후)**
+- P0: Supabase Database 테이블 생성 완료 (로그인 500 에러 해결)
+  - 6개 테이블 생성: `users`, `sessions`, `counselings`, `reports`, `user_preferences`, `feedbacks`
+  - 데이터베이스 연결 성공 및 정상 작동 확인
+- P1: Gemini API 성능 최적화 (타임아웃 문제 해결)
+  - Gemini 타임아웃 증가: 30초 → 45초 (환경변수 지원)
+  - 프레임 버퍼 제한 추가: 무제한 → 최대 40개 (메모리 누수 방지)
+  - 예상 성능 향상: 타임아웃 실패율 33% → <5%
+- 관련 문서:
+  - `docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md` - 상세 로그 분석
+  - `docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md` - 테이블 생성 가이드
+  - `docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md` - Frontend 팀 공지 ⭐ NEW
+- 배포: commit fcd95ff (P1 코드), commit 3890d73 (P0 문서), commit cee5bdd (Frontend 공지)
+
 ---
 
 ### v1.2.1 (2025-01-10)
@@ -1279,7 +1293,8 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🗄️ [스키마 관리 가이드](./schema/README.md) - SQL 기반 스키마 관리
 
 ### 프론트엔드 협업
-- 📢 [Backend 업데이트 공지 (2025-01-11)](./docs/frontend/BACKEND_UPDATE_20250111.md) - 최신 변경사항 ⭐ NEW
+- 🚨 [프로덕션 긴급 수정 공지 (2025-01-11)](./docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md) - Database + Performance 수정 ⭐ HOT
+- 📢 [Backend 업데이트 공지 (2025-01-11)](./docs/frontend/BACKEND_UPDATE_20250111.md) - v1.2.2 변경사항
 - 🎯 [User Preferences 최적화 가이드](./docs/frontend/FRONTEND_PREFERENCES_GUIDE.md) - API 최적화 방법
 - 🤖 [AI Counseling 통합 가이드](./docs/frontend/AI_COUNSELING_INTEGRATION_GUIDE.md) - 8가지 감정 AI 상담
 - 🎭 [감정 타입 지원 공식 답변](./docs/frontend/EMOTION_TYPE_SUPPORT_RESPONSE.md) - 8가지 감정 지원
@@ -1294,3 +1309,7 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 📡 [API 엔드포인트 레퍼런스](./docs/guides/API_ENDPOINT_REFERENCE.md) - 완전한 API 문서
 - 🚀 [빠른 시작 가이드](./docs/guides/QUICK_START.md) - 프로젝트 시작하기
 - 🧪 [테스트 명령어 모음](./docs/guides/QUICK_TEST_COMMANDS.md) - 빠른 테스트 실행
+
+### 문제 해결 (Troubleshooting)
+- 🔍 [프로덕션 로그 분석 (2025-01-11)](./docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md) - 상세 로그 분석
+- 🗄️ [P0: Supabase 테이블 설정](./docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md) - 긴급 DB 설정
