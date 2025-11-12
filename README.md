@@ -1327,8 +1327,9 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🗄️ [스키마 관리 가이드](./schema/README.md) - SQL 기반 스키마 관리
 
 ### 프론트엔드 협업
-- 🎉 [DB 연결 복구 완료 (2025-01-11)](./docs/frontend/DB_CONNECTION_RESOLVED_20250111.md) - 테스트 준비 완료 ⭐ NEW
-- 🚨 [프로덕션 긴급 수정 공지 (2025-01-11)](./docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md) - Database + Performance 수정 ⭐ HOT
+- 🎯 [인증 시스템 완전 복구 (2025-01-12)](./docs/frontend/AUTH_FIXED_READY_FOR_TEST.md) - 회원가입/로그인 테스트 가능 🔥 HOT
+- 🎉 [DB 연결 복구 완료 (2025-01-11)](./docs/frontend/DB_CONNECTION_RESOLVED_20250111.md) - 테스트 준비 완료
+- 🚨 [프로덕션 긴급 수정 공지 (2025-01-11)](./docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md) - Database + Performance 수정
 - 📢 [Backend 업데이트 공지 (2025-01-11)](./docs/frontend/BACKEND_UPDATE_20250111.md) - v1.2.2 변경사항
 - 🎯 [User Preferences 최적화 가이드](./docs/frontend/FRONTEND_PREFERENCES_GUIDE.md) - API 최적화 방법
 - 🤖 [AI Counseling 통합 가이드](./docs/frontend/AI_COUNSELING_INTEGRATION_GUIDE.md) - 8가지 감정 AI 상담
