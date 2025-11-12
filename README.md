@@ -1327,6 +1327,7 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🗄️ [스키마 관리 가이드](./schema/README.md) - SQL 기반 스키마 관리
 
 ### 프론트엔드 협업
+- 🎉 [Backend 작업 완료 보고 (2025-01-12)](./docs/frontend/BACKEND_WORK_COMPLETE_20250112.md) - 전체 작업 완료 요약 ⭐ NEW
 - 🎯 [인증 시스템 완전 복구 (2025-01-12)](./docs/frontend/AUTH_FIXED_READY_FOR_TEST.md) - 회원가입/로그인 테스트 가능 🔥 HOT
 - 🎉 [DB 연결 복구 완료 (2025-01-11)](./docs/frontend/DB_CONNECTION_RESOLVED_20250111.md) - 테스트 준비 완료
 - 🚨 [프로덕션 긴급 수정 공지 (2025-01-11)](./docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md) - Database + Performance 수정
@@ -1347,8 +1348,9 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🧪 [테스트 명령어 모음](./docs/guides/QUICK_TEST_COMMANDS.md) - 빠른 테스트 실행
 
 ### 문제 해결 (Troubleshooting)
-- 🔧 [refreshToken Schema 수정 Post-mortem](./docs/troubleshooting/REFRESH_TOKEN_SCHEMA_FIX.md) - Schema-Model 불일치 해결 ⭐ NEW
-- ⚡ [DB 재생성 후 재연결 가이드](./docs/troubleshooting/DB_RECONNECTION_GUIDE.md) - DATABASE_URL 업데이트 (15분) ⭐ HOT
+- 🔴 [로그인 선택적 실패 (특정 계정만 성공)](./docs/troubleshooting/LOGIN_500_SELECTIVE_FAILURE.md) - 긴급 조사 중 🔥 URGENT
+- 🔧 [refreshToken Schema 수정 Post-mortem](./docs/troubleshooting/REFRESH_TOKEN_SCHEMA_FIX.md) - Schema-Model 불일치 해결
+- ⚡ [DB 재생성 후 재연결 가이드](./docs/troubleshooting/DB_RECONNECTION_GUIDE.md) - DATABASE_URL 업데이트 (15분)
 - 🚨 [로그인 500 에러 진단 가이드](./docs/troubleshooting/LOGIN_500_DIAGNOSTIC_GUIDE.md) - 로그인 실패 해결 방법
 - 🔍 [프로덕션 로그 분석 (2025-01-11)](./docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md) - 상세 로그 분석
 - 🗄️ [P0: Supabase 테이블 설정](./docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md) - 긴급 DB 설정
