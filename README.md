@@ -1126,6 +1126,23 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
   - `docs/frontend/DB_CONNECTION_RESOLVED_20250111.md` - Frontend 팀 공지 ⭐ NEW
 - 배포: commit 00a84db (진단 가이드), commit bdc0aeb (재연결 가이드)
 
+**🔧 refreshToken Schema 수정 (2025-01-12 새벽)**
+- **근본 원인**: Schema-Model 불일치로 인한 인증 실패
+  - Sequelize Model에는 `refreshToken` 필드 정의됨
+  - `schema/init.sql`에는 해당 컬럼 누락
+  - 코드 실행 시 `column "refreshToken" does not exist` 에러 발생
+- **즉시 수정**: 프로덕션 DB에 컬럼 추가
+  - `ALTER TABLE "users" ADD COLUMN "refreshToken" VARCHAR(500);`
+  - 회원가입/로그인 즉시 정상 작동
+- **재발 방지**: 스키마 파일 및 문서 업데이트
+  - `schema/init.sql` - refreshToken 컬럼 추가
+  - `docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md` - 스키마 업데이트
+  - `docs/troubleshooting/DB_RECONNECTION_GUIDE.md` - 스키마 업데이트
+- **Post-mortem**:
+  - `docs/troubleshooting/REFRESH_TOKEN_SCHEMA_FIX.md` - 상세 분석 및 재발 방지 조치 ⭐ NEW
+  - 타임라인: 23:31 에러 발견 → 23:50 수정 완료 (19분 소요)
+  - 교훈: DB 연결 성공 ≠ 시스템 정상, 실제 CRUD 테스트 필수
+
 ---
 
 ### v1.2.1 (2025-01-10)
@@ -1329,6 +1346,7 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🧪 [테스트 명령어 모음](./docs/guides/QUICK_TEST_COMMANDS.md) - 빠른 테스트 실행
 
 ### 문제 해결 (Troubleshooting)
+- 🔧 [refreshToken Schema 수정 Post-mortem](./docs/troubleshooting/REFRESH_TOKEN_SCHEMA_FIX.md) - Schema-Model 불일치 해결 ⭐ NEW
 - ⚡ [DB 재생성 후 재연결 가이드](./docs/troubleshooting/DB_RECONNECTION_GUIDE.md) - DATABASE_URL 업데이트 (15분) ⭐ HOT
 - 🚨 [로그인 500 에러 진단 가이드](./docs/troubleshooting/LOGIN_500_DIAGNOSTIC_GUIDE.md) - 로그인 실패 해결 방법
 - 🔍 [프로덕션 로그 분석 (2025-01-11)](./docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md) - 상세 로그 분석
