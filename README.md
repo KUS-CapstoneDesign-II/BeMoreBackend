@@ -1143,6 +1143,28 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
   - 타임라인: 23:31 에러 발견 → 23:50 수정 완료 (19분 소요)
   - 교훈: DB 연결 성공 ≠ 시스템 정상, 실제 CRUD 테스트 필수
 
+**🔧 Session Schema-Model 불일치 수정 (2025-11-13)** 🔥 CRITICAL
+- **근본 원인**: Sequelize 설정과 실제 DB 스키마 불일치로 인한 WebSocket 세션 기능 완전 마비
+  - Model: `underscored: true` (snake_case 예상) + `tableName: 'counseling_sessions'`
+  - Schema: camelCase 컬럼명 (`sessionId`, `createdAt`) + `sessions` 테이블
+  - 결과: 모든 세션 생성/조회 실패 (`column session_id does not exist`)
+- **즉시 수정**: Model 설정 변경 (DB 수정 불필요)
+  - `models/Session.js` 수정: `underscored: false`, `tableName: 'sessions'`
+  - 모든 인덱스 camelCase로 변경 (`sessionId`, `userId`, `createdAt`)
+  - 검증 스크립트 통과 확인 완료
+- **영향 범위**:
+  - WebSocket 세션 생성/조회/업데이트 복구
+  - 감정 분석 데이터 저장 정상화
+  - 사용자 세션 기능 완전 복구
+- **재발 방지**: refreshToken 문제와 동일한 패턴 재발
+  - Schema validation script 정기 실행 필수
+  - CI/CD 파이프라인 통합 권장
+  - Sequelize `underscored` 옵션 주의사항 문서화
+- **Post-mortem**:
+  - `docs/troubleshooting/SESSION_SCHEMA_MISMATCH_FIX.md` - 상세 분석 및 검증 ⭐ NEW
+  - 타임라인: 06:23 에러 발생 → [시간] 수정 완료
+  - 교훈: Schema-Model 일치성 검증 자동화 필수, `underscored` 옵션 신중히 사용
+
 ---
 
 ### v1.2.1 (2025-01-10)
