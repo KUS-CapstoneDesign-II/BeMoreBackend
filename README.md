@@ -2,7 +2,7 @@
 
 > 실시간 멀티모달 감정 분석을 통한 인지행동치료(CBT) 상담 지원 플랫폼의 백엔드 API 서버
 
-[![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
+[![Version](https://img.shields.io/badge/version-1.2.3-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](./LICENSE)
 
@@ -1095,55 +1095,11 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - Render 자동 배포 완료 (commit dcec327, 7e8c91e, cbd9cdf)
 - 프로덕션 적용 완료
 
-**🚨 프로덕션 긴급 수정 (2025-01-11 오후)**
-- P0: Supabase Database 테이블 생성 완료 (로그인 500 에러 해결)
-  - 6개 테이블 생성: `users`, `sessions`, `counselings`, `reports`, `user_preferences`, `feedbacks`
-  - 데이터베이스 연결 성공 및 정상 작동 확인
-- P1: Gemini API 성능 최적화 (타임아웃 문제 해결)
-  - Gemini 타임아웃 증가: 30초 → 45초 (환경변수 지원)
-  - 프레임 버퍼 제한 추가: 무제한 → 최대 40개 (메모리 누수 방지)
-  - 예상 성능 향상: 타임아웃 실패율 33% → <5%
-- 관련 문서:
-  - `docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md` - 상세 로그 분석
-  - `docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md` - 테이블 생성 가이드
-  - `docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md` - Frontend 팀 공지 ⭐ NEW
-- 배포: commit fcd95ff (P1 코드), commit 3890d73 (P0 문서), commit cee5bdd (Frontend 공지)
+---
 
-**🎉 DB 연결 복구 완료 (2025-01-11 저녁)**
-- IPv6/IPv4 호환성 문제 해결
-  - Render IPv4 전용 네트워크 ↔ Supabase Direct Connection IPv6 충돌
-  - Session Pooler 전환으로 IPv4 호환 확보
-- 비밀번호 인증 문제 해결
-  - 비밀번호 내 특수문자 `@` → URL 인코딩 `%40` 적용
-  - DATABASE_URL 파싱 오류 해결
-- 데이터베이스 연결 성공 (2025-01-11 23:15 UTC)
-  - 회원가입/로그인 API 정상 작동 확인
-  - 한국어 에러 메시지 작동 (Phase 11 검증)
-  - 총 문제 해결 시간: 17분 (22:58-23:15 UTC)
-- 관련 문서:
-  - `docs/troubleshooting/LOGIN_500_DIAGNOSTIC_GUIDE.md` - 로그인 500 에러 진단
-  - `docs/troubleshooting/DB_RECONNECTION_GUIDE.md` - DB 재연결 가이드
-  - `docs/frontend/DB_CONNECTION_RESOLVED_20250111.md` - Frontend 팀 공지 ⭐ NEW
-- 배포: commit 00a84db (진단 가이드), commit bdc0aeb (재연결 가이드)
+### v1.2.3 (2025-11-13) 🔥 CRITICAL
 
-**🔧 refreshToken Schema 수정 (2025-01-12 새벽)**
-- **근본 원인**: Schema-Model 불일치로 인한 인증 실패
-  - Sequelize Model에는 `refreshToken` 필드 정의됨
-  - `schema/init.sql`에는 해당 컬럼 누락
-  - 코드 실행 시 `column "refreshToken" does not exist` 에러 발생
-- **즉시 수정**: 프로덕션 DB에 컬럼 추가
-  - `ALTER TABLE "users" ADD COLUMN "refreshToken" VARCHAR(500);`
-  - 회원가입/로그인 즉시 정상 작동
-- **재발 방지**: 스키마 파일 및 문서 업데이트
-  - `schema/init.sql` - refreshToken 컬럼 추가
-  - `docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md` - 스키마 업데이트
-  - `docs/troubleshooting/DB_RECONNECTION_GUIDE.md` - 스키마 업데이트
-- **Post-mortem**:
-  - `docs/troubleshooting/REFRESH_TOKEN_SCHEMA_FIX.md` - 상세 분석 및 재발 방지 조치 ⭐ NEW
-  - 타임라인: 23:31 에러 발견 → 23:50 수정 완료 (19분 소요)
-  - 교훈: DB 연결 성공 ≠ 시스템 정상, 실제 CRUD 테스트 필수
-
-**🔧 Session Schema-Model 불일치 수정 (2025-11-13)** 🔥 CRITICAL
+**🔧 Session Schema-Model 불일치 수정**
 - **근본 원인**: Sequelize 설정과 실제 DB 스키마 불일치로 인한 WebSocket 세션 기능 완전 마비
   - Model: `underscored: true` (snake_case 예상) + `tableName: 'counseling_sessions'`
   - Schema: camelCase 컬럼명 (`sessionId`, `createdAt`) + `sessions` 테이블
@@ -1162,8 +1118,61 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
   - Sequelize `underscored` 옵션 주의사항 문서화
 - **Post-mortem**:
   - `docs/troubleshooting/SESSION_SCHEMA_MISMATCH_FIX.md` - 상세 분석 및 검증 ⭐ NEW
-  - 타임라인: 06:23 에러 발생 → [시간] 수정 완료
+  - 타임라인: 06:23 에러 발생 → 수정 완료 (f1decaa commit)
   - 교훈: Schema-Model 일치성 검증 자동화 필수, `underscored` 옵션 신중히 사용
+- **배포**: commit f1decaa (Session model fix + documentation)
+
+---
+
+### v1.2.2 (2025-01-11~12)
+
+**🚨 프로덕션 긴급 수정 (2025-01-11 오후)**
+- P0: Supabase Database 테이블 생성 완료 (로그인 500 에러 해결)
+  - 6개 테이블 생성: `users`, `sessions`, `counselings`, `reports`, `user_preferences`, `feedbacks`
+  - 데이터베이스 연결 성공 및 정상 작동 확인
+- P1: Gemini API 성능 최적화 (타임아웃 문제 해결)
+  - Gemini 타임아웃 증가: 30초 → 45초 (환경변수 지원)
+  - 프레임 버퍼 제한 추가: 무제한 → 최대 40개 (메모리 누수 방지)
+  - 예상 성능 향상: 타임아웃 실패율 33% → <5%
+- 관련 문서:
+  - `docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md` - 상세 로그 분석
+  - `docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md` - 테이블 생성 가이드
+  - `docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md` - Frontend 팀 공지
+- 배포: commit fcd95ff (P1 코드), commit 3890d73 (P0 문서), commit cee5bdd (Frontend 공지)
+
+**🎉 DB 연결 복구 완료 (2025-01-11 저녁)**
+- IPv6/IPv4 호환성 문제 해결
+  - Render IPv4 전용 네트워크 ↔ Supabase Direct Connection IPv6 충돌
+  - Session Pooler 전환으로 IPv4 호환 확보
+- 비밀번호 인증 문제 해결
+  - 비밀번호 내 특수문자 `@` → URL 인코딩 `%40` 적용
+  - DATABASE_URL 파싱 오류 해결
+- 데이터베이스 연결 성공 (2025-01-11 23:15 UTC)
+  - 회원가입/로그인 API 정상 작동 확인
+  - 한국어 에러 메시지 작동 (Phase 11 검증)
+  - 총 문제 해결 시간: 17분 (22:58-23:15 UTC)
+- 관련 문서:
+  - `docs/troubleshooting/LOGIN_500_DIAGNOSTIC_GUIDE.md` - 로그인 500 에러 진단
+  - `docs/troubleshooting/DB_RECONNECTION_GUIDE.md` - DB 재연결 가이드
+  - `docs/frontend/DB_CONNECTION_RESOLVED_20250111.md` - Frontend 팀 공지
+- 배포: commit 00a84db (진단 가이드), commit bdc0aeb (재연결 가이드)
+
+**🔧 refreshToken Schema 수정 (2025-01-12 새벽)**
+- **근본 원인**: Schema-Model 불일치로 인한 인증 실패
+  - Sequelize Model에는 `refreshToken` 필드 정의됨
+  - `schema/init.sql`에는 해당 컬럼 누락
+  - 코드 실행 시 `column "refreshToken" does not exist` 에러 발생
+- **즉시 수정**: 프로덕션 DB에 컬럼 추가
+  - `ALTER TABLE "users" ADD COLUMN "refreshToken" VARCHAR(500);`
+  - 회원가입/로그인 즉시 정상 작동
+- **재발 방지**: 스키마 파일 및 문서 업데이트
+  - `schema/init.sql` - refreshToken 컬럼 추가
+  - `docs/troubleshooting/P0_SUPABASE_TABLE_SETUP.md` - 스키마 업데이트
+  - `docs/troubleshooting/DB_RECONNECTION_GUIDE.md` - 스키마 업데이트
+- **Post-mortem**:
+  - `docs/troubleshooting/REFRESH_TOKEN_SCHEMA_FIX.md` - 상세 분석 및 재발 방지 조치
+  - 타임라인: 23:31 에러 발견 → 23:50 수정 완료 (19분 소요)
+  - 교훈: DB 연결 성공 ≠ 시스템 정상, 실제 CRUD 테스트 필수
 
 ---
 
@@ -1331,9 +1340,9 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 
 ---
 
-**마지막 업데이트**: 2025-01-11
-**프로젝트 버전**: 1.2.2
-**문서 버전**: 3.5.0
+**마지막 업데이트**: 2025-11-13
+**프로젝트 버전**: 1.2.3 (Session schema-model fix)
+**문서 버전**: 3.6.0
 
 ---
 
@@ -1349,8 +1358,9 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🗄️ [스키마 관리 가이드](./schema/README.md) - SQL 기반 스키마 관리
 
 ### 프론트엔드 협업
-- 🎉 [Backend 작업 완료 보고 (2025-01-12)](./docs/frontend/BACKEND_WORK_COMPLETE_20250112.md) - 전체 작업 완료 요약 ⭐ NEW
-- 🎯 [인증 시스템 완전 복구 (2025-01-12)](./docs/frontend/AUTH_FIXED_READY_FOR_TEST.md) - 회원가입/로그인 테스트 가능 🔥 HOT
+- 🔥 **WebSocket 세션 기능 복구 완료 (2025-11-13)** - Session schema-model 불일치 해결, 감정 분석 데이터 저장 정상화 ⭐ NEW
+- 🎉 [Backend 작업 완료 보고 (2025-01-12)](./docs/frontend/BACKEND_WORK_COMPLETE_20250112.md) - 전체 작업 완료 요약
+- 🎯 [인증 시스템 완전 복구 (2025-01-12)](./docs/frontend/AUTH_FIXED_READY_FOR_TEST.md) - 회원가입/로그인 테스트 가능
 - 🎉 [DB 연결 복구 완료 (2025-01-11)](./docs/frontend/DB_CONNECTION_RESOLVED_20250111.md) - 테스트 준비 완료
 - 🚨 [프로덕션 긴급 수정 공지 (2025-01-11)](./docs/frontend/BACKEND_PRODUCTION_FIX_20250111.md) - Database + Performance 수정
 - 📢 [Backend 업데이트 공지 (2025-01-11)](./docs/frontend/BACKEND_UPDATE_20250111.md) - v1.2.2 변경사항
@@ -1370,8 +1380,9 @@ grep -r "API_KEY\|SECRET\|PASSWORD\|TOKEN" --include="*.js" --exclude-dir=node_m
 - 🧪 [테스트 명령어 모음](./docs/guides/QUICK_TEST_COMMANDS.md) - 빠른 테스트 실행
 
 ### 문제 해결 (Troubleshooting)
-- 🔴 [로그인 선택적 실패 (특정 계정만 성공)](./docs/troubleshooting/LOGIN_500_SELECTIVE_FAILURE.md) - 긴급 조사 중 🔥 URGENT
-- 🔧 [refreshToken Schema 수정 Post-mortem](./docs/troubleshooting/REFRESH_TOKEN_SCHEMA_FIX.md) - Schema-Model 불일치 해결
+- 🔥 [Session Schema-Model 불일치 수정](./docs/troubleshooting/SESSION_SCHEMA_MISMATCH_FIX.md) - WebSocket 세션 기능 복구 (2025-11-13) ⭐ NEW
+- 🔧 [refreshToken Schema 수정 Post-mortem](./docs/troubleshooting/REFRESH_TOKEN_SCHEMA_FIX.md) - Schema-Model 불일치 해결 (2025-01-12)
+- ✅ [로그인 선택적 실패 해결](./docs/troubleshooting/LOGIN_500_SELECTIVE_FAILURE.md) - 정상 동작 확인 (DB에 계정 없음)
 - ⚡ [DB 재생성 후 재연결 가이드](./docs/troubleshooting/DB_RECONNECTION_GUIDE.md) - DATABASE_URL 업데이트 (15분)
 - 🚨 [로그인 500 에러 진단 가이드](./docs/troubleshooting/LOGIN_500_DIAGNOSTIC_GUIDE.md) - 로그인 실패 해결 방법
 - 🔍 [프로덕션 로그 분석 (2025-01-11)](./docs/troubleshooting/PRODUCTION_LOG_ANALYSIS_20250111.md) - 상세 로그 분석
