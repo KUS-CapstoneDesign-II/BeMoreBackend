@@ -57,9 +57,9 @@ graph TB
         WS[WebSocket Server<br/>ws library]
 
         subgraph "WebSocket 3 Channels"
-            WS1[/ws/landmarks<br/>Face Landmarks]
-            WS2[/ws/voice<br/>Audio Stream]
-            WS3[/ws/session<br/>Session Control]
+            WS1["Landmarks Channel<br/>(ws/landmarks)"]
+            WS2["Voice Channel<br/>(ws/voice)"]
+            WS3["Session Channel<br/>(ws/session)"]
         end
 
         subgraph "Core Services"
