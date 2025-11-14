@@ -430,6 +430,72 @@ BeMoreBackend/
 - 세션 상태 변경 (active/paused/ended)
 - 세션 종료 시 FinalReportService 호출
 
+#### 4. AI Voice Chat Channel
+
+**엔드포인트**: `ws://server/ws/session?sessionId={sessionId}`
+
+**기능**: 실시간 AI 음성 상담 응답 생성 및 스트리밍
+
+**요청 메시지**:
+```javascript
+{
+  "type": "request_ai_response",
+  "data": {
+    "message": "요즘 회사에서 스트레스를 많이 받아요",
+    "emotion": "anxious"  // 8개 감정 중 하나 또는 null
+  }
+}
+```
+
+**응답 스트리밍** (3단계):
+
+1. **스트리밍 시작**:
+```javascript
+{
+  "type": "ai_stream_begin",
+  "data": {}
+}
+```
+
+2. **응답 청크** (여러 번):
+```javascript
+{
+  "type": "ai_stream_chunk",
+  "data": {
+    "chunk": "스트레스를 받고 계시는군요. "
+  }
+}
+```
+
+3. **스트리밍 완료**:
+```javascript
+{
+  "type": "ai_stream_complete",
+  "data": {}
+}
+```
+
+**에러 처리**:
+```javascript
+{
+  "type": "ai_stream_error",
+  "data": {
+    "error": "AI 서비스가 일시적으로 사용할 수 없습니다"
+  }
+}
+```
+
+**처리**:
+- 사용자 메시지 저장 (`conversations` 테이블)
+- 대화 히스토리 조회 (최근 10개)
+- Gemini API 스트리밍 호출 (감정 기반 프롬프트)
+- AI 응답 저장 및 실시간 전송
+
+**지원 감정**:
+`happy`, `sad`, `angry`, `anxious`, `neutral`, `surprised`, `disgusted`, `fearful`
+
+📘 **상세 가이드**: [AI Voice Chat Guide](./docs/guides/AI_VOICE_CHAT_GUIDE.md)
+
 ---
 
 ## 🗄️ Data Schema
