@@ -140,23 +140,50 @@ graph TB
 
 ## 📊 Processing Pipeline
 
+### Part 1: 데이터 처리 파이프라인 (Data Processing)
+
 ```mermaid
-flowchart TD
-    subgraph "Data Input Layer"
+flowchart LR
+    subgraph "Input"
         A["Face Landmarks<br/>478 points × 3D coords"]
         B["Audio Signal<br/>PCM/WAV, 16kHz"]
-        C["Session Control<br/>pause/resume/end"]
     end
 
     subgraph "Feature Extraction"
         A1["MediaPipe Feature<br/>Extraction"]
-        B1["VAD Processing<br/>Voice Activity Detection<br/>(Silero VAD)"]
-        B2["STT Processing<br/>Speech to Text<br/>(Whisper API)"]
+        B1["VAD Processing<br/>(Silero VAD)"]
+        B2["STT Processing<br/>(Whisper API)"]
     end
 
-    subgraph "Analysis Layer"
+    subgraph "Analysis"
         D["EmotionInferenceService<br/>(Gemini API)"]
         E["NLP Analysis<br/>Keyword Extraction"]
+    end
+
+    A -->|real-time| A1
+    B -->|stream| B1
+    B -->|chunks| B2
+
+    A1 -->|facial features| D
+    B1 -->|voice activity| D
+    B2 -->|text output| E
+
+    D -->|emotion data| OUT1[("Emotion<br/>Results")]
+    E -->|keywords| OUT2[("Text<br/>Analysis")]
+
+    style D fill:#e1f5ff
+    style B2 fill:#e8f5e9
+    style OUT1 fill:#fff9c4
+    style OUT2 fill:#fff9c4
+```
+
+### Part 2: CBT 분석 파이프라인 (CBT Analysis)
+
+```mermaid
+flowchart LR
+    subgraph "Input Data"
+        IN1[("Emotion<br/>Results")]
+        IN2[("Text<br/>Analysis")]
     end
 
     subgraph "CBT Analysis"
@@ -170,36 +197,28 @@ flowchart TD
     end
 
     subgraph "Storage"
-        I[(Session Data<br/>PostgreSQL)]
-        J[(Report Data<br/>PostgreSQL)]
+        I[("Session Data<br/>PostgreSQL")]
+        J[("Report Data<br/>PostgreSQL")]
         K["File Storage<br/>tmp/analyses/*.json"]
     end
 
-    A -->|real-time| A1
-    B -->|stream| B1
-    B -->|chunks| B2
-
-    A1 -->|facial features| D
-    B1 -->|voice activity| D
-    B2 -->|text output| E
-
-    D -->|emotion data| G1
-    E -->|keywords| G1
+    IN1 --> G1
+    IN2 --> G1
 
     G1 -->|distortion flags| G2
     G2 -->|questions| G3
     G3 -->|interventions| H
 
-    H -->|session summary| I
-    H -->|report metadata| J
+    H -->|summary| I
+    H -->|metadata| J
     H -->|full report| K
 
-    C -.->|triggers| H
-
-    style D fill:#e1f5ff
-    style B2 fill:#e8f5e9
     style G1 fill:#f3e5f5
+    style G2 fill:#f3e5f5
+    style G3 fill:#f3e5f5
     style H fill:#fff3e0
+    style IN1 fill:#fff9c4
+    style IN2 fill:#fff9c4
 ```
 
 ### 세션 처리 흐름
