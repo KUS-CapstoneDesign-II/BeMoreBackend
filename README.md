@@ -2,7 +2,7 @@
 
 > 실시간 멀티모달 감정 분석을 통한 인지행동치료(CBT) 상담 지원 플랫폼의 백엔드 API 서버
 
-[![Version](https://img.shields.io/badge/version-1.2.3-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](./LICENSE)
 
@@ -532,11 +532,15 @@ BeMoreBackend/
 | Column | Type | 설명 |
 |--------|------|------|
 | id | SERIAL | 기본키 |
-| sessionId | VARCHAR(64) | 세션 ID |
-| userId | VARCHAR(64) | 사용자 ID |
-| reportId | VARCHAR(100) | 리포트 ID |
-| emotion | VARCHAR(50) | 주요 감정 |
+| sessionId | VARCHAR(64) | 세션 ID (FK) |
+| userId | VARCHAR(64) | 사용자 ID (FK) |
+| reportType | VARCHAR(50) | 리포트 유형 (기본: session_summary) |
+| emotionSummary | JSONB | 감정 분석 요약 |
+| cbtSummary | JSONB | CBT 분석 요약 ⭐ NEW |
+| recommendations | TEXT | 권장 사항 |
 | generatedAt | TIMESTAMP | 생성일시 |
+| createdAt | TIMESTAMP | 생성일시 |
+| updatedAt | TIMESTAMP | 수정일시 |
 
 **참고**: 전체 리포트 데이터는 `tmp/analyses/{reportId}.json` 파일로 저장됨
 
@@ -805,9 +809,9 @@ render logs -s your-service-name -f
 
 ## 🛠️ Version & Tech Stack
 
-**프로젝트 버전**: 1.2.3 (Session schema-model fix)
-**문서 버전**: 4.0.0 (Architecture-focused redesign)
-**마지막 업데이트**: 2025-11-13
+**프로젝트 버전**: 1.3.0 (CBT API frontend integration)
+**문서 버전**: 4.1.0 (CBT API documentation update)
+**마지막 업데이트**: 2025-11-18
 
 ### Backend Core
 
@@ -864,6 +868,40 @@ render logs -s your-service-name -f
 - **영향 범위**: WebSocket 세션 생성/조회/업데이트 복구, 감정 분석 데이터 저장 정상화
 - **Post-mortem**: `docs/troubleshooting/SESSION_SCHEMA_MISMATCH_FIX.md`
 - **배포**: commit f1decaa
+
+---
+
+### v1.3.0 (2025-11-18)
+
+**🎯 CBT API 프론트엔드 통합 개선**
+
+**Database Schema**
+- 📊 `reports` 테이블에 `cbtSummary JSONB` 컬럼 추가
+- CBT 분석 데이터를 데이터베이스에 영구 저장
+
+**Security Enhancement**
+- 🔐 세션 엔드포인트에 사용자 격리 검증 추가
+- 인증된 사용자가 자신의 세션만 접근 가능 (403 Forbidden)
+- 영향 범위: `/api/session/:id/report`, `/api/session/:id/summary`
+
+**API Response Changes**
+- ⚡ Urgency 필드 매핑 변경 (프론트엔드 요구사항):
+  - `high` → `immediate`
+  - `medium` → `soon`
+  - `low` → `routine`
+- 📡 리포트 응답에 `cbtFindings[]` 배열 추가
+  - 각 감정 분석 시점의 CBT 결과를 타임라인 형식으로 제공
+  - `text` 필드 → `examples[]` 배열로 변환
+- 🔤 `mostCommon` 한국어 문자열 형식으로 반환
+
+**Frontend Integration**
+- ✅ TypeScript 타입 100% 호환성 확보
+- 모든 API 응답이 프론트엔드 인터페이스와 정확히 일치
+
+**Technical Details**
+- 영향받는 파일: 5개 (schema, controllers, services)
+- 배포: commit 85a966d
+- 하위 호환성: 대부분 유지 (urgency 값 변경 주의)
 
 ---
 
@@ -953,6 +991,6 @@ render logs -s your-service-name -f
 
 ---
 
-**마지막 업데이트**: 2025-11-13
-**프로젝트 버전**: 1.2.3 (Session schema-model fix)
-**문서 버전**: 4.1.0 (Processing Pipeline enhancement)
+**마지막 업데이트**: 2025-11-18
+**프로젝트 버전**: 1.3.0 (CBT API frontend integration)
+**문서 버전**: 4.1.0 (CBT API documentation update)
