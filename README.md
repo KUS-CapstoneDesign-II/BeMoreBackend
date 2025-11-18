@@ -905,7 +905,7 @@ render logs -s your-service-name -f
 
 ---
 
-### v1.2.2 (2025-01-11~12)
+### v1.2.2 (2025-11-11~12)
 
 **🚨 프로덕션 긴급 수정**
 - P0: Supabase Database 테이블 생성 완료 (6개 테이블)
@@ -919,7 +919,7 @@ render logs -s your-service-name -f
 
 ---
 
-### v1.2.1 (2025-01-10)
+### v1.2.1 (2025-11-10)
 
 **🎭 감정 타입 확장 (5개 → 8개)**
 - MediaPipe 표준 8가지 감정 지원
@@ -953,8 +953,8 @@ render logs -s your-service-name -f
 
 ### 프론트엔드 협업
 - 🔥 **WebSocket 세션 기능 복구 완료 (2025-11-13)** - Session schema-model 불일치 해결
-- 🎉 [Backend 작업 완료 보고 (2025-01-12)](./docs/frontend/BACKEND_WORK_COMPLETE_20250112.md)
-- 🎯 [인증 시스템 완전 복구 (2025-01-12)](./docs/frontend/AUTH_FIXED_READY_FOR_TEST.md)
+- 🎉 [Backend 작업 완료 보고 (2025-11-12)](./docs/frontend/BACKEND_WORK_COMPLETE_20250112.md)
+- 🎯 [인증 시스템 완전 복구 (2025-11-12)](./docs/frontend/AUTH_FIXED_READY_FOR_TEST.md)
 
 ### 문제 해결 (Troubleshooting)
 - 🔥 [Session Schema-Model 불일치 수정](./docs/troubleshooting/SESSION_SCHEMA_MISMATCH_FIX.md)
