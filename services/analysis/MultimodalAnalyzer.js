@@ -226,8 +226,12 @@ class MultimodalAnalyzer {
 
     // 왜곡 분포
     const distortionDistribution = {};
+    const distortionNames = {}; // Store Korean names for each type
     allDistortions.forEach(d => {
       distortionDistribution[d.type] = (distortionDistribution[d.type] || 0) + 1;
+      if (!distortionNames[d.type] && d.name_ko) {
+        distortionNames[d.type] = d.name_ko;
+      }
     });
 
     // 개입 이력
@@ -242,6 +246,7 @@ class MultimodalAnalyzer {
       distortionDistribution,
       mostCommonDistortion: mostCommon ? {
         type: mostCommon[0],
+        name_ko: distortionNames[mostCommon[0]],
         count: mostCommon[1]
       } : null,
       totalInterventions: interventionHistory.length,

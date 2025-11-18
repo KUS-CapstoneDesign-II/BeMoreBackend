@@ -302,6 +302,11 @@ async function report(req, res) {
     const session = SessionManager.getSession(sessionId);
     if (!session) return res.status(404).json({ success: false, error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` } });
 
+    // User isolation check: verify session belongs to authenticated user
+    if (req.user && session.userId !== req.user.id) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: '해당 세션에 대한 접근 권한이 없습니다' } });
+    }
+
     let report;
     try {
       const gen = new SessionReportGenerator();
@@ -366,6 +371,11 @@ async function summary(req, res) {
     const session = SessionManager.getSession(sessionId);
     if (!session) return res.status(404).json({ success: false, error: { code: 'SESSION_NOT_FOUND', message: `세션을 찾을 수 없습니다: ${sessionId}` } });
 
+    // User isolation check: verify session belongs to authenticated user
+    if (req.user && session.userId !== req.user.id) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: '해당 세션에 대한 접근 권한이 없습니다' } });
+    }
+
     let report;
     try {
       console.log('📋 세션 리포트 생성 시작...');
@@ -404,7 +414,10 @@ async function summary(req, res) {
         keyObservations: report.analysis?.overallAssessment?.keyObservations || [],
         dominantEmotion: report.analysis?.emotionSummary?.dominantEmotion || null,
         averageVoiceMetrics: report.analysis?.vadSummary?.averageMetrics || null,
-        cbt: { totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0, mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion || null },
+        cbt: {
+          totalDistortions: report.analysis?.cbtSummary?.totalDistortions || 0,
+          mostCommon: report.analysis?.cbtSummary?.mostCommonDistortion?.name_ko || null
+        },
         recommendations
       };
       const etag = crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');

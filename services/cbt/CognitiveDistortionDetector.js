@@ -213,7 +213,7 @@ class CognitiveDistortionDetector {
         needsIntervention: true,
         reason: 'high_severity',
         message: `심각도 높은 인지 왜곡 ${highSeverityCount}개 탐지`,
-        urgency: 'high'
+        urgency: 'immediate'
       };
     }
 
@@ -233,7 +233,7 @@ class CognitiveDistortionDetector {
         needsIntervention: true,
         reason: 'repeated_distortion',
         message: `같은 왜곡(${type}) ${count}회 반복 탐지`,
-        urgency: 'medium',
+        urgency: 'soon',
         distortionType: type
       };
     }
@@ -245,7 +245,7 @@ class CognitiveDistortionDetector {
         needsIntervention: true,
         reason: 'multiple_distortions',
         message: `${uniqueTypes.size}가지 다른 왜곡 동시 발생`,
-        urgency: 'medium',
+        urgency: 'soon',
         distortionTypes: Array.from(uniqueTypes)
       };
     }
@@ -254,7 +254,7 @@ class CognitiveDistortionDetector {
       needsIntervention: false,
       reason: 'normal',
       message: '정상 범위',
-      urgency: 'low'
+      urgency: 'routine'
     };
   }
 

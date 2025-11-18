@@ -90,6 +90,7 @@ CREATE TABLE "reports" (
   "userId" VARCHAR(64) NOT NULL,
   "reportType" VARCHAR(50) DEFAULT 'session_summary',
   "emotionSummary" JSONB,
+  "cbtSummary" JSONB,
   "recommendations" TEXT,
   "generatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

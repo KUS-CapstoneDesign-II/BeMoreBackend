@@ -93,6 +93,15 @@ class SessionReportGenerator {
       throw new Error(`CBT details generation failed: ${e.message}`);
     }
 
+    let cbtFindings;
+    try {
+      // 5-1. CBT Findings 배열 (프론트엔드 요구사항)
+      cbtFindings = this._generateCBTFindings(safeSession);
+    } catch (e) {
+      console.error('❌ CBT Findings 생성 실패:', e.message);
+      cbtFindings = [];
+    }
+
     try {
       // 6. 요약 통계
       statistics = this._generateStatistics(safeSession, analysis);
@@ -111,6 +120,7 @@ class SessionReportGenerator {
       vadTimeline,
       vadVector: analysis.vadVector,
       cbtDetails,
+      cbtFindings,
       statistics
     };
 
@@ -216,6 +226,42 @@ class SessionReportGenerator {
         totalPoints: vadHistory.length
       }
     };
+  }
+
+  /**
+   * CBT Findings 배열 생성 (프론트엔드 요구사항)
+   * 각 감정 분석 시점의 CBT 결과를 배열로 반환
+   */
+  _generateCBTFindings(session) {
+    if (!Array.isArray(session.emotions) || session.emotions.length === 0) {
+      return [];
+    }
+
+    const findings = [];
+
+    session.emotions.forEach(emotion => {
+      if (emotion.cbtAnalysis) {
+        const finding = {
+          timestamp: emotion.timestamp,
+          hasDistortions: emotion.cbtAnalysis.hasDistortions || false,
+          detections: (emotion.cbtAnalysis.detections || []).map(d => ({
+            type: d.type,
+            name_ko: d.name_ko,
+            severity: d.severity,
+            confidence: d.confidence,
+            examples: d.text ? [d.text] : []  // Convert text → examples[]
+          })),
+          intervention: emotion.cbtAnalysis.intervention || null
+        };
+
+        // Only include findings with distortions or interventions
+        if (finding.hasDistortions || finding.intervention) {
+          findings.push(finding);
+        }
+      }
+    });
+
+    return findings;
   }
 
   /**
