@@ -2,7 +2,7 @@
 
 > 실시간 멀티모달 감정 분석을 통한 인지행동치료(CBT) 상담 지원 플랫폼의 백엔드 API 서버
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/KUS-CapstoneDesign-II/BeMoreBackend)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](./LICENSE)
 
@@ -809,9 +809,9 @@ render logs -s your-service-name -f
 
 ## 🛠️ Version & Tech Stack
 
-**프로젝트 버전**: 1.3.0 (CBT API frontend integration)
-**문서 버전**: 4.1.0 (CBT API documentation update)
-**마지막 업데이트**: 2025-11-18
+**프로젝트 버전**: 1.3.1 (Capstone documentation complete)
+**문서 버전**: 4.2.0 (README v1.3.1 + Capstone docs)
+**마지막 업데이트**: 2025-11-19
 
 ### Backend Core
 
@@ -868,6 +868,38 @@ render logs -s your-service-name -f
 - **영향 범위**: WebSocket 세션 생성/조회/업데이트 복구, 감정 분석 데이터 저장 정상화
 - **Post-mortem**: `docs/troubleshooting/SESSION_SCHEMA_MISMATCH_FIX.md`
 - **배포**: commit f1decaa
+
+---
+
+### v1.3.1 (2025-11-19)
+
+**📚 프로젝트 문서화 완료**
+
+**Capstone Documentation**
+- 📖 캡스톤 디자인 제출용 README 작성 (README_CAPSTONE.md, 2,559 라인)
+  - 개발자 관점의 상세 기술 문서
+  - 실제 코드 구현 예제 포함
+  - 시스템 아키텍처 및 성능 지표 문서화
+  - 기술적 도전과제 및 해결 과정 기록
+
+**Documentation Templates**
+- 📝 README 업데이트 표준 프롬프트 템플릿 (PROMPT_README_UPDATE.md)
+  - 6가지 업데이트 시나리오별 프롬프트
+  - 버전별 업데이트 가이드 (Major/Minor/Patch)
+  - 날짜 오류 수정 워크플로우
+- 📝 캡스톤 README 전용 프롬프트 (PROMPT_CAPSTONE_README.md)
+  - BeMore 프로젝트 맞춤 템플릿
+  - 개발자/사용자/교육자 관점별 가이드
+
+**Deployment Documentation**
+- ✅ CBT v1.3.0 배포 완료 문서 (CBT_v1.3.0_DEPLOYMENT_COMPLETE.md)
+- 🧪 배포 검증 가이드 (DEPLOYMENT_VERIFICATION_v1.3.0.md)
+- 🎯 프론트엔드 통합 가이드 (FRONTEND_NOTIFICATION_CBT_v1.3.0.md)
+
+**Impact**
+- 프로젝트 문서 완성도 향상
+- 향후 README 유지보수 프로세스 표준화
+- 캡스톤 제출 준비 완료
 
 ---
 
@@ -951,10 +983,14 @@ render logs -s your-service-name -f
 
 ## 📌 Quick Links
 
+### 캡스톤 디자인
+- 📖 **[캡스톤 제출용 README](./README_CAPSTONE.md)** - 개발자 관점의 상세 기술 문서
+
 ### 프론트엔드 협업
 - 🔥 **WebSocket 세션 기능 복구 완료 (2025-11-13)** - Session schema-model 불일치 해결
 - 🎉 [Backend 작업 완료 보고 (2025-11-12)](./docs/frontend/BACKEND_WORK_COMPLETE_20250112.md)
 - 🎯 [인증 시스템 완전 복구 (2025-11-12)](./docs/frontend/AUTH_FIXED_READY_FOR_TEST.md)
+- 🎯 [CBT v1.3.0 배포 알림 (2025-11-18)](./FRONTEND_NOTIFICATION_CBT_v1.3.0.md)
 
 ### 문제 해결 (Troubleshooting)
 - 🔥 [Session Schema-Model 불일치 수정](./docs/troubleshooting/SESSION_SCHEMA_MISMATCH_FIX.md)
@@ -962,6 +998,8 @@ render logs -s your-service-name -f
 - ⚡ [DB 재생성 후 재연결 가이드](./docs/troubleshooting/DB_RECONNECTION_GUIDE.md)
 
 ### 배포 및 인프라
+- ✅ [CBT v1.3.0 배포 완료 (2025-11-18)](./CBT_v1.3.0_DEPLOYMENT_COMPLETE.md)
+- 🧪 [배포 검증 가이드](./DEPLOYMENT_VERIFICATION_v1.3.0.md)
 - 🚀 [Render 배포 가이드](./docs/deployment/RENDER_DEPLOYMENT_SETUP_2025-11-04.md)
 - 📊 [Supabase 설정 가이드](./docs/database/SUPABASE_SETUP_GUIDE.md)
 
@@ -969,6 +1007,10 @@ render logs -s your-service-name -f
 - 📡 [API 엔드포인트 레퍼런스](./docs/guides/API_ENDPOINT_REFERENCE.md)
 - 🚀 [빠른 시작 가이드](./docs/guides/QUICK_START.md)
 - 🧪 [테스트 명령어 모음](./docs/guides/QUICK_TEST_COMMANDS.md)
+
+### 문서화 템플릿
+- 📝 [README 업데이트 프롬프트](./PROMPT_README_UPDATE.md)
+- 📝 [캡스톤 README 프롬프트](./PROMPT_CAPSTONE_README.md)
 
 ---
 
